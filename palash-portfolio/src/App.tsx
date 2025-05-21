@@ -230,29 +230,49 @@ const publicationsData = [
 // Pictures data - add more items here to have more carousel slides
 const picturesData = [
   {
-    image: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?fit=crop&w=400&q=80",
-    title: "Professional... sometimes!",
-    description: "Caught in a rare moment of seriousness, probably moments before a joke.",
+    image: "/images/Pic_section/Palash-Roy_Plaza de Bolívar.jpg",
+    title: "Plaza de Bolívar, Colombia",
+    description: "Exploring the historic heart of Bogotá at Plaza de Bolívar during my research visit for ICSME-2023.",
   },
   {
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?fit=crop&w=400&q=80",
-    title: "Tech Enthusiast",
-    description: "Most likely to automate life and laugh at meme code!",
+    image: "/images/Pic_section/Palash-Justin_Santa Fe, Bogotá, Chocó.jpg",
+    title: "Santa Fe, Bogotá, Chocó",
+    description: "Making connections with fellow researchers in beautiful Colombia during our conference travel.",
   },
   {
-    image: "https://images.unsplash.com/photo-1464983953574-0892a716854b?fit=crop&w=400&q=80",
-    title: "Explorer",
-    description: "Travels far for both code and coffee. Nature and hackathons in equal measure.",
+    image: "/images/Pic_section/Palash_Group_Chico_Norte.jpg",
+    title: "Group Photo at Chico Norte",
+    description: "Exploring Chico Norte fellow friends of mine from all over the world.",
   },
   {
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?fit=crop&w=400&q=80",
-    title: "Hackathon Warrior",
-    description: "3AM coding sessions are when the real magic happens.",
+    image: "/images/Pic_section/Palash-Group_Parque_Nacional_Oriental.jpg",
+    title: "Parque Nacional Oriental",
+    description: "Taking a break from academic discussions to enjoy Colombia's natural beauty at Parque Nacional Oriental.",
   },
   {
-    image: "https://images.unsplash.com/photo-1543269865-cbf427effbad?fit=crop&w=400&q=80",
-    title: "Team Player",
-    description: "Making friends with fellow code enthusiasts wherever I go.",
+    image: "/images/Pic_section/Palash-Cousins_Banff_Gondola.jpg",
+    title: "Banff Gondola with Cousins",
+    description: "Enjoying the breathtaking views of the Canadian Rockies with family at the Banff Gondola.",
+  },
+  {
+    image: "/images/Pic_section/Palash-Cousins2_banff.jpg",
+    title: "Banff National Park",
+    description: "Another memorable moment with cousins exploring the natural wonders of Banff National Park.",
+  },
+  {
+    image: "/images/Pic_section/Palash-Family_Sulphur_Mountain.jpg",
+    title: "Family at Sulphur Mountain",
+    description: "A family adventure scaling the heights of Sulphur Mountain with its spectacular panoramic views.",
+  },
+  {
+    image: "/images/Pic_section/Palash-Mugdho(Cousin)_Montauk_Point_State_Park.jpg",
+    title: "Montauk Point State Park",
+    description: "An enjoyable day with my cousin Mugdho at Montauk Point State Park, taking in the coastal scenery.",
+  },
+  {
+    image: "/images/Pic_section/Palash-Roy_West_Village_NY(Friends_Building).jpg",
+    title: "West Village, New York",
+    description: "Couldn't resist visiting the iconic 'Friends' building during my trip to West Village, New York!",
   },
 ];
 
@@ -684,7 +704,7 @@ export default function App() {
                   </p>
                   
                   <p>
-                    With publications in renowned venues like ICSME, ESEM, IWSC etc, Palash has received multiple awards including the GSA Research Excellence Award and People's Choice Best Paper Award. Originally from Bangladesh, <strong>Palash</strong> completed his undergraduate studies at BRAC University before moving to Canada to pursue graduate studies.
+                    With publications in renowned venues like ICSME, ESEM, IWSC etc, Palash has received multiple awards including the Research Excellence Award. Originally from Bangladesh, <strong>Palash</strong> completed his undergraduate studies at BRAC University before moving to Canada to pursue graduate studies.
                   </p>
                   
                   <p>
@@ -829,8 +849,8 @@ export default function App() {
                   <li>GraphCodeBERT, Codex, StarCoder, GPT</li>
                   <li>BERT, Embeddings, Fine-Tuning</li>
                   <li>Few-Shot Learning, Attention Mechanisms</li>
-                  <li>Prompt Engineering, Tokenization</li>
-                  <li>BLEU, ROUGE, Perplexity</li>
+                  <li>Prompt Engineering, AI AGENT, Tokenization</li>
+                  <li>BLEU, ROUGE, CodeBLEU</li>
                 </ul>
               </div>
               
