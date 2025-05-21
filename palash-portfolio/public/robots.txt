@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Allow all images to be indexed
+Allow: /images/
+
+# Allow paper PDFs to be indexed
+Allow: /papers/
+
+# Sitemap location
+Sitemap: https://palashroy.me/sitemap.xml

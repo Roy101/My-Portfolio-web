@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /assets/
+Disallow: /images/
+
+# Direct search engines to the main site's sitemap
+Sitemap: https://palashroy.me/sitemap.xml
+
+# Indicate this is a redirect domain
+Host: https://palashroy.me

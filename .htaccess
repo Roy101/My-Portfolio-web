@@ -1,0 +1,31 @@
+# Redirect from portfolio.palashroy.me to palashroy.me
+RewriteEngine On
+RewriteCond %{HTTP_HOST} ^portfolio\.palashroy\.me$ [NC]
+RewriteRule ^(.*)$ https://palashroy.me/$1 [R=301,L]
+
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Set browser caching
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-XSS-Protection "1; mode=block"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Set default character set
+AddDefaultCharset UTF-8
+
+# Custom 404 page (optional, uncomment if you have a custom 404 page)
+# ErrorDocument 404 /404.html
