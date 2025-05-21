@@ -16,8 +16,17 @@ const navLinks = [
   { label: "References", href: "#references" }
 ];
 
+// Define interface for highlight items to include optional image property
+interface HighlightItem {
+  title: string;
+  organization: string;
+  description: string;
+  link?: string;
+  image?: string;
+}
+
 // Featured Highlights data - reorganized to show wins first, then nominations
-const highlightsData = [
+const highlightsData: HighlightItem[] = [
   // Wins - 2025
   {
     title: "Research Excellence in Science, Technology, Engineering, or Math (2025)",
@@ -353,6 +362,7 @@ const Carousel = <T extends unknown>({ items, renderItem, itemsPerSlide = 3 }: C
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
   const [actualItemsPerSlide, setActualItemsPerSlide] = useState(itemsPerSlide);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0])); // Track loaded slide indexes
 
   // Loading state for better UX
   useEffect(() => {
@@ -393,17 +403,44 @@ const Carousel = <T extends unknown>({ items, renderItem, itemsPerSlide = 3 }: C
 
   const nextSlide = () => {
     if (!needsNavigation) return;
-    setCurrentIndex((prevIndex) => (prevIndex === totalSlides - 1 ? 0 : prevIndex + 1));
+    const nextIndex = currentIndex === totalSlides - 1 ? 0 : currentIndex + 1;
+    setCurrentIndex(nextIndex);
+    
+    // Preload next slide's images
+    setLoadedImages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(nextIndex);
+      
+      // Also add the one after that for smoother experience
+      const nextNextIndex = nextIndex === totalSlides - 1 ? 0 : nextIndex + 1;
+      newSet.add(nextNextIndex);
+      return newSet;
+    });
   };
 
   const prevSlide = () => {
     if (!needsNavigation) return;
-    setCurrentIndex((prevIndex) => (prevIndex === 0 ? totalSlides - 1 : prevIndex - 1));
+    const prevIndex = currentIndex === 0 ? totalSlides - 1 : currentIndex - 1;
+    setCurrentIndex(prevIndex);
+    
+    // Preload previous slide's images
+    setLoadedImages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(prevIndex);
+      return newSet;
+    });
   };
 
   const goToSlide = (index: number) => {
     if (!needsNavigation) return;
     setCurrentIndex(index);
+    
+    // Mark this slide as loaded
+    setLoadedImages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(index);
+      return newSet;
+    });
   };
 
   // Create array of slides, each containing multiple items
@@ -429,11 +466,14 @@ const Carousel = <T extends unknown>({ items, renderItem, itemsPerSlide = 3 }: C
                   ? "grid-cols-1 sm:grid-cols-2"
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               }`}>
-                {slide.map((item, itemIndex) => (
-                  <div key={`${slideIndex}-${itemIndex}`} className="carousel-item h-full">
-                    {renderItem(item)}
-                  </div>
-                ))}
+                {/* Only render images that are in view or will soon be in view */}
+                {(loadedImages.has(slideIndex) || Math.abs(slideIndex - currentIndex) <= 1) && 
+                  slide.map((item, itemIndex) => (
+                    <div key={`${slideIndex}-${itemIndex}`} className="carousel-item h-full">
+                      {renderItem(item)}
+                    </div>
+                  ))
+                }
               </div>
             </div>
           ))}
@@ -1056,13 +1096,27 @@ export default function App() {
               items={picturesData}
               renderItem={(item) => (
                 <div className="bg-[#181a22] h-full p-4 rounded-lg flex flex-col items-center text-center">
-                  <div className="w-full h-48 sm:h-52 overflow-hidden rounded">
+                  <div className="w-full h-48 sm:h-52 overflow-hidden rounded relative">
+                    {/* Loading placeholder */}
+                    <div className="absolute inset-0 bg-[#232333] animate-pulse"></div>
+                    
                     <img
                       src={item.image}
                       alt={item.altText || `Palash Ranjan Roy (Palash Roy) at ${item.title}`}
                       title={`Palash Roy - ${item.description}`}
-                      className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
+                      className="w-full h-full object-cover transition-transform hover:scale-105 duration-300 relative z-10"
                       loading="lazy"
+                      decoding="async"
+                      fetchPriority="low" 
+                      onLoad={(e) => {
+                        // Once the image loads, make it visible
+                        e.currentTarget.style.opacity = '1';
+                        // Hide the loading placeholder
+                        if (e.currentTarget.previousSibling) {
+                          (e.currentTarget.previousSibling as HTMLElement).style.display = 'none';
+                        }
+                      }}
+                      style={{ opacity: 0, transition: 'opacity 0.3s ease-in' }}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                         console.error(`Failed to load image for ${item.title}`);
