@@ -1,7 +1,14 @@
 # Caching and compression
 /*
- * Cache static assets
- */
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-XSS-Protection: 1; mode=block
+  Content-Security-Policy: upgrade-insecure-requests
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Link: <https://palashroy.me>; rel="canonical"
+
 /images/*
   Cache-Control: public, max-age=31536000, immutable
 
@@ -17,9 +24,3 @@
 # Force SSL/HTTPS
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-
-# Compression
-/*
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  Referrer-Policy: strict-origin-when-cross-origin

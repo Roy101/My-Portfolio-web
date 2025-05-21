@@ -233,46 +233,55 @@ const picturesData = [
     image: "/images/Pic_section/Palash-Roy_Plaza de Bolívar.jpg",
     title: "Plaza de Bolívar, Colombia",
     description: "Exploring the historic heart of Bogotá at Plaza de Bolívar during my research visit for ICSME-2023.",
+    altText: "Palash Ranjan Roy (Palash Roy) at Plaza de Bolívar in Bogotá during ICSME-2023 research conference"
   },
   {
     image: "/images/Pic_section/Palash-Justin_Santa Fe, Bogotá, Chocó.jpg",
     title: "Santa Fe, Bogotá, Chocó",
     description: "Making connections with fellow researchers in beautiful Colombia during our conference travel.",
+    altText: "Palash Roy with Justin in Santa Fe, Bogotá, Chocó - Computer Science researchers at international conference"
   },
   {
     image: "/images/Pic_section/Palash_Group_Chico_Norte.jpg",
     title: "Group Photo at Chico Norte",
     description: "Exploring Chico Norte fellow friends of mine from all over the world.",
+    altText: "Palash Ranjan Roy with international research colleagues at Chico Norte in Colombia"
   },
   {
     image: "/images/Pic_section/Palash-Group_Parque_Nacional_Oriental.jpg",
     title: "Parque Nacional Oriental",
     description: "Taking a break from academic discussions to enjoy Colombia's natural beauty at Parque Nacional Oriental.",
+    altText: "Palash Roy with research colleagues at Parque Nacional Oriental in Colombia during academic conference"
   },
   {
     image: "/images/Pic_section/Palash-Cousins_Banff_Gondola.jpg",
     title: "Banff Gondola with Cousins",
     description: "Enjoying the breathtaking views of the Canadian Rockies with family at the Banff Gondola.",
+    altText: "PhD student Palash Ranjan Roy with cousins at Banff Gondola in the Canadian Rockies"
   },
   {
     image: "/images/Pic_section/Palash-Cousins2_banff.jpg",
     title: "Banff National Park",
     description: "Another memorable moment with cousins exploring the natural wonders of Banff National Park.",
+    altText: "Palash Roy and cousins visiting Banff National Park in Alberta, Canada"
   },
   {
     image: "/images/Pic_section/Palash-Family_Sulphur_Mountain.jpg",
     title: "Family at Sulphur Mountain",
     description: "A family adventure scaling the heights of Sulphur Mountain with its spectacular panoramic views.",
+    altText: "Computer Science researcher Palash Ranjan Roy with family at Sulphur Mountain in Banff, Canada"
   },
   {
     image: "/images/Pic_section/Palash-Mugdho(Cousin)_Montauk_Point_State_Park.jpg",
     title: "Montauk Point State Park",
     description: "An enjoyable day with my cousin Mugdho at Montauk Point State Park, taking in the coastal scenery.",
+    altText: "Palash Roy and cousin Mugdho at Montauk Point State Park in New York"
   },
   {
     image: "/images/Pic_section/Palash-Roy_West_Village_NY(Friends_Building).jpg",
     title: "West Village, New York",
     description: "Couldn't resist visiting the iconic 'Friends' building during my trip to West Village, New York!",
+    altText: "Palash Ranjan Roy visiting the Friends TV show building in West Village, New York City"
   },
 ];
 
@@ -1050,7 +1059,8 @@ export default function App() {
                   <div className="w-full h-48 sm:h-52 overflow-hidden rounded">
                     <img
                       src={item.image}
-                      alt={item.title}
+                      alt={item.altText || `Palash Ranjan Roy (Palash Roy) at ${item.title}`}
+                      title={`Palash Roy - ${item.description}`}
                       className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
                       loading="lazy"
                       onError={(e) => {

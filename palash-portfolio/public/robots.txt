@@ -1,11 +1,29 @@
 User-agent: *
 Allow: /
 
-# Allow all images to be indexed
+# Allow all images to be indexed with higher priority
 Allow: /images/
+Allow: /images/Pic_section/
 
 # Allow paper PDFs to be indexed
 Allow: /papers/
 
-# Sitemap location
+# Sitemap locations
 Sitemap: https://palashroy.me/sitemap.xml
+Sitemap: https://palashroy.me/sitemap-index.xml
+
+# Googlebot-specific instructions
+User-agent: Googlebot
+Allow: /
+Allow: /images/
+Allow: /papers/
+
+# Googlebot-Image specific instructions
+User-agent: Googlebot-Image
+Allow: /
+Allow: /images/
+Allow: /images/Pic_section/
+
+# Allow Google to better index your profile images
+Allow: /images/AnotherDP.png
+Allow: /images/MyDP.png

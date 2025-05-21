@@ -3,7 +3,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://palashroy.me/</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2025-05-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -16,10 +16,26 @@
       <image:title>Palash Roy - AI Researcher and PhD Student</image:title>
       <image:caption>Profile photo of Palash Ranjan Roy, Computer Science researcher at University of Saskatchewan</image:caption>
     </image:image>
+    <!-- Added photos from the Pictures section -->
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Roy_Plaza de Bolívar.jpg</image:loc>
+      <image:title>Palash Ranjan Roy at Plaza de Bolívar, Colombia</image:title>
+      <image:caption>Palash Roy exploring the historic heart of Bogotá at Plaza de Bolívar during research visit for ICSME-2023</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Justin_Santa Fe, Bogotá, Chocó.jpg</image:loc>
+      <image:title>Palash Roy in Santa Fe, Bogotá, Chocó</image:title>
+      <image:caption>Palash Ranjan Roy making connections with fellow researchers in Colombia during conference travel</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Cousins_Banff_Gondola.jpg</image:loc>
+      <image:title>Palash Roy at Banff Gondola with Cousins</image:title>
+      <image:caption>Palash Ranjan Roy enjoying the breathtaking views of the Canadian Rockies at the Banff Gondola</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://palashroy.me/about.html</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2025-05-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
