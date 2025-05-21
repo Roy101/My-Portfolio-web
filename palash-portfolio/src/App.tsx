@@ -299,31 +299,31 @@ const referencesData = [
   {
     name: "Rezwana Mahfuza",
     title: "PhD Student, Dalhousie University",
-    image: "/images/rezwana.png",
+    image: "/images/rezwana.jpg",
     text: "Palash was an integral part of my study environment when I first started university at Brac University. Palash spent time with me not just to assist me with day-to-day tasks, but also to encourage me with many academic endeavors over the years. He inspires his team, provides important input, and works for everyone to achieve better as a groupmate."
   },
   {
     name: "Farishta Kabir",
     title: "Graduate Research and Teaching Assistant, University of Alberta",
-    image: "/images/farishta.png",
+    image: "/images/farishta.jpg",
     text: "I've had the pleasure of working with Palash during a few undergraduate courses and in the Robotics Club at BRAC University as a colleague. He always stood-out for his focused problem-solving approach and leadership in teamwork. Palash combines his expertise with an organizational mindset, making him a productive addition to any research project or team. Wishing him all the best for his future endeavours."
   },
   {
     name: "Fahmida Nipa",
     title: "PS & CS Core Network, Cyber Security, Datacom",
-    image: "/images/Nipa.png",
+    image: "/images/Nipa.jpg",
     text: "Throughout my Robotics Club journey, I have seen Palash to be very enthusiastic about robotics. Not to mention the leadership and managerial quality I got to experience while working with him was quite mentionable. I believe he will do his best wherever he set his foot, as his dignity towards his responsibilities resembles how much effort he can demonstrate. He is very adaptive and can communicate fluently with anyone when working in teams. I personally teamed up with him during several events organized by the club. those works were success and naturally outstanding as he pulled out the best from the team."
   },
   {
     name: "Syeda Umme Salma",
     title: "Graduate Research Assistant, PhD Student",
-    image: "/images/omi.png",
+    image: "/images/omi.jpg",
     text: "Palash is one of the greatest guys I've ever had as a collaborator, and we've worked together on multiple projects. I would strongly suggest his services to anyone in need of an software engineer. He is one of the wisest persons I have ever encountered, and his ability to solve any situation with a pleasant gesture is astonishing. Palash would be a valuable addition to any team."
   },
   {
     name: "Md. Noushin Islam",
     title: "Web Developer, Frontend Developer, MSc in Software Engineering",
-    image: "/images/saad.png",
+    image: "/images/saad.jpg",
     text: "I was impressed by Palash's ability to handle any situation calmly and patiently, even in the toughest situation. His natural skill has helped us succeed in many events throughout my journey at ROBU."
   }
 ];
@@ -679,7 +679,7 @@ export default function App() {
           <div className="w-64 h-64 md:w-96 md:h-96 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(122,205,235,0.15)] mt-10 md:mt-0 md:ml-14 border-4 border-[#2d324b] bg-[#171830] flex items-center justify-center relative">
             {/* Profile photo with improved alt text for SEO */}
             <img 
-              src="/images/AnotherDP.png" 
+              src="/images/AnotherDP.jpg" 
               alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering" 
               className="w-full h-full object-cover"
             />
@@ -702,7 +702,7 @@ export default function App() {
               <div className="md:w-1/3 flex flex-col items-center">
                 <div className="rounded-full overflow-hidden border-4 border-[#2d324b] bg-[#233343] w-64 h-64">
                   <img 
-                    src="/images/MyDP.png" 
+                    src="/images/MyDP.jpg" 
                     alt="Palash Roy - AI Researcher and Computer Science PhD Student at University of Saskatchewan" 
                     className="w-full h-full object-cover"
                   />
@@ -1213,9 +1213,10 @@ export default function App() {
                     {/* Profile image */}
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#7ec8e3] mr-4 flex-shrink-0">
                       <img
-                        src={item.image}
+                        src={item.image.replace('.png', '.jpg')}
                         alt={item.name}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = "https://via.placeholder.com/150?text=Profile";
                         }}

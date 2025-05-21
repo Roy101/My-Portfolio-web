@@ -25,5 +25,5 @@ Allow: /images/
 Allow: /images/Pic_section/
 
 # Allow Google to better index your profile images
-Allow: /images/AnotherDP.png
-Allow: /images/MyDP.png
+Allow: /images/AnotherDP.jpg
+Allow: /images/MyDP.jpg

@@ -8,6 +8,8 @@
   Content-Security-Policy: upgrade-insecure-requests
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Link: <https://palashroy.me>; rel="canonical"
+  Link: </assets/index-*.css>; rel=preload; as=style
+  Link: </assets/index-*.js>; rel=preload; as=script
 
 /images/*
   Cache-Control: public, max-age=31536000, immutable
