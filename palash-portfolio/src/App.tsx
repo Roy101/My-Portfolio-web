@@ -201,6 +201,26 @@ const academicServiceData = [
 // Publications data - Palash Ranjan Roy's publications
 const publicationsData = [
   {
+    title: "Are Classical Clone Detectors Good Enough For the AI Era?",
+    authors: "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
+    venue: "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
+    year: "2025",
+    pages: "pp. 295-307",
+    doi: "10.1109/ICSME64153.2025.00035",
+    description: "Evaluates the effectiveness of classical clone detection tools in the modern AI era, analyzing their performance against AI-generated code and proposing improvements for contemporary software development.",
+    preprint: "https://arxiv.org/pdf/2509.25754"
+  },
+  {
+    title: "Towards Just-In-Time, Inclusive Clone Refactoring",
+    authors: "P. Roy",
+    venue: "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
+    year: "2025",
+    pages: "pp. 884-886",
+    doi: "10.1109/ICSME64153.2025.00099",
+    description: "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
+    preprint: "https://ieeexplore.ieee.org/document/11186070/keywords#keywords"
+  },
+  {
     title: "Are large language models a threat to programming platforms? an exploratory study",
     authors: "M. M. Billah, P. R. Roy, Z. Codabux, and B. Roy",
     venue: "Proceedings of the 18th ACM/IEEE International Symposium on Empirical Software Engineering and Measurement",
@@ -756,7 +776,7 @@ export default function App() {
                     </svg>
                     <span className="sr-only">Facebook</span>
                   </a>
-                  <a href="https://www.instagram.com/checkoutpial/?hl=en" target="_blank" rel="noopener noreferrer" 
+                  <a href="https://www.instagram.com/checkoutroy/?hl=en" target="_blank" rel="noopener noreferrer" 
                     className="w-10 h-10 rounded-full bg-[#E4405F] flex items-center justify-center text-white hover:bg-opacity-80 transition-all"
                     aria-label="Visit Palash Roy's Instagram profile">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
