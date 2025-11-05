@@ -118,7 +118,8 @@ const leadershipRolesData = [
     period: "2025-2026",
     role: "President",
     organization: "Graduate Students Association (GSA)",
-    place: "University of Saskatchewan"
+    place: "University of Saskatchewan",
+    link: "https://gsa.usask.ca"
   },
   {
     period: "2024-2025",
@@ -219,16 +220,6 @@ const publicationsData = [
     doi: "10.1109/ICSME64153.2025.00099",
     description: "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
     preprint: "https://ieeexplore.ieee.org/document/11186070/keywords#keywords"
-  },
-  {
-    title: "Are large language models a threat to programming platforms? an exploratory study",
-    authors: "M. M. Billah, P. R. Roy, Z. Codabux, and B. Roy",
-    venue: "Proceedings of the 18th ACM/IEEE International Symposium on Empirical Software Engineering and Measurement",
-    year: "2024",
-    pages: "pp. 292–301",
-    doi: "10.1145/3674805.3686689",
-    description: "This study aims to assess LLMs' capability to solve diverse programming challenges across programming platforms with varying difficulty levels, comparing them to human programmers and identifying potential threats to established norms in programming platforms.",
-    preprint: "/papers/Are_large_language.pdf"
   },
   {
     title: "Gptclonebench: A comprehensive benchmark of semantic clones and cross-language clones using gpt-3 model and semanticclonebench",
@@ -737,7 +728,7 @@ export default function App() {
           <div className="w-64 h-64 md:w-96 md:h-96 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(122,205,235,0.15)] mt-10 md:mt-0 md:ml-14 border-4 border-[#2d324b] bg-[#171830] flex items-center justify-center relative">
             {/* Profile photo with improved alt text for SEO */}
             <img 
-              src="/images/AnotherDP.jpg" 
+              src="/images/palash_ranjan_roy.jpg" 
               alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering" 
               className="w-full h-full object-cover"
             />
@@ -760,7 +751,7 @@ export default function App() {
               <div className="md:w-1/3 flex flex-col items-center">
                 <div className="rounded-full overflow-hidden border-4 border-[#2d324b] bg-[#233343] w-64 h-64">
                   <img 
-                    src="/images/MyDP.jpg" 
+                    src="/images/palash_roy.jpg" 
                     alt="Palash Roy - AI Researcher and Computer Science PhD Student at University of Saskatchewan" 
                     className="w-full h-full object-cover"
                   />
@@ -1212,7 +1203,20 @@ export default function App() {
               renderItem={(item) => (
                 <div className="bg-[#181a22] h-full p-6 rounded-lg">
                   <div className="font-bold mb-1">{item.role}</div>
-                  <div className="text-[#7ec8e3] text-sm mb-1">{item.organization}</div>
+                  <div className="text-[#7ec8e3] text-sm mb-1">
+                    {item.link ? (
+                      <a 
+                        href={item.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="hover:text-[#35c7ff] transition-colors hover:underline"
+                      >
+                        {item.organization}
+                      </a>
+                    ) : (
+                      item.organization
+                    )}
+                  </div>
                   <div className="text-[#a2a5b9] text-xs mb-1 italic">{item.place}</div>
                   <div className="text-[#a9c0d4] text-sm">{item.period}</div>
                 </div>
