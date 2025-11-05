@@ -115,9 +115,15 @@ const highlightsData: HighlightItem[] = [
 // Leadership roles data (renamed from volunteerWorkData)
 const leadershipRolesData = [
   {
-    period: "2024-2025",
+    period: "2025-2026",
     role: "President",
-    organization: "Bangladeshi Students' Association",
+    organization: "Graduate Students Association (GSA)",
+    place: "University of Saskatchewan"
+  },
+  {
+    period: "2024-2025",
+    role: "President (Completed)",
+    organization: "Bangladeshi Students' Association (BSAUS)",
     place: "University of Saskatchewan"
   },
   {
