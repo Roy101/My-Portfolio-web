@@ -3,12 +3,12 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=no" />
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <!-- Updated SEO Meta Tags with focused keywords -->
-  <title>Palash Ranjan Roy | Computer Science PhD Student | AI Researcher | Code Clones Expert</title>
-  <meta name="description" content="Palash Ranjan Roy (Palash Roy) is a PhD student at the University of Saskatchewan specializing in software engineering research, code clones, LLMs, and AI-driven software development." />
-  <meta name="keywords" content="Palash, Palash Ranjan Roy, Palash Roy, Computer Science PhD, Software Engineering Researcher, Code Clones, Large Language Models, University of Saskatchewan, Machine Learning, Software Research, LLM Research, AI Research" />
+  <title>Palash Ranjan Roy (Palash Roy) | Code Clone Researcher & Computer Science PhD | University of Saskatchewan</title>
+  <meta name="description" content="Official site of Palash Ranjan Roy (Palash Roy), a Computer Science PhD researcher and code clone researcher at the University of Saskatchewan. Research on code clones, refactoring, large language models, and AI-driven software engineering, with publications at FSE, ICSME, ESEM, and IWSC." />
+  <meta name="keywords" content="Palash, Roy, Ranjan, Ranjan Roy, Palash Roy, Palash Ranjan, Palash Ranjan Roy, Palash R. Roy, P. R. Roy, Computer Science PhD, Software Engineering Researcher, Code Clones, Large Language Models, University of Saskatchewan, Saskatoon, Machine Learning, Software Research, LLM Research, AI Research, BRAC University" />
   <meta name="author" content="Palash Ranjan Roy" />
   
   <!-- Canonical URL -->
@@ -17,10 +17,10 @@
   <!-- Open Graph / Social Media Meta Tags -->
   <meta property="og:title" content="Palash Ranjan Roy (Palash Roy) - AI Researcher & Software Engineer" />
   <meta property="og:description" content="Palash Ranjan Roy is a PhD researcher at USask focusing on AI-driven code clone detection and software engineering." />
-  <meta property="og:image" content="/images/AnotherDP.jpg" />
-  <meta property="og:image:alt" content="Photograph of Palash Ranjan Roy" />
-  <meta property="og:image:width" content="600" />
-  <meta property="og:image:height" content="600" />
+  <meta property="og:image" content="https://palashroy.me/images/palash_roy_headshot.jpg" />
+  <meta property="og:image:alt" content="Photograph of Palash Ranjan Roy (Palash Roy), Computer Science PhD student at the University of Saskatchewan" />
+  <meta property="og:image:width" content="1400" />
+  <meta property="og:image:height" content="1209" />
   <meta property="og:url" content="https://palashroy.me" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Palash Ranjan Roy's Portfolio" />
@@ -30,7 +30,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Palash Ranjan Roy (Palash Roy) - AI Researcher & Software Engineer" />
   <meta name="twitter:description" content="Researching software engineering, machine learning, and AI for code analysis." />
-  <meta name="twitter:image" content="/images/AnotherDP.jpg" />
+  <meta name="twitter:image" content="/images/palash_roy_headshot.jpg" />
   <meta name="twitter:image:alt" content="Photo of Palash Ranjan Roy, Computer Science PhD student" />
   <meta name="twitter:creator" content="@Palash16355210" />
   
@@ -54,14 +54,15 @@
   {
     "@context": "https://schema.org",
     "@type": "Person",
+    "@id": "https://palashroy.me/#person",
     "name": "Palash Ranjan Roy",
-    "alternateName": ["Palash Roy", "P. R. Roy"],
+    "alternateName": ["Palash Roy", "Ranjan Roy", "Palash Ranjan", "P. R. Roy"],
     "url": "https://palashroy.me",
     "image": {
       "@type": "ImageObject",
-      "url": "/images/AnotherDP.jpg",
-      "width": "600",
-      "height": "600",
+      "url": "https://palashroy.me/images/palash_roy_headshot.jpg",
+      "width": "1400",
+      "height": "1209",
       "caption": "Palash Ranjan Roy, PhD Student at University of Saskatchewan"
     },
     "jobTitle": "PhD Student",
@@ -83,6 +84,17 @@
       },
       {
         "@type": "Organization",
+        "name": "University of Saskatchewan Graduate Students' Association (GSA)",
+        "url": "https://gsa.usask.ca",
+        "roleName": "President (2025-2026)"
+      },
+      {
+        "@type": "Organization",
+        "name": "University of Saskatchewan Senate",
+        "roleName": "Member (2025-2026)"
+      },
+      {
+        "@type": "Organization",
         "name": "Bangladeshi Students' Association",
         "roleName": "President"
       }
@@ -90,7 +102,8 @@
     "sameAs": [
       "https://twitter.com/Palash16355210",
       "https://www.linkedin.com/in/palashranjanroy/",
-      "https://www.github.com/roy101",
+      "https://github.com/Roy101",
+      "https://www.instagram.com/checkoutroy/",
       "https://www.facebook.com/pial.roy.3705",
       "https://www.researchgate.net/profile/Palash_Roy",
       "https://scholar.google.com/citations?user=Vy_sw5UAAAAJ",
@@ -115,7 +128,7 @@
     "givenName": "Palash Ranjan",
     "familyName": "Roy",
     "gender": "Male",
-    "alternateName": ["Palash Roy", "P. R. Roy", "Palash R. Roy"],
+    "alternateName": ["Palash Roy", "Ranjan Roy", "Palash Ranjan", "P. R. Roy", "Palash R. Roy"],
     "nationality": "Bangladeshi-Canadian",
     "knowsLanguage": ["English", "Bengali"],
     "birthPlace": {
@@ -138,7 +151,7 @@
         "addressCountry": "Canada"
       }
     },
-    "@id": "https://palashroy.me/#identity"
+    "@id": "https://palashroy.me/#person"
   }
   </script>
   
@@ -151,9 +164,8 @@
     gtag('config', 'G-D2999Q8H3Z');
   </script>
 
-  <!-- Preload critical assets -->
-  <link rel="preload" href="/images/AnotherDP.jpg" as="image" />
-  <link rel="preload" href="/images/MyDP.jpg" as="image" />
+  <!-- Preload the above-the-fold hero image (LCP) -->
+  <link rel="preload" href="/images/palash_roy_headshot.jpg" as="image" fetchpriority="high" />
   
   <!-- Performance optimization meta tags -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.unsplash.com https://news.usask.ca data:; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; connect-src 'self';" />
@@ -170,10 +182,10 @@
     "name": "Palash Ranjan Roy",
     "givenName": "Palash Ranjan",
     "familyName": "Roy",
-    "alternateName": ["Palash Roy", "P. R. Roy", "Palash R. Roy", "পলাশ রঞ্জন রায়"],
-    "identifier": "https://orcid.org/0000-0002-1825-0097",
+    "alternateName": ["Palash Roy", "Ranjan Roy", "Palash Ranjan", "P. R. Roy", "Palash R. Roy", "পলাশ রঞ্জন রায়"],
+    "@id": "https://palashroy.me/#person",
     "url": "https://palashroy.me",
-    "image": "https://palashroy.me/images/AnotherDP.jpg",
+    "image": "https://palashroy.me/images/palash_roy_headshot.jpg",
     "description": "Palash Ranjan Roy is a PhD student in Computer Science at the University of Saskatchewan. His research focuses on software engineering, specifically code clone detection, refactoring, and applications of large language models in software development. Originally from Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to Canada to pursue graduate studies.",
     "nationality": "Bangladeshi-Canadian",
     "knowsLanguage": ["English", "Bengali"],
@@ -231,14 +243,54 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
-  
+
+  <!-- Crawlable fallback content for non-JS crawlers and improved indexing of this SPA -->
+  <noscript>
+    <main>
+      <h1>Palash Ranjan Roy (Palash Roy)</h1>
+      <p>
+        <strong>Palash Ranjan Roy</strong> (also known as <strong>Palash Roy</strong>,
+        <strong>Ranjan Roy</strong>, or <strong>P. R. Roy</strong>) is a Computer Science PhD
+        researcher and code clone researcher at the <a href="https://www.usask.ca/">University of Saskatchewan</a>
+        in Saskatoon, Canada. His research focuses on code clone detection, refactoring, and the
+        application of large language models (LLMs) to software engineering. Originally from
+        Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to
+        Canada for graduate studies. He is a member of the Software Research Lab (SRLab) and the
+        Interactive Software Engineering Lab (ISELab). In university governance, Palash served as
+        President of the University of Saskatchewan Graduate Students' Association (GSA, 2025-2026),
+        as a member of the University Senate, and on the Provost and Vice-President Academic Search
+        Committee.
+      </p>
+
+      <h2>Selected Publications by Palash Ranjan Roy</h2>
+      <ul>
+        <li>A. I. Alam, P. R. Roy, C. K. Roy, B. Roy, K. A. Schneider. "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models." Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026. <a href="https://arxiv.org/abs/2604.25903">arXiv:2604.25903</a></li>
+        <li>A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy, K. A. Schneider. "Are Classical Clone Detectors Good Enough For the AI Era?" ICSME 2025. <a href="https://arxiv.org/abs/2509.25754">arXiv:2509.25754</a></li>
+        <li>P. R. Roy. "Towards Just-In-Time, Inclusive Clone Refactoring." ICSME 2025. <a href="/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf">PDF</a></li>
+        <li>P. R. Roy, M. Billah, Z. Codabux, B. Roy. "Are Large Language Models a Threat to Programming Platforms? An Exploratory Study." ESEM 2024.</li>
+        <li>A. I. Alam, P. R. Roy, F. Al-Omari, C. K. Roy, B. Roy, K. A. Schneider. "GPTCloneBench: A comprehensive benchmark of semantic clones and cross-language clones using GPT-3 and SemanticCloneBench." ICSME 2023.</li>
+        <li>P. R. Roy, A. I. Alam, F. Al-omari, B. Roy, C. K. Roy, K. A. Schneider. "Unveiling the potential of large language models in generating semantic and cross-language clones." IWSC 2023.</li>
+        <li>P. R. Roy, M. N. Islam, L. T. Jeba, et al. "A study on paper and author ranking." ICISET 2022.</li>
+      </ul>
+
+      <h2>Find Palash Roy online</h2>
+      <ul>
+        <li><a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en">Google Scholar</a></li>
+        <li><a href="https://www.linkedin.com/in/palashranjanroy/">LinkedIn</a></li>
+        <li><a href="https://www.researchgate.net/profile/Palash_Roy">ResearchGate</a></li>
+        <li><a href="https://www.github.com/roy101">GitHub</a></li>
+      </ul>
+    </main>
+  </noscript>
+
   <!-- Additional structured data - this info is extracted from the About Me section -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Person",
+    "@id": "https://palashroy.me/#person",
     "name": "Palash Ranjan Roy",
-    "alternateName": ["Palash Roy", "P. R. Roy"],
+    "alternateName": ["Palash Roy", "Ranjan Roy", "Palash Ranjan", "P. R. Roy"],
     "description": "Ph.D. student in Computer Science at the University of Saskatchewan, specializing in the intersection of artificial intelligence and software engineering. Research focuses on leveraging large language models to enhance code understanding and generation, aiming to develop tools that assist developers in creating more efficient and reliable software.",
     "affiliation": {
       "@type": "Organization",
@@ -293,6 +345,67 @@
       {
         "@type": "ScholarlyArticle",
         "position": 1,
+        "name": "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models",
+        "headline": "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models",
+        "author": [
+          {"name": "Ajmain Inqiad Alam"},
+          {"name": "Palash Roy", "alternateName": "Palash Ranjan Roy"},
+          {"name": "Chanchal K. Roy"},
+          {"name": "Banani Roy"},
+          {"name": "Kevin A. Schneider"}
+        ],
+        "publisher": {
+          "@type": "Organization",
+          "name": "ACM International Conference on the Foundations of Software Engineering (FSE)"
+        },
+        "isPartOf": "Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026",
+        "datePublished": "2026",
+        "url": "https://arxiv.org/abs/2604.25903",
+        "about": ["Large Language Models", "Model Compression", "Green AI", "Sustainable Software Engineering"],
+        "keywords": ["Carbon-Taxed Transformers", "Green AI", "Model Compression", "Large Language Models", "FSE 2026", "Palash Ranjan Roy", "Palash Roy"]
+      },
+      {
+        "@type": "ScholarlyArticle",
+        "position": 2,
+        "name": "Are Classical Clone Detectors Good Enough For the AI Era?",
+        "headline": "Are Classical Clone Detectors Good Enough For the AI Era?",
+        "author": [
+          {"name": "Ajmain Inqiad Alam"},
+          {"name": "Palash Roy", "alternateName": "Palash Ranjan Roy"},
+          {"name": "F Al-Omari"},
+          {"name": "Chanchal K. Roy"},
+          {"name": "Banani Roy"},
+          {"name": "Kevin A. Schneider"}
+        ],
+        "publisher": {
+          "@type": "Organization",
+          "name": "IEEE International Conference on Software Maintenance and Evolution (ICSME)"
+        },
+        "datePublished": "2025",
+        "url": "https://arxiv.org/abs/2509.25754",
+        "about": ["Code Clones", "AI-generated Code", "Software Engineering"],
+        "keywords": ["Code Clones", "Clone Detection", "AI Era", "Software Engineering", "Palash Ranjan Roy", "Palash Roy"]
+      },
+      {
+        "@type": "ScholarlyArticle",
+        "position": 3,
+        "name": "Towards Just-In-Time, Inclusive Clone Refactoring",
+        "headline": "Towards Just-In-Time, Inclusive Clone Refactoring",
+        "author": [
+          {"name": "Palash Ranjan Roy", "alternateName": "Palash Roy"}
+        ],
+        "publisher": {
+          "@type": "Organization",
+          "name": "IEEE International Conference on Software Maintenance and Evolution (ICSME)"
+        },
+        "datePublished": "2025",
+        "url": "https://palashroy.me/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf",
+        "about": ["Code Clones", "Clone Refactoring", "Large Language Models", "Software Engineering"],
+        "keywords": ["Clone Refactoring", "Just-In-Time", "Code Clones", "Large Language Models", "Software Engineering", "Palash Ranjan Roy", "Palash Roy"]
+      },
+      {
+        "@type": "ScholarlyArticle",
+        "position": 4,
         "name": "Are Large Language Models a Threat to Programming Platforms? An Exploratory Study",
         "headline": "Are Large Language Models a Threat to Programming Platforms? An Exploratory Study",
         "author": [
@@ -311,7 +424,7 @@
       },
       {
         "@type": "ScholarlyArticle",
-        "position": 2,
+        "position": 5,
         "name": "GPTCloneBench: A comprehensive benchmark of semantic clones and cross-language clones using GPT-3 model and SemanticCloneBench",
         "headline": "GPTCloneBench: A comprehensive benchmark of semantic clones and cross-language clones using GPT-3 model and SemanticCloneBench",
         "author": [
@@ -332,7 +445,7 @@
       },
       {
         "@type": "ScholarlyArticle",
-        "position": 3,
+        "position": 6,
         "name": "Unveiling the potential of large language models in generating semantic and cross-language clones",
         "headline": "Unveiling the potential of large language models in generating semantic and cross-language clones",
         "author": [
@@ -382,15 +495,39 @@
     "image": [
       {
         "@type": "ImageObject",
-        "contentUrl": "/images/AnotherDP.jpg",
-        "description": "Professional portrait of Palash Ranjan Roy",
+        "contentUrl": "https://palashroy.me/images/palash_roy_headshot.jpg",
+        "description": "Professional portrait of Palash Ranjan Roy, code clone researcher at the University of Saskatchewan",
         "name": "Palash Ranjan Roy Portrait"
       },
       {
         "@type": "ImageObject",
-        "contentUrl": "/images/MyDP.jpg",
-        "description": "Profile photo of Palash Roy",
+        "contentUrl": "https://palashroy.me/images/palash_roy.jpg",
+        "description": "Profile photo of Palash Roy, Computer Science PhD researcher",
         "name": "Palash Roy Profile"
+      },
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://palashroy.me/images/gsa_gala/gala-final-speech.jpg",
+        "description": "Palash Roy delivering his final address as President of the University of Saskatchewan Graduate Students' Association at the 2026 GSA Awards and Gala",
+        "name": "Palash Roy, GSA President final address"
+      },
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://palashroy.me/images/gsa_gala/gala-cgps-dean-burshtyn.jpg",
+        "description": "Palash Roy with Dr. Deborah Burshtyn, Dean of the College of Graduate and Postdoctoral Studies, at the 2026 GSA Awards and Gala",
+        "name": "Palash Roy with CGPS Dean Dr. Deborah Burshtyn"
+      },
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://palashroy.me/images/gsa_gala/gala-provost-mcdougall.jpg",
+        "description": "Palash Roy with Dr. Patti McDougall, Interim Provost and Vice-President Academic, at the 2026 GSA Awards and Gala",
+        "name": "Palash Roy with Interim Provost Dr. Patti McDougall"
+      },
+      {
+        "@type": "ImageObject",
+        "contentUrl": "https://palashroy.me/images/gsa_gala/gala-executive-team.jpg",
+        "description": "Palash Roy with the University of Saskatchewan GSA executive team at the 2026 Awards and Gala",
+        "name": "Palash Roy with the GSA executive team"
       }
     ],
     "mainEntityOfPage": {

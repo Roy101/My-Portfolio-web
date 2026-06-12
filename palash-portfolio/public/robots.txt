@@ -1,9 +1,10 @@
 User-agent: *
 Allow: /
 
-# Allow all images to be indexed with higher priority
+# Allow all images to be indexed
 Allow: /images/
 Allow: /images/Pic_section/
+Allow: /images/gsa_gala/
 
 # Allow paper PDFs to be indexed
 Allow: /papers/
@@ -23,7 +24,4 @@ User-agent: Googlebot-Image
 Allow: /
 Allow: /images/
 Allow: /images/Pic_section/
-
-# Allow Google to better index your profile images
-Allow: /images/AnotherDP.jpg
-Allow: /images/MyDP.jpg
+Allow: /images/gsa_gala/

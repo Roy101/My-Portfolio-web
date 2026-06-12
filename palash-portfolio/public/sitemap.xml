@@ -3,113 +3,194 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://palashroy.me/</loc>
-    <lastmod>2025-05-21</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://palashroy.me/images/AnotherDP.jpg</image:loc>
-      <image:title>Palash Ranjan Roy - Computer Science PhD Student at University of Saskatchewan</image:title>
-      <image:caption>Professional portrait of Palash Ranjan Roy (Palash Roy), PhD Student in Computer Science specializing in AI and Software Engineering</image:caption>
+      <image:loc>https://palashroy.me/images/palash_roy_headshot.jpg</image:loc>
+      <image:title>Palash Ranjan Roy (Palash Roy), Code Clone Researcher</image:title>
+      <image:caption>Professional portrait of Palash Ranjan Roy (Palash Roy), Computer Science PhD researcher and code clone researcher at the University of Saskatchewan.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://palashroy.me/images/MyDP.jpg</image:loc>
-      <image:title>Palash Roy - AI Researcher and PhD Student</image:title>
-      <image:caption>Profile photo of Palash Ranjan Roy, Computer Science researcher at University of Saskatchewan</image:caption>
-    </image:image>
-    <!-- Added photos from the Pictures section -->
-    <image:image>
-      <image:loc>https://palashroy.me/images/Pic_section/Palash-Roy_Plaza de Bolívar.jpg</image:loc>
-      <image:title>Palash Ranjan Roy at Plaza de Bolívar, Colombia</image:title>
-      <image:caption>Palash Roy exploring the historic heart of Bogotá at Plaza de Bolívar during research visit for ICSME-2023</image:caption>
+      <image:loc>https://palashroy.me/images/palash_roy.jpg</image:loc>
+      <image:title>Palash Roy, Computer Science PhD Researcher</image:title>
+      <image:caption>Palash Ranjan Roy (Palash Roy), AI and software engineering researcher at the University of Saskatchewan.</image:caption>
     </image:image>
     <image:image>
-      <image:loc>https://palashroy.me/images/Pic_section/Palash-Justin_Santa Fe, Bogotá, Chocó.jpg</image:loc>
-      <image:title>Palash Roy in Santa Fe, Bogotá, Chocó</image:title>
-      <image:caption>Palash Ranjan Roy making connections with fellow researchers in Colombia during conference travel</image:caption>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-final-speech.jpg</image:loc>
+      <image:title>Palash Roy delivering his final address as GSA President</image:title>
+      <image:caption>Palash Ranjan Roy delivering his final speech as President of the University of Saskatchewan Graduate Students' Association at the 2026 GSA Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-awards-stage.jpg</image:loc>
+      <image:title>Palash Roy presenting the GSA Awards</image:title>
+      <image:caption>Palash Ranjan Roy presenting awards to graduate student recipients on stage at the 2026 University of Saskatchewan GSA Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-cgps-dean-burshtyn.jpg</image:loc>
+      <image:title>Palash Roy with CGPS Dean Dr. Deborah Burshtyn</image:title>
+      <image:caption>Palash Ranjan Roy with Dr. Deborah Burshtyn, Dean of the College of Graduate and Postdoctoral Studies, at the 2026 GSA Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-vice-provost-delbaere.jpg</image:loc>
+      <image:title>Palash Roy with Vice-Provost Dr. Marjorie Delbaere</image:title>
+      <image:caption>Palash Ranjan Roy with Dr. Marjorie Delbaere, Interim Vice-Provost Students and Learning, at the 2026 GSA Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-medicine-dean.jpg</image:loc>
+      <image:title>Palash Roy with Medicine Dean Dr. Sarah Forgie</image:title>
+      <image:caption>Palash Ranjan Roy with Dr. Sarah Forgie, Dean of the College of Medicine, at the 2026 GSA Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-provost-mcdougall.jpg</image:loc>
+      <image:title>Palash Roy with Interim Provost Dr. Patti McDougall</image:title>
+      <image:caption>Palash Ranjan Roy with Dr. Patti McDougall, Interim Provost and Vice-President Academic, at the 2026 GSA Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-executive-team.jpg</image:loc>
+      <image:title>Palash Roy with the GSA executive team</image:title>
+      <image:caption>Palash Ranjan Roy with the University of Saskatchewan GSA executive team at the 2026 Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/gsa_gala/gala-team-celebration.jpg</image:loc>
+      <image:title>Palash Roy celebrating with the GSA team</image:title>
+      <image:caption>Palash Ranjan Roy celebrating with the University of Saskatchewan GSA team at the 2026 Awards and Gala.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Roy_Plaza%20de%20Bol%C3%ADvar.jpg</image:loc>
+      <image:title>Palash Roy at Plaza de Bolivar, Colombia</image:title>
+      <image:caption>Palash Ranjan Roy at Plaza de Bolivar in Bogota during the ICSME 2023 research conference.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Justin_Santa%20Fe%2C%20Bogot%C3%A1%2C%20Choc%C3%B3.jpg</image:loc>
+      <image:title>Palash Roy in Santa Fe, Bogota</image:title>
+      <image:caption>Palash Ranjan Roy with fellow researchers in Colombia during conference travel.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash_Group_Chico_Norte.jpg</image:loc>
+      <image:title>Palash Roy with friends at Chico Norte</image:title>
+      <image:caption>Palash Ranjan Roy with international research colleagues at Chico Norte, Colombia.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Group_Parque_Nacional_Oriental.jpg</image:loc>
+      <image:title>Palash Roy at Parque Nacional Oriental</image:title>
+      <image:caption>Palash Ranjan Roy with research colleagues at Parque Nacional Oriental, Colombia.</image:caption>
     </image:image>
     <image:image>
       <image:loc>https://palashroy.me/images/Pic_section/Palash-Cousins_Banff_Gondola.jpg</image:loc>
-      <image:title>Palash Roy at Banff Gondola with Cousins</image:title>
-      <image:caption>Palash Ranjan Roy enjoying the breathtaking views of the Canadian Rockies at the Banff Gondola</image:caption>
+      <image:title>Palash Roy at the Banff Gondola</image:title>
+      <image:caption>Palash Ranjan Roy with family at the Banff Gondola in the Canadian Rockies.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Cousins2_banff.jpg</image:loc>
+      <image:title>Palash Roy at Banff National Park</image:title>
+      <image:caption>Palash Ranjan Roy with cousins at Banff National Park, Alberta, Canada.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Family_Sulphur_Mountain.jpg</image:loc>
+      <image:title>Palash Roy at Sulphur Mountain</image:title>
+      <image:caption>Palash Ranjan Roy with family at Sulphur Mountain in Banff, Canada.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Mugdho%28Cousin%29_Montauk_Point_State_Park.jpg</image:loc>
+      <image:title>Palash Roy at Montauk Point State Park</image:title>
+      <image:caption>Palash Ranjan Roy at Montauk Point State Park, New York.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://palashroy.me/images/Pic_section/Palash-Roy_West_Village_NY%28Friends_Building%29.jpg</image:loc>
+      <image:title>Palash Roy in West Village, New York</image:title>
+      <image:caption>Palash Ranjan Roy visiting the Friends building in West Village, New York City.</image:caption>
     </image:image>
   </url>
   <url>
     <loc>https://palashroy.me/about.html</loc>
-    <lastmod>2025-05-21</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#about</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#education</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#experience</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#skills</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#highlights</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#portfolio</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#leadership</loc>
-    <lastmod>2025-05-19</lastmod>
-    <priority>0.6</priority>
+    <lastmod>2026-06-12</lastmod>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#service</loc>
-    <lastmod>2025-05-19</lastmod>
-    <priority>0.6</priority>
+    <lastmod>2026-06-12</lastmod>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#pictures</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://palashroy.me/#references</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://palashroy.me/papers/CTT.pdf</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://palashroy.me/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf</loc>
+    <lastmod>2026-06-12</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://palashroy.me/papers/Are_large_language.pdf</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://palashroy.me/papers/gptclonebench.pdf</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://palashroy.me/papers/unveling_potential.pdf</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://palashroy.me/papers/A_Study_on_Paper_and_Author_Ranking.pdf</loc>
-    <lastmod>2025-05-19</lastmod>
+    <lastmod>2026-06-12</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>

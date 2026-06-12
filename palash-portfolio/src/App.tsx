@@ -12,7 +12,7 @@ const navLinks = [
   { label: "Publications", href: "#portfolio" },
   { label: "Leadership", href: "#leadership" },
   { label: "Service", href: "#service" },
-  { label: "Pictures", href: "#pictures" },
+  { label: "Gallery", href: "#pictures" },
   { label: "References", href: "#references" }
 ];
 
@@ -123,7 +123,7 @@ const leadershipRolesData = [
   },
   {
     period: "2024-2025",
-    role: "President (Completed)",
+    role: "President",
     organization: "Bangladeshi Students' Association (BSAUS)",
     place: "University of Saskatchewan"
   },
@@ -149,6 +149,42 @@ const leadershipRolesData = [
 
 // Academic service data - now including invited lectures
 const academicServiceData = [
+  {
+    period: "2025-2026",
+    role: "Senate Member",
+    description: "Served as a member of the University Senate, contributing to university-wide governance and academic policy.",
+    venue: "University of Saskatchewan"
+  },
+  {
+    period: "2026-2027",
+    role: "Search Committee Member",
+    description: "Committee member for the Provost and Vice-President Academic Search Committee.",
+    venue: "University of Saskatchewan"
+  },
+  {
+    period: "2025-2026",
+    role: "Governance Committee Member",
+    description: "Served on a University Governance Committee as part of graduate student leadership.",
+    venue: "University of Saskatchewan"
+  },
+  {
+    period: "2025-2026",
+    role: "Award Committee Member",
+    description: "Served on multiple University of Saskatchewan award selection committees, including the Distinguished Researcher Award.",
+    venue: "University of Saskatchewan"
+  },
+  {
+    period: "2025-2026",
+    role: "CGPS Committee Member",
+    description: "Served on College of Graduate and Postdoctoral Studies (CGPS) committees, and presented graduate-student reports to University Council and college/faculty councils.",
+    venue: "University of Saskatchewan"
+  },
+  {
+    period: "2026-Present",
+    role: "Graduate Peer Mentor",
+    description: "Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program, delivering small-group workshops and one-to-one sessions on academic skills and the transition into graduate studies.",
+    venue: "University of Saskatchewan"
+  },
   {
     period: "2022-Present",
     role: "Peer Reviewer",
@@ -202,6 +238,15 @@ const academicServiceData = [
 // Publications data - Palash Ranjan Roy's publications
 const publicationsData = [
   {
+    title: "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models",
+    authors: "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
+    venue: "Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026",
+    year: "2026",
+    pages: "Article FSE047",
+    description: "Introduces Carbon-Taxed Transformers (CTT), a green compression pipeline inspired by carbon-taxation economics that achieves up to 49x memory reduction and up to 81% lower CO2 emissions while retaining roughly 98% clone-detection accuracy across multiple transformer architectures.",
+    preprint: "/papers/CTT.pdf"
+  },
+  {
     title: "Are Classical Clone Detectors Good Enough For the AI Era?",
     authors: "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
     venue: "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
@@ -219,14 +264,14 @@ const publicationsData = [
     pages: "pp. 884-886",
     doi: "10.1109/ICSME64153.2025.00099",
     description: "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
-    preprint: "https://ieeexplore.ieee.org/document/11186070/keywords#keywords"
+    preprint: "/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf"
   },
   {
     title: "Gptclonebench: A comprehensive benchmark of semantic clones and cross-language clones using gpt-3 model and semanticclonebench",
     authors: "A. I. Alam, P. R. Roy, F. Al-Omari, C. K. Roy, B. Roy, and K. A. Schneider",
     venue: "2023 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
     year: "2023",
-    pages: "pp. 1–13",
+    pages: "pp. 1-13",
     doi: "10.1109/ICSME58846.2023.00013",
     description: "Presents a benchmark for evaluating semantic code clones and cross-language clones generated using GPT-3.",
     preprint: "/papers/gptclonebench.pdf"
@@ -236,7 +281,7 @@ const publicationsData = [
     authors: "P. R. Roy, A. I. Alam, F. Al-omari, B. Roy, C. K. Roy, and K. A. Schneider",
     venue: "2023 IEEE 17th International Workshop on Software Clones (IWSC)",
     year: "2023",
-    pages: "pp. 22–28",
+    pages: "pp. 22-28",
     doi: "10.1109/IWSC60764.2023.00011",
     description: "Explores how large language models can generate semantic code clones and cross-language clones, analyzing their potential applications and implications.",
     preprint: "/papers/unveling_potential.pdf"
@@ -246,7 +291,7 @@ const publicationsData = [
     authors: "P. R. Roy, M. N. Islam, L. T. Jeba, et al.",
     venue: "2022 International Conference on Innovations in Science, Engineering and Technology (ICISET)",
     year: "2022",
-    pages: "pp. 545–549",
+    pages: "pp. 545-549",
     doi: "10.1109/ICISET54810.2022.9775821",
     description: "Examines methodologies for ranking academic papers and authors, analyzing citation patterns and impact metrics in scientific literature.",
     preprint: "/papers/A_Study_on_Paper_and_Author_Ranking.pdf"
@@ -309,6 +354,58 @@ const picturesData = [
     description: "Couldn't resist visiting the iconic 'Friends' building during my trip to West Village, New York!",
     altText: "Palash Ranjan Roy visiting the Friends TV show building in West Village, New York City"
   },
+];
+
+// 2026 GSA Awards & Gala photos - from Palash Roy's tenure as GSA President
+const gsaGalaData = [
+  {
+    image: "/images/gsa_gala/gala-final-speech.jpg",
+    title: "Final Address as GSA President",
+    description: "Delivering my final address as President of the University of Saskatchewan Graduate Students' Association at the 2026 GSA Awards & Gala.",
+    altText: "Palash Ranjan Roy (Palash Roy) delivering his final speech as GSA President at the 2026 University of Saskatchewan Graduate Students' Association Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-awards-stage.jpg",
+    title: "Presenting the GSA Awards",
+    description: "Recognizing outstanding graduate students on stage during the 2026 GSA Awards & Gala.",
+    altText: "Palash Ranjan Roy presenting awards to graduate student recipients on stage at the 2026 University of Saskatchewan GSA Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-cgps-dean-burshtyn.jpg",
+    title: "With CGPS Dean Dr. Deborah Burshtyn",
+    description: "With Dr. Deborah (Debby) Burshtyn, Dean of the College of Graduate and Postdoctoral Studies (CGPS), at the 2026 GSA Awards & Gala.",
+    altText: "Palash Roy with Dr. Deborah Burshtyn, Dean of the College of Graduate and Postdoctoral Studies, at the 2026 University of Saskatchewan GSA Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-vice-provost-delbaere.jpg",
+    title: "With Vice-Provost Dr. Marjorie Delbaere",
+    description: "With Dr. Marjorie Delbaere, Interim Vice-Provost, Students and Learning, at the 2026 GSA Awards & Gala.",
+    altText: "Palash Ranjan Roy with Dr. Marjorie Delbaere, Interim Vice-Provost Students and Learning, at the 2026 University of Saskatchewan GSA Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-medicine-dean.jpg",
+    title: "With Medicine Dean Dr. Sarah Forgie",
+    description: "With Dr. Sarah Forgie, Dean of the College of Medicine, University of Saskatchewan, at the 2026 GSA Awards & Gala.",
+    altText: "Palash Roy with Dr. Sarah Forgie, Dean of the College of Medicine, at the 2026 University of Saskatchewan GSA Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-provost-mcdougall.jpg",
+    title: "With Provost Dr. Patti McDougall",
+    description: "With Dr. Patti McDougall, Interim Provost and Vice-President Academic, at the 2026 GSA Awards & Gala.",
+    altText: "Palash Ranjan Roy with Dr. Patti McDougall, Interim Provost and Vice-President Academic, at the 2026 University of Saskatchewan GSA Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-executive-team.jpg",
+    title: "The GSA Executive Team",
+    description: "With the University of Saskatchewan GSA executive team at the 2026 Awards & Gala.",
+    altText: "Palash Roy with the University of Saskatchewan Graduate Students' Association executive team at the 2026 GSA Awards and Gala"
+  },
+  {
+    image: "/images/gsa_gala/gala-team-celebration.jpg",
+    title: "Celebrating with the Team",
+    description: "Celebrating a successful year with the GSA team at the 2026 Awards & Gala.",
+    altText: "Palash Ranjan Roy celebrating with the University of Saskatchewan GSA team at the 2026 GSA Awards and Gala"
+  }
 ];
 
 // References data - updated with all references and their images
@@ -380,8 +477,8 @@ const Carousel = <T extends unknown>({
   items, 
   renderItem, 
   itemsPerSlide = 3, 
-  autoRotate = true, 
-  rotationInterval = 5000 
+  autoRotate = true,
+  rotationInterval = 8000
 }: CarouselProps<T>) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
@@ -692,48 +789,67 @@ export default function App() {
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col md:flex-row justify-between items-center relative z-1">
           <div className="flex-1 max-w-2xl">
-            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">INTRODUCTION</h2>
-            <h1 className="text-6xl md:text-7xl font-bold mb-6">
-              I'm Palash, a<br />
+            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">👋 Hello, I'm</h2>
+            <h1 className="text-6xl md:text-7xl font-bold mb-5">
+              Palash Roy,<br />
               <span className="bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">Computer Science</span><br />
-              <span className="text-[#ff4081]">PhD Student</span>
+              <span className="text-[#ff4081]">PhD Researcher</span>
             </h1>
+
+            {/* Role pills - lead with research identity, then leadership and personality */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🔬 Code Clone Researcher</span>
+              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🤖 LLMs for Software Engineering</span>
+              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🏛️ GSA President</span>
+            </div>
+
             <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">
-              I am a Software Engineering Researcher at <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Software Analytics Lab (SRLab)</a> & <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Interactive Software Engineering Lab (ISELab)</a> specializing in <strong>code clone detection</strong>, <strong>refactoring</strong>, and <strong>large language models</strong>. Currently I am working under the supervision of Dr. Kevin Schneider.
+              I am a <strong>code clone researcher</strong> at the <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">ISELab</a>, working on <strong>clone detection</strong>, <strong>refactoring</strong>, and <strong>large language models</strong> under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.
             </p>
-            
+
             <div className="flex gap-8 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#7ec8e3]">3+</div>
-                <div className="text-xs uppercase tracking-wider">Years Experience</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-[#7ec8e3]">10+</div>
-                <div className="text-xs uppercase tracking-wider">Projects Completed</div>
+                <div className="text-3xl font-bold text-[#7ec8e3]">6+</div>
+                <div className="text-xs uppercase tracking-wider">Publications</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-[#7ec8e3]">5+</div>
-                <div className="text-xs uppercase tracking-wider">Awards/Accolades</div>
+                <div className="text-xs uppercase tracking-wider">Awards &amp; Honors</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-[#7ec8e3]">4.5K+</div>
+                <div className="text-xs uppercase tracking-wider">Grad Students Led</div>
               </div>
             </div>
-            
-            <a href="#about" className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-[#35c7ff] hover:text-[#ff4081] transition-colors">
-              Browse Experience
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path fillRule="evenodd" d="M8 1a.5.5 0 0 1 .5.5v11.793l3.146-3.147a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
-              </svg>
-            </a>
+
+            <div className="flex flex-wrap gap-4">
+              <a href="#portfolio" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+                View Publications
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>
+              </a>
+              <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#2d324b] text-[#d0cccc] text-sm font-semibold hover:border-[#7ec8e3] hover:text-white transition-colors">
+                Google Scholar
+              </a>
+            </div>
           </div>
           
-          <div className="w-64 h-64 md:w-96 md:h-96 rounded-xl overflow-hidden shadow-[0_0_50px_rgba(122,205,235,0.15)] mt-10 md:mt-0 md:ml-14 border-4 border-[#2d324b] bg-[#171830] flex items-center justify-center relative">
-            {/* Profile photo with improved alt text for SEO */}
-            <img 
-              src="/images/palash_ranjan_roy.jpg" 
-              alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering" 
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-70 text-xs p-2 text-center">
-              This isn't serious, but I think it is hilarious. If this was serious, I would be ready to change the world.
+          <div className="relative mt-12 md:mt-0 md:ml-14 shrink-0">
+            {/* Soft glow ring behind the portrait */}
+            <div className="absolute -inset-3 bg-gradient-to-tr from-[#35c7ff] to-[#ff4081] opacity-20 blur-2xl rounded-[2rem]"></div>
+            <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(122,205,235,0.18)] border-4 border-[#2d324b] bg-[#171830]">
+              {/* Profile photo with improved alt text for SEO */}
+              <img
+                src="/images/palash_roy_headshot.jpg"
+                alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
+                className="w-full h-full object-cover"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </div>
+            {/* Status badge highlighting research identity */}
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#12131c] border border-[#2d324b] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse"></span>
+              <span className="font-semibold text-white">Code Clone Researcher</span>
             </div>
           </div>
         </div>
@@ -750,10 +866,12 @@ export default function App() {
               {/* Left column with profile image and social links */}
               <div className="md:w-1/3 flex flex-col items-center">
                 <div className="rounded-full overflow-hidden border-4 border-[#2d324b] bg-[#233343] w-64 h-64">
-                  <img 
-                    src="/images/palash_roy.jpg" 
-                    alt="Palash Roy - AI Researcher and Computer Science PhD Student at University of Saskatchewan" 
+                  <img
+                    src="/images/palash_roy.jpg"
+                    alt="Palash Roy - AI Researcher and Computer Science PhD Student at University of Saskatchewan"
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 
@@ -775,7 +893,7 @@ export default function App() {
                     </svg>
                     <span className="sr-only">Instagram</span>
                   </a>
-                  <a href="https://www.linkedin.com/in/palash-ranjan-roy-b3578918b" target="_blank" rel="noopener noreferrer" 
+                  <a href="https://www.linkedin.com/in/palashranjanroy/" target="_blank" rel="noopener noreferrer" 
                     className="w-10 h-10 rounded-full bg-[#0A66C2] flex items-center justify-center text-white hover:bg-opacity-80 transition-all"
                     aria-label="Visit Palash Roy's LinkedIn profile">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
@@ -792,8 +910,22 @@ export default function App() {
                     <span className="sr-only">GitHub</span>
                   </a>
                 </div>
+
+                {/* At-a-glance highlights card - surfaces the most important facts */}
+                <div className="mt-8 w-full bg-[#181a22] border border-[#2d324b] rounded-xl p-5 text-sm">
+                  <h3 className="text-[#7ec8e3] font-semibold mb-3 uppercase tracking-wider text-xs">At a Glance</h3>
+                  <ul className="space-y-2.5 text-[#d0cccc]">
+                    <li className="flex gap-2"><span>🔬</span><span>Code clone researcher at SRLab and ISELab</span></li>
+                    <li className="flex gap-2"><span>🎓</span><span>PhD Researcher in Computer Science, University of Saskatchewan</span></li>
+                    <li className="flex gap-2"><span>🤖</span><span>Works on clone detection, refactoring, and large language models</span></li>
+                    <li className="flex gap-2"><span>📄</span><span>Newest paper "Carbon-Taxed Transformers" (FSE 2026)</span></li>
+                    <li className="flex gap-2"><span>🏛️</span><span>President, Graduate Students' Association (2025-26)</span></li>
+                    <li className="flex gap-2"><span>🏅</span><span>USask Senator and Provost Search Committee member</span></li>
+                    <li className="flex gap-2"><span>📍</span><span>Saskatoon, Canada. Originally from Bangladesh 🇧🇩</span></li>
+                  </ul>
+                </div>
               </div>
-              
+
               {/* Right column with biography text */}
               <div className="md:w-2/3">
                 {/* Name Variants Badge Component - Added for SEO */}
@@ -806,19 +938,19 @@ export default function App() {
                 
                 <div className="text-[#d0cccc] space-y-4 leading-relaxed">
                   <p>
-                    <strong>Palash Ranjan Roy</strong> (also known as <strong>Palash Roy</strong> in academic publications) is a PhD Student in Computer Science at the University of Saskatchewan, Canada. His research focuses on <strong>code clone detection</strong>, <strong>refactoring methodologies</strong>, and <strong>large language model applications in software engineering</strong>.
+                    <strong>Palash Ranjan Roy</strong> (also published as <strong>Palash Roy</strong>) is a PhD researcher in Computer Science at the University of Saskatchewan, Canada. He is a <strong>code clone researcher</strong> whose work spans clone detection, refactoring, and the application of <strong>large language models</strong> to software engineering. He conducts his research in the <a href="https://srlab.usask.ca/members/" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and the <a href="https://ise.usask.ca/team/" className="text-[#7ec8e3] hover:underline">Interactive Software Engineering Lab (ISELab)</a> under the supervision of Dr. Kevin Schneider.
                   </p>
-                  
+
                   <p>
-                    With publications in renowned venues like ICSME, ESEM, IWSC etc, Palash has received multiple awards including the Research Excellence Award. Originally from Bangladesh, <strong>Palash</strong> completed his undergraduate studies at BRAC University before moving to Canada to pursue graduate studies.
+                    His research has been published in flagship software engineering conferences such as ASE, FSE, ICSME, and ESEM. His most recent paper, <em>Carbon-Taxed Transformers</em>, appeared at FSE 2026. He has received several honors for his work, including a Research Excellence Award and a Best Thesis Award.
                   </p>
-                  
+
                   <p>
-                    He is affiliated with both the <a href="https://srlab.usask.ca/members/" className="text-[#7ec8e3] hover:underline">Software Research Lab</a> and <a href="https://ise.usask.ca/team/" className="text-[#7ec8e3] hover:underline">Interactive Software Engineering Lab</a>, where he explores the intersection of AI and software development to create more efficient and reliable coding tools.
+                    Beyond his research, Palash served as President of the University of Saskatchewan Graduate Students' Association (2025-26), where he represented more than 4,500 graduate students. He has contributed extensively to university governance as a member of the University Senate, the Provost Search Committee, and several College of Graduate and Postdoctoral Studies and award committees.
                   </p>
-                  
+
                   <p>
-                    Throughout his academic journey, Palash has demonstrated exceptional aptitude in software engineering research, particularly in applying AI techniques to solve complex coding problems. His work on identifying code clones using large language models has been recognized internationally, reflecting his commitment to advancing the field.
+                    Originally from Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to Canada for his graduate studies.
                   </p>
                 </div>
                 
@@ -849,19 +981,26 @@ export default function App() {
                 {/* Experience Section integrated within the Biography section */}
                 <div className="mt-10">
                   <h3 className="text-xl font-semibold mb-4 text-[#7ec8e3]">Experience</h3>
+                  <p className="text-[#a2a5b9] text-xs italic mb-4">Currently serving concurrently as Graduate Teaching Assistant, Research Technician, and Graduate Peer Mentor at the University of Saskatchewan.</p>
                   <div className="space-y-6">
                     <div>
                       <h4 className="font-bold">Graduate Teaching Assistant</h4>
                       <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | 2022 - Present</div>
                       <p className="text-[#d0cccc] text-sm mt-1">Instructed undergraduate students in data structures, programming, and practical computing labs.</p>
                     </div>
-                    
+
                     <div>
                       <h4 className="font-bold">Research Technician</h4>
-                      <div className="text-[#a2a5b9] text-sm">iSE & SR Lab, University of Saskatchewan | May 2022 - Aug 2022</div>
-                      <p className="text-[#d0cccc] text-sm mt-1">Supporting web based systems, Maintaining CFI equipments, Supporting SOAR CREATE Program.</p>
+                      <div className="text-[#a2a5b9] text-sm">iSE & SR Lab, University of Saskatchewan | 2022 - Present</div>
+                      <p className="text-[#d0cccc] text-sm mt-1">Supporting web-based systems, maintaining CFI equipment, and supporting the SOAR CREATE Program.</p>
                     </div>
-                    
+
+                    <div>
+                      <h4 className="font-bold">Graduate Peer Mentor</h4>
+                      <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | 2026 - Present</div>
+                      <p className="text-[#d0cccc] text-sm mt-1">Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program. Sharing my own grad school experience, delivering small-group workshops, and meeting students one-to-one to support their academic skills and transition into graduate studies.</p>
+                    </div>
+
                     <div>
                       <h4 className="font-bold">Visiting Research Student</h4>
                       <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | May 2022 - Aug 2022</div>
@@ -908,15 +1047,9 @@ export default function App() {
               </div>
               <h2 className="text-4xl font-bold mb-6">Technical Competencies</h2>
               
-              <div className="max-w-3xl mx-auto text-[#d0cccc] space-y-4">
+              <div className="max-w-3xl mx-auto text-[#d0cccc]">
                 <p>
-                  These are technical skills that I have acquired thus far in my computer science career.
-                </p>
-                <p>
-                  I am not claiming to be a master in all of these skills, that would be amazing, but it is simply not true.
-                </p>
-                <p>
-                  With that said, I am confident that I can hold a position that utilizes any of the following competencies and increase my mastery in any of these skills if needed.
+                  The tools, languages, and methods I work with across research and software development.
                 </p>
               </div>
             </div>
@@ -1059,6 +1192,8 @@ export default function App() {
                         src={item.image}
                         alt={item.title}
                         className="w-full h-48 object-cover rounded"
+                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
                   )}
@@ -1138,55 +1273,6 @@ export default function App() {
             />
           </section>
 
-          {/* Pictures Section with Carousel and centered content - updated to match other sections */}
-          <section id="pictures" className="pt-2 pb-12">
-            <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                Pictures
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Pictures to Verify I am a Weirdo</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Here is a collage of photos that help eludidate my eceletic personality.
-              </p>
-            </div>
-            <Carousel
-              items={picturesData}
-              renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-4 rounded-lg flex flex-col items-center text-center">
-                  <div className="w-full h-48 sm:h-52 overflow-hidden rounded relative">
-                    {/* Loading placeholder */}
-                    <div className="absolute inset-0 bg-[#232333] animate-pulse"></div>
-                    
-                    <img
-                      src={item.image}
-                      alt={item.altText || `Palash Ranjan Roy (Palash Roy) at ${item.title}`}
-                      title={`Palash Roy - ${item.description}`}
-                      className="w-full h-full object-cover transition-transform hover:scale-105 duration-300 relative z-10"
-                      loading="lazy"
-                      decoding="async"
-                      fetchPriority="low" 
-                      onLoad={(e) => {
-                        // Once the image loads, make it visible
-                        e.currentTarget.style.opacity = '1';
-                        // Hide the loading placeholder
-                        if (e.currentTarget.previousSibling) {
-                          (e.currentTarget.previousSibling as HTMLElement).style.display = 'none';
-                        }
-                      }}
-                      style={{ opacity: 0, transition: 'opacity 0.3s ease-in' }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        console.error(`Failed to load image for ${item.title}`);
-                      }}
-                    />
-                  </div>
-                  <div className="font-bold mt-3 mb-1">{item.title}</div>
-                  <div className="text-xs text-[#d0cccc]">"{item.description}"</div>
-                </div>
-              )}
-            />
-          </section>
-
           {/* Leadership Roles Section with Carousel and centered content - updated to match other sections */}
           <section id="leadership" className="pt-2 pb-12">
             <div className="text-center mb-8">
@@ -1240,6 +1326,53 @@ export default function App() {
             />
           </section>
 
+          {/* Combined Gallery Section - GSA presidency highlights and personal moments */}
+          <section id="pictures" className="pt-2 pb-12">
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
+                Gallery
+              </div>
+              <h2 className="text-4xl font-bold mb-4">Beyond the Research</h2>
+              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
+                From representing 4,500+ graduate students as GSA President to exploring the world with family and friends.
+              </p>
+            </div>
+            <Carousel
+              items={[...gsaGalaData, ...picturesData]}
+              renderItem={(item) => (
+                <div className="bg-[#181a22] h-full p-4 rounded-lg flex flex-col items-center text-center">
+                  <div className="w-full h-48 sm:h-52 overflow-hidden rounded relative">
+                    {/* Loading placeholder */}
+                    <div className="absolute inset-0 bg-[#232333] animate-pulse"></div>
+
+                    <img
+                      src={item.image}
+                      alt={item.altText || `Palash Ranjan Roy (Palash Roy) at ${item.title}`}
+                      title={`Palash Roy - ${item.description}`}
+                      className="w-full h-full object-cover transition-transform hover:scale-105 duration-300 relative z-10"
+                      loading="lazy"
+                      decoding="async"
+                      fetchPriority="low"
+                      onLoad={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        if (e.currentTarget.previousSibling) {
+                          (e.currentTarget.previousSibling as HTMLElement).style.display = 'none';
+                        }
+                      }}
+                      style={{ opacity: 0, transition: 'opacity 0.3s ease-in' }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        console.error(`Failed to load image for ${item.title}`);
+                      }}
+                    />
+                  </div>
+                  <div className="font-bold mt-3 mb-1">{item.title}</div>
+                  <div className="text-xs text-[#d0cccc]">"{item.description}"</div>
+                </div>
+              )}
+            />
+          </section>
+
           {/* References Section - updated with new style matching the image */}
           <section id="references" className="pt-2 pb-16">
             <div className="text-center mb-8">
@@ -1259,7 +1392,7 @@ export default function App() {
               
               <div className="mt-8 text-[#a2a5b9] max-w-3xl mx-auto">
                 <p className="font-medium">
-                  For my future reference: 
+                  I have had the privilege to work with
                   <a href="https://artsandscience.usask.ca/profile/KSchneider" className="text-[#7ec8e3] hover:underline ml-1">Dr. Kevin Schneider</a>,
                   <a href="https://clones.usask.ca/" className="text-[#7ec8e3] hover:underline ml-1">Dr. Chanchal Roy</a>,
                   <a href="https://www.tru.ca/science/departments/engineering/Faculty.html" className="text-[#7ec8e3] hover:underline ml-1">Dr. Farouq Al-Omari</a>,
@@ -1391,10 +1524,10 @@ export default function App() {
               </div>
             </div>
             <div className="pt-6 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
-              <div>© 2025 Palash Ranjan Roy | All rights reserved</div>
+              <div>© 2026 Palash Ranjan Roy | All rights reserved</div>
               <div className="flex gap-4 mt-2 md:mt-0">
-                <a href="https://github.com/YourGithubUsername" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">GitHub</a>
-                <a href="https://www.linkedin.com/in/palash-ranjan-roy-b3578918b" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">LinkedIn</a>
+                <a href="https://github.com/Roy101" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">GitHub</a>
+                <a href="https://www.linkedin.com/in/palashranjanroy/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">LinkedIn</a>
                 <a href="https://www.researchgate.net/profile/Palash_Roy" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">ResearchGate</a>
               </div>
             </div>

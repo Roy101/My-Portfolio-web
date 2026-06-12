@@ -11,4 +11,16 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: "es2020",
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        // Split rarely-changing vendor code into its own long-cached chunk
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+        },
+      },
+    },
+  },
 });
