@@ -1013,6 +1013,18 @@ export default function App() {
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold mb-2 text-[#7ec8e3]">Academic Profiles</h3>
                   <div className="flex flex-wrap gap-3">
+                    <a href="https://orcid.org/0000-0001-9470-4233" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM6.5 5.5a1 1 0 11-2 0 1 1 0 012 0zM5.5 8h2v6.5h-2V8zm3.5 0h1.9v.9h.03c.27-.5.92-1.05 1.9-1.05 2.03 0 2.4 1.27 2.4 2.95v3.7h-2v-3.28c0-.78-.01-1.79-1.1-1.79-1.1 0-1.27.86-1.27 1.74v3.33H9V8z" clipRule="evenodd"></path>
+                      </svg>
+                      ORCID
+                    </a>
+                    <a href="https://dblp.org/pid/355/4465.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                      <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 4a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2H5zm2 3h6v1.5H7V7zm0 3h6v1.5H7V10zm0 3h4v1.5H7V13z"></path>
+                      </svg>
+                      dblp
+                    </a>
                     <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
