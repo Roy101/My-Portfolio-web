@@ -27,6 +27,12 @@ interface HighlightItem {
 
 // Featured Highlights data - reorganized to show wins first, then nominations
 const highlightsData: HighlightItem[] = [
+  // Wins - 2026
+  {
+    title: "🏆 ACM SIGSOFT Distinguished Paper Award (2026)",
+    organization: "ACM International Conference on the Foundations of Software Engineering (FSE)",
+    description: "Awarded to \"Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models\" (FSE 2026), one of the highest honors for a paper at a flagship software engineering conference."
+  },
   // Wins - 2025
   {
     title: "Research Excellence in Science, Technology, Engineering, or Math (2025)",
@@ -242,9 +248,17 @@ const publicationsData = [
     authors: "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
     venue: "Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026",
     year: "2026",
-    pages: "Article FSE047",
-    description: "Introduces Carbon-Taxed Transformers (CTT), a green compression pipeline inspired by carbon-taxation economics that achieves up to 49x memory reduction and up to 81% lower CO2 emissions while retaining roughly 98% clone-detection accuracy across multiple transformer architectures.",
+    pages: "pp. 1035-1058",
+    award: "ACM SIGSOFT Distinguished Paper Award",
+    description: "Winner of the ACM SIGSOFT Distinguished Paper Award. Introduces Carbon-Taxed Transformers (CTT), a green compression pipeline inspired by carbon-taxation economics that achieves up to 49x memory reduction and up to 81% lower CO2 emissions while retaining roughly 98% clone-detection accuracy across multiple transformer architectures.",
     preprint: "/papers/CTT.pdf"
+  },
+  {
+    title: "Carbon-Taxed Transformers: Efficient, Accurate, and Sustainable LLMs",
+    authors: "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
+    venue: "34th ACM International Conference on the Foundations of Software Engineering (FSE), Poster Track",
+    year: "2026",
+    description: "A poster summarizing Carbon-Taxed Transformers (CTT), a pipeline for efficient, accurate, and sustainable large language models applied to software engineering tasks.",
   },
   {
     title: "Are Classical Clone Detectors Good Enough For the AI Era?",
@@ -803,13 +817,19 @@ export default function App() {
               <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🏛️ GSA President</span>
             </div>
 
+            <a href="#portfolio" className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-gradient-to-r from-[#3a2c05] to-[#5c4708] border border-[#ffd700]/40 text-sm hover:border-[#ffd700] transition-colors">
+              <span>🏆</span>
+              <span className="text-[#ffd700] font-semibold">ACM SIGSOFT Distinguished Paper Award</span>
+              <span className="text-[#d0cccc]">&middot; FSE 2026</span>
+            </a>
+
             <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">
               I am a <strong>code clone researcher</strong> at the <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">ISELab</a>, working on <strong>clone detection</strong>, <strong>refactoring</strong>, and <strong>large language models</strong> under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.
             </p>
 
             <div className="flex gap-8 mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#7ec8e3]">6+</div>
+                <div className="text-3xl font-bold text-[#7ec8e3]">8+</div>
                 <div className="text-xs uppercase tracking-wider">Publications</div>
               </div>
               <div className="text-center">
@@ -1247,6 +1267,11 @@ export default function App() {
               items={publicationsData}
               renderItem={(item) => (
                 <div className="bg-[#181a22] h-full p-6 rounded-lg">
+                  {item.award && (
+                    <div className="inline-flex items-center gap-1 mb-2 px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b8860b] to-[#ffd700] text-black">
+                      🏆 {item.award}
+                    </div>
+                  )}
                   <div className="font-bold mb-1">{item.title}</div>
                   <div className="text-[#7ec8e3] text-sm mb-1">{item.authors}</div>
                   <div className="text-[#a2a5b9] text-xs mb-1 italic">{item.venue}{item.year ? `, ${item.year}` : ""}{item.pages ? `, ${item.pages}` : ""}</div>
