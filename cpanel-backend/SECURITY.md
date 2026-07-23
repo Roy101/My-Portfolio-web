@@ -11,8 +11,11 @@
 - **CSRF:** login form and every save carry a per-session token, checked with `hash_equals`.
 - **Authorization:** the save endpoint refuses anything without a valid admin session.
 - **Input allow-list:** only the known content sections can be written; data must be valid JSON.
-- **Secrets protected:** `config.php` (DB credentials) is blocked from the web by `api/.htaccess`
-  and git-ignored so it is never committed.
+- **Secrets protected:** DB credentials load from **above the web root** if you place them there
+  (`portfolio-config.php`), otherwise from `api/config.php` which is blocked by `api/.htaccess` and
+  git-ignored. Either way credentials are never committed.
+- **Safe provisioning:** `create-admin.php` is a one-time form that **refuses to run once an admin
+  exists** and **deletes itself** after use — it cannot be replayed to overwrite your login.
 - **Read API is read-only:** `api/content.php` only runs a fixed `SELECT`; it cannot modify anything.
 
 ## Your one-time checklist on cPanel
@@ -22,7 +25,9 @@
 - [ ] Confirm the site is **HTTPS** (your `.htaccess` already forces it) — the admin needs HTTPS.
 - [ ] In `config.php`, give the DB user only the privileges it needs (ALL on this one database is fine).
 - [ ] Keep cPanel's **PHP version** current (8.x) — cPanel → MultiPHP Manager.
+- [ ] Set **`display_errors = Off`** and `log_errors = On` (cPanel → MultiPHP INI Editor) so errors never print.
 - [ ] Verify `https://palashroy.me/api/config.php` returns **403/empty** (not your credentials).
+- [ ] Verify `https://palashroy.me/create-admin.php` is **gone** (404) after first-time setup.
 
 ## Good to know
 - The admin is at `/admin`; the site itself is static files, so the only "attackable" surface is the

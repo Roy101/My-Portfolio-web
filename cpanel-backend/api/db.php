@@ -2,14 +2,19 @@
 // Shared database connection (PDO, prepared statements only).
 function config(): array
 {
-    $path = __DIR__ . '/config.php';
-    if (!file_exists($path)) {
-        http_response_code(500);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'config.php missing — copy config.sample.php to config.php']);
-        exit;
+    // Preferred (most secure): config kept ABOVE the web root, e.g. one level above public_html.
+    // Fallback: config.php inside api/ (protected by api/.htaccess).
+    $candidates = [
+        __DIR__ . '/../../portfolio-config.php', // above public_html — not web-accessible
+        __DIR__ . '/config.php',
+    ];
+    foreach ($candidates as $path) {
+        if (file_exists($path)) return require $path;
     }
-    return require $path;
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'config missing — create config.php (see SETUP.md)']);
+    exit;
 }
 
 function db(): PDO

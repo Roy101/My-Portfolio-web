@@ -25,12 +25,15 @@ After this, you edit content at **palashroy.me/admin** and it goes live within a
    - *(you do NOT need to upload `schema.sql` — it was only for the import; don't leave it on the server)*
 3. In `public_html/api/`, **copy `config.sample.php` → `config.php`** and edit `config.php` with the
    database name / user / password from Step 1. Save.
+   - **Extra-secure option:** instead of `api/config.php`, put the file **one level above `public_html`**
+     and name it **`portfolio-config.php`**. The code checks there first, so your DB password never lives
+     in a web-served folder at all. (Either location works.)
 
 ## STEP 3 — Create your admin login
-1. Open `public_html/create-admin.php` in File Manager → **Edit**.
-2. Set `$USERNAME` and a **strong** `$PASSWORD`. Save.
-3. Visit **https://palashroy.me/create-admin.php** once (it says "Admin user ready").
-4. **Delete `create-admin.php`** from the server (important).
+1. Visit **https://palashroy.me/create-admin.php** once.
+2. Enter a username (3+ chars) and a **strong** password (10+ chars) → **Create admin**.
+3. It creates the account and then **deletes itself automatically**. (It also refuses to run once an
+   admin exists, so it can't be abused.) If it's still listed in File Manager afterward, delete it.
 
 ## STEP 4 — Upload the website
 1. Extract the website zip (`palashroy-cpanel.zip`) into `public_html` (index.html, assets/, images/, papers/, .htaccess…).

@@ -174,7 +174,7 @@ small{color:#6b6f85}
 <script>
 const CSRF = <?= json_encode(csrf()) ?>;
 const SCHEMAS = <?= json_encode($schemas) ?>;
-const DATA = <?= json_encode($content, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?>;
+const DATA = <?= json_encode($content, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>;
 const LABELS = {publications:'Publications',highlights:'Achievements',news:'News & Milestones',media:'In the News',gallery:'Pictures',leadership:'Leadership',service:'Academic Service',references:'References'};
 const sections = Object.keys(SCHEMAS);
 let current = sections[0];
