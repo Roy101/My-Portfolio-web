@@ -1,0 +1,81 @@
+[
+  {
+    "title": "🏆 ACM SIGSOFT Distinguished Paper Award (2026)",
+    "organization": "ACM International Conference on the Foundations of Software Engineering (FSE)",
+    "description": "Awarded to \"Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models\" (FSE 2026), one of the highest honors for a paper at a flagship software engineering conference."
+  },
+  {
+    "title": "Research Excellence in Science, Technology, Engineering, or Math (2025)",
+    "organization": "Graduate Students Association, University of Saskatchewan",
+    "description": "Recognized for outstanding contributions to research in STEM fields at the university level.",
+    "link": "https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php"
+  },
+  {
+    "title": "Best Thesis Award (MSc) (2025)",
+    "organization": "Department of Computer Science, University of Saskatchewan",
+    "description": "Awarded for exceptional research work during Master's studies in Computer Science."
+  },
+  {
+    "title": "SOAR Distinguished Research Award (2024)",
+    "organization": "NSERC Collaborative Research and Training (CREATE), Canada",
+    "description": "Recognized for distinguished research contributions within the NSERC collaborative framework."
+  },
+  {
+    "title": "75th Anniversary Scholarship (2024)",
+    "organization": "College of Graduate & Postdoctoral Studies (CGPS), University of Saskatchewan",
+    "description": "Received scholarship commemorating the 75th anniversary of the College of Graduate Studies."
+  },
+  {
+    "title": "CS Citizenship Award (M.Sc.) (2024)",
+    "organization": "Department of Computer Science, University of Saskatchewan",
+    "description": "Recognized for exemplary citizenship and community contributions within the Computer Science department.",
+    "link": "https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php"
+  },
+  {
+    "title": "Research Award (2024)",
+    "organization": "8th Symposium on Innovations in Computer Science and Applied Computing (ICSAC), University of Saskatchewan",
+    "description": "Awarded for innovative research presented at the ICSAC symposium."
+  },
+  {
+    "title": "People's Choice Best Paper Award (2023)",
+    "organization": "IWSC-2023 at Bogota, Colombia",
+    "description": "Paper on large language models and code clones voted as the best paper by attendees.",
+    "link": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
+  },
+  {
+    "title": "Student Encouragement Award (2023)",
+    "organization": "IWSC-2023 at Bogota, Colombia",
+    "description": "Received encouragement award at the International Workshop on Software Clones in Bogota.",
+    "link": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
+  },
+  {
+    "title": "People's Choice Best Presentation Award (2023)",
+    "organization": "SOAR Symposium at Saskatoon, Saskatchewan",
+    "description": "Presentation voted as the best by symposium attendees at the SOAR event in Saskatoon."
+  },
+  {
+    "title": "Nominated for University of Saskatchewan Best Thesis Award (2025)",
+    "organization": "College of Graduate and Postdoctoral Studies, University of Saskatchewan",
+    "description": "Thesis nominated for the prestigious university-wide best thesis recognition."
+  },
+  {
+    "title": "Nominated for WAGS Distinguished MSc Thesis STEM (2025)",
+    "organization": "Western Association of Graduate School",
+    "description": "Thesis nominated for distinguished recognition among STEM disciplines across Western institutions."
+  },
+  {
+    "title": "Nominee, CS Geddes Awards (M.Sc.) (2024)",
+    "organization": "Department of Computer Science, University of Saskatchewan",
+    "description": "Nominated for the prestigious Geddes Award for excellence in Computer Science."
+  },
+  {
+    "title": "Nominee, Carl McCrosky Innovation Scholarship (2024)",
+    "organization": "University of Saskatchewan",
+    "description": "Nominated for scholarship recognizing innovative approaches in Computer Science research."
+  },
+  {
+    "title": "Nominee, Mark Kroeker Exceptional Student Leadership Award (2024)",
+    "organization": "University of Saskatchewan",
+    "description": "Nominated for exceptional leadership within the student community."
+  }
+]

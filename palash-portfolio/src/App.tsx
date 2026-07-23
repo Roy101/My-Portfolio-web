@@ -4,6 +4,21 @@ import React, { useState, useEffect } from "react";
 import newsData from "./content/news.json";
 import mediaData from "./content/media.json";
 import metricsData from "./content/metrics.json";
+import publicationsDataRaw from "./content/publications.json";
+
+// Publication record shape (fields beyond the core are optional)
+type Publication = {
+  title: string;
+  authors: string;
+  venue: string;
+  year: string;
+  description: string;
+  pages?: string;
+  award?: string;
+  doi?: string;
+  preprint?: string;
+};
+const publicationsData: Publication[] = publicationsDataRaw as Publication[];
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -28,98 +43,9 @@ interface HighlightItem {
   image?: string;
 }
 
-// Featured Highlights data - reorganized to show wins first, then nominations
-const highlightsData: HighlightItem[] = [
-  // Wins - 2026
-  {
-    title: "🏆 ACM SIGSOFT Distinguished Paper Award (2026)",
-    organization: "ACM International Conference on the Foundations of Software Engineering (FSE)",
-    description: "Awarded to \"Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models\" (FSE 2026), one of the highest honors for a paper at a flagship software engineering conference."
-  },
-  // Wins - 2025
-  {
-    title: "Research Excellence in Science, Technology, Engineering, or Math (2025)",
-    organization: "Graduate Students Association, University of Saskatchewan",
-    description: "Recognized for outstanding contributions to research in STEM fields at the university level.",
-    link: "https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php"
-  },
-  {
-    title: "Best Thesis Award (MSc) (2025)",
-    organization: "Department of Computer Science, University of Saskatchewan",
-    description: "Awarded for exceptional research work during Master's studies in Computer Science."
-  },
-  
-  // Wins - 2024
-  {
-    title: "SOAR Distinguished Research Award (2024)",
-    organization: "NSERC Collaborative Research and Training (CREATE), Canada",
-    description: "Recognized for distinguished research contributions within the NSERC collaborative framework."
-  },
-  {
-    title: "75th Anniversary Scholarship (2024)",
-    organization: "College of Graduate & Postdoctoral Studies (CGPS), University of Saskatchewan",
-    description: "Received scholarship commemorating the 75th anniversary of the College of Graduate Studies."
-  },
-  {
-    title: "CS Citizenship Award (M.Sc.) (2024)",
-    organization: "Department of Computer Science, University of Saskatchewan",
-    description: "Recognized for exemplary citizenship and community contributions within the Computer Science department.",
-    link: "https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php"
-  },
-  {
-    title: "Research Award (2024)",
-    organization: "8th Symposium on Innovations in Computer Science and Applied Computing (ICSAC), University of Saskatchewan",
-    description: "Awarded for innovative research presented at the ICSAC symposium."
-  },
-  
-  // Wins - 2023
-  {
-    title: "People's Choice Best Paper Award (2023)",
-    organization: "IWSC-2023 at Bogota, Colombia",
-    description: "Paper on large language models and code clones voted as the best paper by attendees.",
-    link: "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
-  },
-  {
-    title: "Student Encouragement Award (2023)",
-    organization: "IWSC-2023 at Bogota, Colombia",
-    description: "Received encouragement award at the International Workshop on Software Clones in Bogota.",
-    link: "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
-  },
-  {
-    title: "People's Choice Best Presentation Award (2023)",
-    organization: "SOAR Symposium at Saskatoon, Saskatchewan",
-    description: "Presentation voted as the best by symposium attendees at the SOAR event in Saskatoon."
-  },
-  
-  // Nominations - 2025
-  {
-    title: "Nominated for University of Saskatchewan Best Thesis Award (2025)",
-    organization: "College of Graduate and Postdoctoral Studies, University of Saskatchewan",
-    description: "Thesis nominated for the prestigious university-wide best thesis recognition."
-  },
-  {
-    title: "Nominated for WAGS Distinguished MSc Thesis STEM (2025)",
-    organization: "Western Association of Graduate School",
-    description: "Thesis nominated for distinguished recognition among STEM disciplines across Western institutions."
-  },
-  
-  // Nominations - 2024
-  {
-    title: "Nominee, CS Geddes Awards (M.Sc.) (2024)",
-    organization: "Department of Computer Science, University of Saskatchewan",
-    description: "Nominated for the prestigious Geddes Award for excellence in Computer Science."
-  },
-  {
-    title: "Nominee, Carl McCrosky Innovation Scholarship (2024)",
-    organization: "University of Saskatchewan",
-    description: "Nominated for scholarship recognizing innovative approaches in Computer Science research."
-  },
-  {
-    title: "Nominee, Mark Kroeker Exceptional Student Leadership Award (2024)",
-    organization: "University of Saskatchewan",
-    description: "Nominated for exceptional leadership within the student community."
-  }
-];
+// Featured Highlights data - single source in src/content/highlights.json
+import highlightsDataRaw from "./content/highlights.json";
+const highlightsData: HighlightItem[] = highlightsDataRaw as HighlightItem[];
 
 // Leadership roles data (renamed from volunteerWorkData)
 const leadershipRolesData = [
@@ -241,77 +167,6 @@ const academicServiceData = [
     role: "Invited Speaker",
     description: "How to start building your first Robot?",
     venue: "BRAC University"
-  }
-];
-
-// Publications data - Palash Ranjan Roy's publications
-const publicationsData = [
-  {
-    title: "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models",
-    authors: "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
-    venue: "Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026",
-    year: "2026",
-    pages: "pp. 1035-1058",
-    award: "ACM SIGSOFT Distinguished Paper Award",
-    description: "Winner of the ACM SIGSOFT Distinguished Paper Award. Introduces Carbon-Taxed Transformers (CTT), a green compression pipeline inspired by carbon-taxation economics that achieves up to 49x memory reduction and up to 81% lower CO2 emissions while retaining roughly 98% clone-detection accuracy across multiple transformer architectures.",
-    preprint: "/papers/CTT.pdf"
-  },
-  {
-    title: "Carbon-Taxed Transformers: Efficient, Accurate, and Sustainable LLMs",
-    authors: "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
-    venue: "34th ACM International Conference on the Foundations of Software Engineering (FSE), Poster Track",
-    year: "2026",
-    description: "A poster summarizing Carbon-Taxed Transformers (CTT), a pipeline for efficient, accurate, and sustainable large language models applied to software engineering tasks.",
-  },
-  {
-    title: "Are Classical Clone Detectors Good Enough For the AI Era?",
-    authors: "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
-    venue: "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-    year: "2025",
-    pages: "pp. 295-307",
-    doi: "10.1109/ICSME64153.2025.00035",
-    description: "Evaluates the effectiveness of classical clone detection tools in the modern AI era, analyzing their performance against AI-generated code and proposing improvements for contemporary software development.",
-    preprint: "https://arxiv.org/pdf/2509.25754"
-  },
-  {
-    title: "Towards Just-In-Time, Inclusive Clone Refactoring",
-    authors: "P. Roy",
-    venue: "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-    year: "2025",
-    pages: "pp. 884-886",
-    doi: "10.1109/ICSME64153.2025.00099",
-    description: "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
-    preprint: "/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf"
-  },
-  {
-    title: "Gptclonebench: A comprehensive benchmark of semantic clones and cross-language clones using gpt-3 model and semanticclonebench",
-    authors: "A. I. Alam, P. R. Roy, F. Al-Omari, C. K. Roy, B. Roy, and K. A. Schneider",
-    venue: "2023 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-    year: "2023",
-    pages: "pp. 1-13",
-    doi: "10.1109/ICSME58846.2023.00013",
-    description: "Presents a benchmark for evaluating semantic code clones and cross-language clones generated using GPT-3.",
-    preprint: "/papers/gptclonebench.pdf"
-  },
-  {
-    title: "Unveiling the potential of large language models in generating semantic and cross-language clones",
-    authors: "P. R. Roy, A. I. Alam, F. Al-omari, B. Roy, C. K. Roy, and K. A. Schneider",
-    venue: "2023 IEEE 17th International Workshop on Software Clones (IWSC)",
-    year: "2023",
-    pages: "pp. 22-28",
-    doi: "10.1109/IWSC60764.2023.00011",
-    description: "Explores how large language models can generate semantic code clones and cross-language clones, analyzing their potential applications and implications.",
-    preprint: "/papers/unveling_potential.pdf"
-  },
-  {
-    title: "A study on paper and author ranking",
-    authors: "P. R. Roy, M. N. Islam, L. T. Jeba, et al.",
-    venue: "2022 International Conference on Innovations in Science, Engineering and Technology (ICISET)",
-    year: "2022",
-    pages: "pp. 545-549",
-    doi: "10.1109/ICISET54810.2022.9775821",
-    description: "Examines methodologies for ranking academic papers and authors, analyzing citation patterns and impact metrics in scientific literature.",
-    preprint: "/papers/A_Study_on_Paper_and_Author_Ranking.pdf"
   }
 ];
 
