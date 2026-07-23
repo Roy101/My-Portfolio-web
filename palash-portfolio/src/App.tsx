@@ -382,135 +382,9 @@ export default function App() {
     };
   }, []);
 
-  return (
-    <div className="min-h-screen bg-black font-sans text-white relative overflow-hidden">
-      {/* Background gradient overlay with red/purple accents - applied to the entire site */}
-      <div className="fixed inset-0 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] z-0 pointer-events-none"></div>
-      <div className="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMDAwMDAwMDYiPjwvcmVjdD4KPHBhdGggZD0iTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVoiIHN0cm9rZT0iIzMzMDAzMzA5IiBzdHJva2Utd2lkdGg9IjAuNSI+PC9wYXRoPgo8L3N2Zz4=')] opacity-30 z-0 pointer-events-none"></div>
-      
-      {/* Mobile Menu */}
-      <MobileMenu 
-        links={navLinks}
-        isOpen={mobileMenuOpen}
-        setIsOpen={setMobileMenuOpen}
-      />
-      
-      {/* Navigation - Updated to be fixed at the top with improved background blending */}
-      <nav className="fixed top-0 left-0 right-0 flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] bg-opacity-95 backdrop-blur-sm shadow-md z-40">
-        <div className="text-3xl font-bold tracking-wide text-[#7ec8e3]">PALASH</div>
-        
-        {/* Mobile hamburger menu button */}
-        <button 
-          className="lg:hidden text-white"
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Open menu"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-            <path fillRule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-          </svg>
-        </button>
-        
-        {/* Desktop navigation */}
-        <ul className="hidden lg:flex gap-6 text-md overflow-x-auto pb-1 hide-scrollbar">
-          {navLinks.map((link) => (
-            <li key={link.href} className="whitespace-nowrap">
-              <a
-                href={link.href}
-                className="hover:text-[#69b0e0] transition-colors duration-150 font-semibold text-base"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      
-      {/* Add padding to the top of the header to account for the fixed navbar */}
-      <header id="home" className="min-h-screen flex items-center relative pt-16">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          {/* Additional decorative elements */}
-          <div className="absolute right-0 top-1/3 w-1/2 h-1/2 bg-gradient-to-l from-[#5a0029] opacity-10 blur-3xl rounded-full"></div>
-          <div className="absolute left-20 bottom-20 w-96 h-96 bg-[#120338] opacity-10 blur-3xl rounded-full"></div>
-        </div>
-        
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col md:flex-row justify-between items-center relative z-1">
-          <div className="flex-1 max-w-2xl">
-            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">👋 Hello, I'm</h2>
-            <h1 className="text-6xl md:text-7xl font-bold mb-5">
-              Palash Roy,<br />
-              <span className="bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">Computer Science</span><br />
-              <span className="text-[#ff4081]">PhD Researcher</span>
-            </h1>
-
-            {/* Role pills - lead with research identity, then leadership and personality */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🔬 Code Clone Researcher</span>
-              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🤖 LLMs for Software Engineering</span>
-              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🏛️ GSA President</span>
-            </div>
-
-            <a href="#portfolio" className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-gradient-to-r from-[#3a2c05] to-[#5c4708] border border-[#ffd700]/40 text-sm hover:border-[#ffd700] transition-colors">
-              <span>🏆</span>
-              <span className="text-[#ffd700] font-semibold">ACM SIGSOFT Distinguished Paper Award</span>
-              <span className="text-[#d0cccc]">&middot; FSE 2026</span>
-            </a>
-
-            <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">
-              I am a <strong>code clone researcher</strong> at the <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">ISELab</a>, working on <strong>clone detection</strong>, <strong>refactoring</strong>, and <strong>large language models</strong> under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.
-            </p>
-
-            <div className="flex gap-8 mb-8">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-[#7ec8e3]">8+</div>
-                <div className="text-xs uppercase tracking-wider">Publications</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-[#7ec8e3]">5+</div>
-                <div className="text-xs uppercase tracking-wider">Awards &amp; Honors</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-[#7ec8e3]">4.5K+</div>
-                <div className="text-xs uppercase tracking-wider">Grad Students Led</div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-4">
-              <a href="#portfolio" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
-                View Publications
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>
-              </a>
-              <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#2d324b] text-[#d0cccc] text-sm font-semibold hover:border-[#7ec8e3] hover:text-white transition-colors">
-                Google Scholar
-              </a>
-            </div>
-          </div>
-          
-          <div className="relative mt-12 md:mt-0 md:ml-14 shrink-0">
-            {/* Soft glow ring behind the portrait */}
-            <div className="absolute -inset-3 bg-gradient-to-tr from-[#35c7ff] to-[#ff4081] opacity-20 blur-2xl rounded-[2rem]"></div>
-            <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(122,205,235,0.18)] border-4 border-[#2d324b] bg-[#171830]">
-              {/* Profile photo with improved alt text for SEO */}
-              <img
-                src="/images/palash_roy_headshot.jpg"
-                alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
-                className="w-full h-full object-cover"
-                decoding="async"
-                fetchPriority="high"
-              />
-            </div>
-            {/* Status badge highlighting research identity */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#12131c] border border-[#2d324b] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse"></span>
-              <span className="font-semibold text-white">Code Clone Researcher</span>
-            </div>
-          </div>
-        </div>
-      </header>
-      
-      {/* Content Container - Removed gradient background to use the global background */}
-      <div className="relative z-10">
-        {/* About Section with centered content - Updated to match reference style */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+  // Reorderable page sections — order is editable from /admin (sectionOrder)
+  const sectionMap: Record<string, React.ReactNode> = {
+    about: (<>
           <section id="about" className="pt-16 pb-16">
             <h2 className="text-3xl font-bold mb-8 border-b border-[#2d324b] pb-3">Biography</h2>
             
@@ -702,7 +576,8 @@ export default function App() {
               </div>
             </div>
           </section>
-
+    </>),
+    portfolio: (<>
           {/* Publications Section with Carousel and centered content */}
           <section id="portfolio" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -732,10 +607,9 @@ export default function App() {
                 Live via <a href={metricsData.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">{metricsData.source}</a> &middot; updated {metricsData.updated}
               </div>
             </div>
-            <Carousel
-              items={publicationsData}
-              renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-6 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl mx-auto">
+              {publicationsData.map((item, idx) => (
+                <div key={idx} className="bg-[#181a22] h-full p-6 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3]/50 transition-colors">
                   {item.award && (
                     <div className="inline-flex items-center gap-1 mb-2 px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b8860b] to-[#ffd700] text-black">
                       🏆 {item.award}
@@ -775,10 +649,11 @@ export default function App() {
                   </div>
                   <div className="text-[#a9c0d4] text-sm">{item.description}</div>
                 </div>
-              )}
-            />
+              ))}
+            </div>
           </section>
-
+    </>),
+    news: (<>
           {/* News & Milestones timeline - content from src/content/news.json */}
           <section id="news" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -803,7 +678,8 @@ export default function App() {
               </ol>
             </div>
           </section>
-
+    </>),
+    leadership: (<>
           {/* Leadership Roles Section with Carousel and centered content - updated to match other sections */}
           <section id="leadership" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -840,7 +716,8 @@ export default function App() {
               )}
             />
           </section>
-
+    </>),
+    service: (<>
           {/* Academic Service Section with Carousel and centered content */}
           <section id="service" className="pt-16 pb-16">
             <h2 className="text-2xl font-semibold mb-8">Academic Service</h2>
@@ -856,7 +733,8 @@ export default function App() {
               )}
             />
           </section>
-
+    </>),
+    highlights: (<>
           {/* Highlights Section with Carousel and centered content - Redesigned to match reference */}
           <section id="highlights" className="pt-16 pb-16">
             {/* New header format matching the reference image */}
@@ -870,11 +748,9 @@ export default function App() {
               </p>
             </div>
             
-            {/* Carousel with highlights items */}
-            <Carousel
-              items={highlightsData}
-              renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+              {highlightsData.map((item, idx) => (
+                <div key={idx} className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col border border-[#2d324b]">
                   {/* Display image at the top if available */}
                   {item.image && (
                     <div className="mb-4">
@@ -906,10 +782,11 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              )}
-            />
+              ))}
+            </div>
           </section>
-
+    </>),
+    media: (<>
           {/* In the News / media coverage - content from src/content/media.json */}
           <section id="media" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -931,7 +808,8 @@ export default function App() {
               ))}
             </div>
           </section>
-
+    </>),
+    pictures: (<>
           {/* Combined Gallery Section - GSA presidency highlights and personal moments */}
           <section id="pictures" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -978,7 +856,8 @@ export default function App() {
               )}
             />
           </section>
-
+    </>),
+    references: (<>
           {/* References Section - updated with new style matching the image */}
           <section id="references" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -1046,6 +925,145 @@ export default function App() {
               itemsPerSlide={2}
             />
           </section>
+    </>),
+  };
+  const defaultSectionOrder = ['about','portfolio','news','leadership','service','highlights','media','pictures','references'];
+  const roRaw = Array.isArray((remote as any).sectionOrder) ? ((remote as any).sectionOrder as string[]) : defaultSectionOrder;
+  const sectionOrder = roRaw.filter((id) => sectionMap[id]);
+  defaultSectionOrder.forEach((id) => { if (!sectionOrder.includes(id)) sectionOrder.push(id); });
+
+  return (
+    <div className="min-h-screen bg-black font-sans text-white relative overflow-hidden">
+      {/* Background gradient overlay with red/purple accents - applied to the entire site */}
+      <div className="fixed inset-0 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] z-0 pointer-events-none"></div>
+      <div className="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMDAwMDAwMDYiPjwvcmVjdD4KPHBhdGggZD0iTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVoiIHN0cm9rZT0iIzMzMDAzMzA5IiBzdHJva2Utd2lkdGg9IjAuNSI+PC9wYXRoPgo8L3N2Zz4=')] opacity-30 z-0 pointer-events-none"></div>
+      
+      {/* Mobile Menu */}
+      <MobileMenu 
+        links={navLinks}
+        isOpen={mobileMenuOpen}
+        setIsOpen={setMobileMenuOpen}
+      />
+      
+      {/* Navigation - Updated to be fixed at the top with improved background blending */}
+      <nav className="fixed top-0 left-0 right-0 flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] bg-opacity-95 backdrop-blur-sm shadow-md z-40">
+        <div className="text-3xl font-bold tracking-wide text-[#7ec8e3]">PALASH</div>
+        
+        {/* Mobile hamburger menu button */}
+        <button 
+          className="lg:hidden text-white"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+            <path fillRule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+        </button>
+        
+        {/* Desktop navigation */}
+        <ul className="hidden lg:flex gap-6 text-md overflow-x-auto pb-1 hide-scrollbar">
+          {navLinks.map((link) => (
+            <li key={link.href} className="whitespace-nowrap">
+              <a
+                href={link.href}
+                className="hover:text-[#69b0e0] transition-colors duration-150 font-semibold text-base"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      
+      {/* Add padding to the top of the header to account for the fixed navbar */}
+      <header id="home" className="min-h-screen flex items-center relative pt-16">
+        <div className="absolute inset-0 pointer-events-none z-0">
+          {/* Additional decorative elements */}
+          <div className="absolute right-0 top-1/3 w-1/2 h-1/2 bg-gradient-to-l from-[#5a0029] opacity-10 blur-3xl rounded-full animate-pulse" style={{ animationDuration: '8s' }}></div>
+          <div className="absolute left-20 bottom-20 w-96 h-96 bg-[#120338] opacity-10 blur-3xl rounded-full animate-pulse" style={{ animationDuration: '6s' }}></div>
+        </div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col md:flex-row justify-between items-center relative z-1">
+          <div className="flex-1 max-w-2xl">
+            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">👋 Hello, I'm</h2>
+            <h1 className="text-6xl md:text-7xl font-bold mb-5">
+              Palash Roy,<br />
+              <span className="bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">Computer Science</span><br />
+              <span className="text-[#ff4081]">PhD Researcher</span>
+            </h1>
+
+            {/* Role pills - lead with research identity, then leadership and personality */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🔬 Code Clone Researcher</span>
+              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🤖 LLMs for Software Engineering</span>
+              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🏛️ GSA President</span>
+            </div>
+
+            <a href="#portfolio" className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-gradient-to-r from-[#3a2c05] to-[#5c4708] border border-[#ffd700]/40 text-sm hover:border-[#ffd700] transition-colors">
+              <span>🏆</span>
+              <span className="text-[#ffd700] font-semibold">ACM SIGSOFT Distinguished Paper Award</span>
+              <span className="text-[#d0cccc]">&middot; FSE 2026</span>
+            </a>
+
+            <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">
+              I am a <strong>code clone researcher</strong> at the <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">ISELab</a>, working on <strong>clone detection</strong>, <strong>refactoring</strong>, and <strong>large language models</strong> under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.
+            </p>
+
+            <div className="grid grid-cols-3 gap-3 mb-8 max-w-md">
+              <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
+                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">8+</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Publications</div>
+              </div>
+              <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
+                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">31+</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Citations</div>
+              </div>
+              <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
+                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">4.5K+</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Students Led</div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <a href="#portfolio" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+                View Publications
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>
+              </a>
+              <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#2d324b] text-[#d0cccc] text-sm font-semibold hover:border-[#7ec8e3] hover:text-white transition-colors">
+                Google Scholar
+              </a>
+            </div>
+          </div>
+          
+          <div className="relative mt-12 md:mt-0 md:ml-14 shrink-0">
+            {/* Soft animated glow ring behind the portrait */}
+            <div className="absolute -inset-3 bg-gradient-to-tr from-[#35c7ff] to-[#ff4081] opacity-20 blur-2xl rounded-[2rem] animate-pulse" style={{ animationDuration: '5s' }}></div>
+            <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(122,205,235,0.18)] border-4 border-[#2d324b] bg-[#171830]">
+              {/* Profile photo with improved alt text for SEO */}
+              <img
+                src="/images/palash_roy_headshot.jpg"
+                alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
+                className="w-full h-full object-cover"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </div>
+            {/* Status badge highlighting research identity */}
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#12131c] border border-[#2d324b] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse"></span>
+              <span className="font-semibold text-white">Code Clone Researcher</span>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      {/* Content Container - Removed gradient background to use the global background */}
+      <div className="relative z-10">
+        {/* About Section with centered content - Updated to match reference style */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+{sectionOrder.map((id) => (
+            <React.Fragment key={id}>{sectionMap[id]}</React.Fragment>
+          ))}
         </div>
 
         {/* Footer with centered content and academic credentials */}

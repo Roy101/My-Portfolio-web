@@ -180,11 +180,17 @@ const DATA = <?= json_encode($content, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_
 const LABELS = {publications:'Publications',highlights:'Achievements',news:'News & Milestones',media:'In the News',gallery:'Pictures',leadership:'Leadership',service:'Academic Service',references:'References'};
 const sections = Object.keys(SCHEMAS);
 let current = sections[0];
+// Page-layout (section order) editing
+const SECTION_LABELS = {about:'About / Biography',portfolio:'Publications',news:'News & Milestones',leadership:'Leadership',service:'Academic Service',highlights:'Awards',media:'In the News',pictures:'Pictures',references:'References'};
+const DEFAULT_ORDER = ['about','portfolio','news','leadership','service','highlights','media','pictures','references'];
+let layoutOrder = (Array.isArray(DATA.sectionOrder) ? DATA.sectionOrder.filter(id=>SECTION_LABELS[id]) : DEFAULT_ORDER.slice());
+DEFAULT_ORDER.forEach(id=>{ if(!layoutOrder.includes(id)) layoutOrder.push(id); });
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 
 function renderTabs(){
-  document.getElementById('tabs').innerHTML = sections.map(s =>
+  const layoutTab = `<a class="${current==='layout'?'active':''}" onclick="switchTo('layout')">⚙ Layout</a>`;
+  document.getElementById('tabs').innerHTML = layoutTab + sections.map(s =>
     `<a class="${s===current?'active':''}" onclick="switchTo('${s}')">${LABELS[s]}</a>`).join('');
 }
 window.switchTo = s => { current = s; renderTabs(); renderSection(); };
@@ -198,7 +204,23 @@ function fieldHtml(section, idx, key, type, val){
   return `<label>${key}</label><input data-k="${key}" value="${esc(val)}" oninput="mark()">${extra}`;
 }
 
+function renderLayout(){
+  const app=document.getElementById('app');
+  app.innerHTML = `<h2>Page Layout</h2><p style="color:#a2a5b9;font-size:13px;margin-bottom:14px">Drag order with the arrows — this sets the order sections appear on your website.</p>`+
+    `<div>`+layoutOrder.map((id,i)=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center"><b>${(i+1)+'. '+SECTION_LABELS[id]}</b><span class="acts"><button class="mv" onclick="moveSection(${i},-1)">↑</button><button class="mv" onclick="moveSection(${i},1)">↓</button></span></div>`).join('')+`</div>`+
+    `<div class="bar"><button class="primary" onclick="saveLayout()">Save Layout</button></div>`+
+    `<small>Changes go live on the website within a minute of saving.</small>`;
+}
+window.moveSection=(i,dir)=>{const j=i+dir;if(j<0||j>=layoutOrder.length)return;[layoutOrder[i],layoutOrder[j]]=[layoutOrder[j],layoutOrder[i]];renderLayout();};
+window.saveLayout=async()=>{
+  try{
+    const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section:'sectionOrder',data:layoutOrder})});
+    const j=await r.json(); toast(j.ok?'Layout saved ✓':('Error: '+(j.error||'failed')));
+  }catch(e){toast('Network error');}
+};
+
 function renderSection(){
+  if(current==='layout'){ renderLayout(); return; }
   const schema = SCHEMAS[current];
   const items = DATA[current] || [];
   const app = document.getElementById('app');
