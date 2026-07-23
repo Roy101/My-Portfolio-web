@@ -153,8 +153,10 @@ main{max-width:820px;margin:20px auto;padding:0 16px}
 label{display:block;font-size:12px;color:#a2a5b9;margin:8px 0 4px;text-transform:capitalize}
 input,textarea{width:100%;box-sizing:border-box;padding:8px;background:#0c0d16;border:1px solid #2d324b;border-radius:6px;color:#fff;font-family:inherit}
 textarea{min-height:70px;resize:vertical}
-.item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px}
 .item-head b{font-size:13px;color:#7ec8e3}
+.acts{display:flex;gap:6px;flex-shrink:0}
+.mv{background:#2d324b;padding:4px 10px;font-size:15px;line-height:1}
 button{background:#2d324b;border:0;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:13px}
 button.primary{background:linear-gradient(90deg,#35c7ff,#ff4081);font-weight:600}
 button.del{background:#3a1420;color:#ff6b6b}
@@ -210,8 +212,11 @@ function itemHtml(section,i,it){
   const schema = SCHEMAS[section];
   const fields = Object.entries(schema).map(([k,t])=>fieldHtml(section,i,k,t,it[k])).join('');
   const title = it.title||it.name||it.role||it.date||('Item '+(i+1));
-  return `<div class="item" data-i="${i}"><div class="item-head"><b>${title.replace(/</g,'&lt;')}</b>`+
-    `<button class="del" onclick="delItem(${i})">Remove</button></div>${fields}</div>`;
+  return `<div class="item" data-i="${i}"><div class="item-head"><b>${(i+1)+'. '+title}`.replace(/</g,'&lt;')+`</b>`+
+    `<span class="acts">`+
+    `<button class="mv" title="Move up" onclick="moveItem(${i},-1)">↑</button>`+
+    `<button class="mv" title="Move down" onclick="moveItem(${i},1)">↓</button>`+
+    `<button class="del" onclick="delItem(${i})">Remove</button></span></div>${fields}</div>`;
 }
 function collect(){
   const schema = SCHEMAS[current];
@@ -223,6 +228,7 @@ function collect(){
 }
 window.addItem = ()=>{ DATA[current]=collect(); DATA[current].push({}); renderSection(); };
 window.delItem = i=>{ DATA[current]=collect(); DATA[current].splice(i,1); renderSection(); };
+window.moveItem = (i,dir)=>{ DATA[current]=collect(); const j=i+dir; if(j<0||j>=DATA[current].length) return; const a=DATA[current]; [a[i],a[j]]=[a[j],a[i]]; renderSection(); };
 window.mark = ()=>{};
 window.save = async ()=>{
   DATA[current]=collect();

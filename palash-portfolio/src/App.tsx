@@ -511,7 +511,7 @@ export default function App() {
       <div className="relative z-10">
         {/* About Section with centered content - Updated to match reference style */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <section id="about" className="pt-20 pb-16">
+          <section id="about" className="pt-16 pb-16">
             <h2 className="text-3xl font-bold mb-8 border-b border-[#2d324b] pb-3">Biography</h2>
             
             <div className="flex flex-col md:flex-row gap-10">
@@ -704,7 +704,7 @@ export default function App() {
           </section>
 
           {/* Publications Section with Carousel and centered content */}
-          <section id="portfolio" className="pt-2 pb-12">
+          <section id="portfolio" className="pt-16 pb-16">
             <div className="text-center mb-8">
               <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
                 Publications
@@ -780,7 +780,7 @@ export default function App() {
           </section>
 
           {/* News & Milestones timeline - content from src/content/news.json */}
-          <section id="news" className="pt-2 pb-12">
+          <section id="news" className="pt-16 pb-16">
             <div className="text-center mb-8">
               <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
                 News &amp; Milestones
@@ -805,7 +805,7 @@ export default function App() {
           </section>
 
           {/* Leadership Roles Section with Carousel and centered content - updated to match other sections */}
-          <section id="leadership" className="pt-2 pb-12">
+          <section id="leadership" className="pt-16 pb-16">
             <div className="text-center mb-8">
               <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
                 Leadership
@@ -842,7 +842,7 @@ export default function App() {
           </section>
 
           {/* Academic Service Section with Carousel and centered content */}
-          <section id="service" className="pt-2 pb-12">
+          <section id="service" className="pt-16 pb-16">
             <h2 className="text-2xl font-semibold mb-8">Academic Service</h2>
             <Carousel
               items={academicServiceData}
@@ -858,7 +858,7 @@ export default function App() {
           </section>
 
           {/* Highlights Section with Carousel and centered content - Redesigned to match reference */}
-          <section id="highlights" className="pt-20 pb-16">
+          <section id="highlights" className="pt-16 pb-16">
             {/* New header format matching the reference image */}
             <div className="text-center mb-8">
               <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
@@ -911,7 +911,7 @@ export default function App() {
           </section>
 
           {/* In the News / media coverage - content from src/content/media.json */}
-          <section id="media" className="pt-2 pb-12">
+          <section id="media" className="pt-16 pb-16">
             <div className="text-center mb-8">
               <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
                 In the News
@@ -933,7 +933,7 @@ export default function App() {
           </section>
 
           {/* Combined Gallery Section - GSA presidency highlights and personal moments */}
-          <section id="pictures" className="pt-2 pb-12">
+          <section id="pictures" className="pt-16 pb-16">
             <div className="text-center mb-8">
               <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
                 Gallery
@@ -980,7 +980,7 @@ export default function App() {
           </section>
 
           {/* References Section - updated with new style matching the image */}
-          <section id="references" className="pt-2 pb-16">
+          <section id="references" className="pt-16 pb-16">
             <div className="text-center mb-8">
               <div className="inline-block px-4 py-2 bg-[#1c1c24] rounded-lg text-[#7ec8e3] text-sm font-semibold mb-3">
                 References
