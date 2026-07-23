@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "node scripts/fetch-metrics.mjs && tsc -b && vite build --outDir dist && node scripts/prerender.mjs",
+    "build": "node scripts/sync-content.mjs && tsc -b && vite build --outDir dist && node scripts/prerender.mjs",
     "lint": "bunx biome lint --write && bunx tsc --noEmit",
     "format": "bunx biome format --write",
     "preview": "vite preview"

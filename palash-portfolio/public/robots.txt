@@ -1,6 +1,11 @@
 User-agent: *
 Allow: /
 
+# Keep the admin, API and setup files out of search results
+Disallow: /admin/
+Disallow: /api/
+Disallow: /create-admin.php
+
 # Allow all images to be indexed
 Allow: /images/
 Allow: /images/Pic_section/
