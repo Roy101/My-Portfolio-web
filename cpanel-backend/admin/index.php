@@ -190,7 +190,8 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 
 function renderTabs(){
   const layoutTab = `<a class="${current==='layout'?'active':''}" onclick="switchTo('layout')">⚙ Layout</a>`;
-  document.getElementById('tabs').innerHTML = layoutTab + sections.map(s =>
+  const metricsTab = `<a class="${current==='metrics'?'active':''}" onclick="switchTo('metrics')">📊 Metrics</a>`;
+  document.getElementById('tabs').innerHTML = layoutTab + metricsTab + sections.map(s =>
     `<a class="${s===current?'active':''}" onclick="switchTo('${s}')">${LABELS[s]}</a>`).join('');
 }
 window.switchTo = s => { current = s; renderTabs(); renderSection(); };
@@ -219,8 +220,38 @@ window.saveLayout=async()=>{
   }catch(e){toast('Network error');}
 };
 
+function renderMetrics(){
+  const m = DATA.metrics || {citations:0,hIndex:0,works:0};
+  const app=document.getElementById('app');
+  app.innerHTML = `<h2>Research Metrics</h2><p style="color:#a2a5b9;font-size:13px;margin-bottom:14px">Set these to match your Google Scholar profile. They appear in the hero and the Publications section.</p>`+
+    `<div class="item">`+
+    `<label>Citations</label><input id="m_citations" type="number" value="${(m.citations??'')}">`+
+    `<label>h-index</label><input id="m_hIndex" type="number" value="${(m.hIndex??'')}">`+
+    `<label>Works / publications count</label><input id="m_works" type="number" value="${(m.works??'')}">`+
+    `</div>`+
+    `<div class="bar"><button class="primary" onclick="saveMetrics()">Save Metrics</button></div>`+
+    `<small>Tip: open your Google Scholar profile, copy the "Cited by" total and h-index here.</small>`;
+}
+window.saveMetrics=async()=>{
+  const prev = DATA.metrics||{};
+  const data = Object.assign({}, prev, {
+    citations: parseInt(document.getElementById('m_citations').value)||0,
+    hIndex: parseInt(document.getElementById('m_hIndex').value)||0,
+    works: parseInt(document.getElementById('m_works').value)||0,
+    source: 'Google Scholar',
+    profileUrl: 'https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en',
+    updated: new Date().toISOString().slice(0,10)
+  });
+  DATA.metrics = data;
+  try{
+    const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section:'metrics',data})});
+    const j=await r.json(); toast(j.ok?'Metrics saved ✓':('Error: '+(j.error||'failed')));
+  }catch(e){toast('Network error');}
+};
+
 function renderSection(){
   if(current==='layout'){ renderLayout(); return; }
+  if(current==='metrics'){ renderMetrics(); return; }
   const schema = SCHEMAS[current];
   const items = DATA[current] || [];
   const app = document.getElementById('app');
@@ -234,7 +265,7 @@ function itemHtml(section,i,it){
   const schema = SCHEMAS[section];
   const fields = Object.entries(schema).map(([k,t])=>fieldHtml(section,i,k,t,it[k])).join('');
   const title = it.title||it.name||it.role||it.date||('Item '+(i+1));
-  return `<div class="item" data-i="${i}"><div class="item-head"><b>${(i+1)+'. '+title}`.replace(/</g,'&lt;')+`</b>`+
+  return `<div class="item" data-i="${i}"><div class="item-head"><b>${((i+1)+'. '+title).replace(/</g,'&lt;')}</b>`+
     `<span class="acts">`+
     `<button class="mv" title="Move up" onclick="moveItem(${i},-1)">↑</button>`+
     `<button class="mv" title="Move down" onclick="moveItem(${i},1)">↓</button>`+

@@ -355,6 +355,7 @@ export default function App() {
   const referencesData = (remote.references ?? defaultReferences) as ReferenceItem[];
   const newsItems = (remote.news ?? newsData.items) as typeof newsData.items;
   const mediaItems = (remote.media ?? mediaData.items) as typeof mediaData.items;
+  const metrics = ((remote.metrics && typeof remote.metrics === "object") ? remote.metrics : metricsData) as typeof metricsData;
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -591,20 +592,20 @@ export default function App() {
               {/* Live research-impact metrics (refreshed from OpenAlex at build time) */}
               <div className="flex flex-wrap justify-center gap-8 mt-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#7ec8e3]">{metricsData.citations}+</div>
+                  <div className="text-3xl font-bold text-[#7ec8e3]">{metrics.citations}+</div>
                   <div className="text-xs uppercase tracking-wider">Citations</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#7ec8e3]">{metricsData.hIndex}</div>
+                  <div className="text-3xl font-bold text-[#7ec8e3]">{metrics.hIndex}</div>
                   <div className="text-xs uppercase tracking-wider">h-index</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#7ec8e3]">{metricsData.works}</div>
+                  <div className="text-3xl font-bold text-[#7ec8e3]">{metrics.works}</div>
                   <div className="text-xs uppercase tracking-wider">Indexed Works</div>
                 </div>
               </div>
               <div className="text-xs text-[#a2a5b9] mt-2">
-                Live via <a href={metricsData.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">{metricsData.source}</a> &middot; updated {metricsData.updated}
+                via <a href={metrics.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">{metrics.source}</a> &middot; updated {metrics.updated}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl mx-auto">
@@ -1015,7 +1016,7 @@ export default function App() {
                 <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Publications</div>
               </div>
               <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
-                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">31+</div>
+                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">{metrics.citations}+</div>
                 <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Citations</div>
               </div>
               <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
