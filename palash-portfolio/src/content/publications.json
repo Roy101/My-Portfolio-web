@@ -1,69 +1,71 @@
-[
-  {
-    "title": "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models",
-    "authors": "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
-    "venue": "Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026",
-    "year": "2026",
-    "pages": "pp. 1035-1058",
-    "award": "ACM SIGSOFT Distinguished Paper Award",
-    "description": "Winner of the ACM SIGSOFT Distinguished Paper Award. Introduces Carbon-Taxed Transformers (CTT), a green compression pipeline inspired by carbon-taxation economics that achieves up to 49x memory reduction and up to 81% lower CO2 emissions while retaining roughly 98% clone-detection accuracy across multiple transformer architectures.",
-    "preprint": "/papers/CTT.pdf"
-  },
-  {
-    "title": "Carbon-Taxed Transformers: Efficient, Accurate, and Sustainable LLMs",
-    "authors": "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
-    "venue": "34th ACM International Conference on the Foundations of Software Engineering (FSE), Poster Track",
-    "year": "2026",
-    "description": "A poster summarizing Carbon-Taxed Transformers (CTT), a pipeline for efficient, accurate, and sustainable large language models applied to software engineering tasks."
-  },
-  {
-    "title": "Are Classical Clone Detectors Good Enough For the AI Era?",
-    "authors": "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
-    "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-    "year": "2025",
-    "pages": "pp. 295-307",
-    "doi": "10.1109/ICSME64153.2025.00035",
-    "description": "Evaluates the effectiveness of classical clone detection tools in the modern AI era, analyzing their performance against AI-generated code and proposing improvements for contemporary software development.",
-    "preprint": "https://arxiv.org/pdf/2509.25754"
-  },
-  {
-    "title": "Towards Just-In-Time, Inclusive Clone Refactoring",
-    "authors": "P. Roy",
-    "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-    "year": "2025",
-    "pages": "pp. 884-886",
-    "doi": "10.1109/ICSME64153.2025.00099",
-    "description": "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
-    "preprint": "/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf"
-  },
-  {
-    "title": "Gptclonebench: A comprehensive benchmark of semantic clones and cross-language clones using gpt-3 model and semanticclonebench",
-    "authors": "A. I. Alam, P. R. Roy, F. Al-Omari, C. K. Roy, B. Roy, and K. A. Schneider",
-    "venue": "2023 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-    "year": "2023",
-    "pages": "pp. 1-13",
-    "doi": "10.1109/ICSME58846.2023.00013",
-    "description": "Presents a benchmark for evaluating semantic code clones and cross-language clones generated using GPT-3.",
-    "preprint": "/papers/gptclonebench.pdf"
-  },
-  {
-    "title": "Unveiling the potential of large language models in generating semantic and cross-language clones",
-    "authors": "P. R. Roy, A. I. Alam, F. Al-omari, B. Roy, C. K. Roy, and K. A. Schneider",
-    "venue": "2023 IEEE 17th International Workshop on Software Clones (IWSC)",
-    "year": "2023",
-    "pages": "pp. 22-28",
-    "doi": "10.1109/IWSC60764.2023.00011",
-    "description": "Explores how large language models can generate semantic code clones and cross-language clones, analyzing their potential applications and implications.",
-    "preprint": "/papers/unveling_potential.pdf"
-  },
-  {
-    "title": "A study on paper and author ranking",
-    "authors": "P. R. Roy, M. N. Islam, L. T. Jeba, et al.",
-    "venue": "2022 International Conference on Innovations in Science, Engineering and Technology (ICISET)",
-    "year": "2022",
-    "pages": "pp. 545-549",
-    "doi": "10.1109/ICISET54810.2022.9775821",
-    "description": "Examines methodologies for ranking academic papers and authors, analyzing citation patterns and impact metrics in scientific literature.",
-    "preprint": "/papers/A_Study_on_Paper_and_Author_Ranking.pdf"
-  }
-]
+{
+  "items": [
+    {
+      "title": "Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models",
+      "authors": "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
+      "venue": "Proceedings of the ACM on Software Engineering (PACMSE), FSE 2026",
+      "year": "2026",
+      "pages": "pp. 1035-1058",
+      "award": "ACM SIGSOFT Distinguished Paper Award",
+      "description": "Winner of the ACM SIGSOFT Distinguished Paper Award. Introduces Carbon-Taxed Transformers (CTT), a green compression pipeline inspired by carbon-taxation economics that achieves up to 49x memory reduction and up to 81% lower CO2 emissions while retaining roughly 98% clone-detection accuracy across multiple transformer architectures.",
+      "preprint": "/papers/CTT.pdf"
+    },
+    {
+      "title": "Carbon-Taxed Transformers: Efficient, Accurate, and Sustainable LLMs",
+      "authors": "A. I. Alam, P. R. Roy, C. K. Roy, B. Roy and K. A. Schneider",
+      "venue": "34th ACM International Conference on the Foundations of Software Engineering (FSE), Poster Track",
+      "year": "2026",
+      "description": "A poster summarizing Carbon-Taxed Transformers (CTT), a pipeline for efficient, accurate, and sustainable large language models applied to software engineering tasks."
+    },
+    {
+      "title": "Are Classical Clone Detectors Good Enough For the AI Era?",
+      "authors": "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
+      "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
+      "year": "2025",
+      "pages": "pp. 295-307",
+      "doi": "10.1109/ICSME64153.2025.00035",
+      "description": "Evaluates the effectiveness of classical clone detection tools in the modern AI era, analyzing their performance against AI-generated code and proposing improvements for contemporary software development.",
+      "preprint": "https://arxiv.org/pdf/2509.25754"
+    },
+    {
+      "title": "Towards Just-In-Time, Inclusive Clone Refactoring",
+      "authors": "P. Roy",
+      "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
+      "year": "2025",
+      "pages": "pp. 884-886",
+      "doi": "10.1109/ICSME64153.2025.00099",
+      "description": "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
+      "preprint": "/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf"
+    },
+    {
+      "title": "Gptclonebench: A comprehensive benchmark of semantic clones and cross-language clones using gpt-3 model and semanticclonebench",
+      "authors": "A. I. Alam, P. R. Roy, F. Al-Omari, C. K. Roy, B. Roy, and K. A. Schneider",
+      "venue": "2023 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
+      "year": "2023",
+      "pages": "pp. 1-13",
+      "doi": "10.1109/ICSME58846.2023.00013",
+      "description": "Presents a benchmark for evaluating semantic code clones and cross-language clones generated using GPT-3.",
+      "preprint": "/papers/gptclonebench.pdf"
+    },
+    {
+      "title": "Unveiling the potential of large language models in generating semantic and cross-language clones",
+      "authors": "P. R. Roy, A. I. Alam, F. Al-omari, B. Roy, C. K. Roy, and K. A. Schneider",
+      "venue": "2023 IEEE 17th International Workshop on Software Clones (IWSC)",
+      "year": "2023",
+      "pages": "pp. 22-28",
+      "doi": "10.1109/IWSC60764.2023.00011",
+      "description": "Explores how large language models can generate semantic code clones and cross-language clones, analyzing their potential applications and implications.",
+      "preprint": "/papers/unveling_potential.pdf"
+    },
+    {
+      "title": "A study on paper and author ranking",
+      "authors": "P. R. Roy, M. N. Islam, L. T. Jeba, et al.",
+      "venue": "2022 International Conference on Innovations in Science, Engineering and Technology (ICISET)",
+      "year": "2022",
+      "pages": "pp. 545-549",
+      "doi": "10.1109/ICISET54810.2022.9775821",
+      "description": "Examines methodologies for ranking academic papers and authors, analyzing citation patterns and impact metrics in scientific literature.",
+      "preprint": "/papers/A_Study_on_Paper_and_Author_Ranking.pdf"
+    }
+  ]
+}

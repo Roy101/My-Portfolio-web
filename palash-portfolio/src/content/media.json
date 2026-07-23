@@ -1,20 +1,22 @@
-[
-  {
-    "outlet": "University of Saskatchewan, Computer Science",
-    "date": "2025",
-    "title": "Celebrating Excellence: Computer Science professor and graduate students receive GSA awards",
-    "url": "https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php"
-  },
-  {
-    "outlet": "USask News",
-    "date": "2023",
-    "title": "USask clones researcher wins international award",
-    "url": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
-  },
-  {
-    "outlet": "University of Saskatchewan, Computer Science",
-    "date": "2024",
-    "title": "Graduate Student Award Recipients",
-    "url": "https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php"
-  }
-]
+{
+  "items": [
+    {
+      "outlet": "University of Saskatchewan, Computer Science",
+      "date": "2025",
+      "title": "Celebrating Excellence: Computer Science professor and graduate students receive GSA awards",
+      "url": "https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php"
+    },
+    {
+      "outlet": "USask News",
+      "date": "2023",
+      "title": "USask clones researcher wins international award",
+      "url": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
+    },
+    {
+      "outlet": "University of Saskatchewan, Computer Science",
+      "date": "2024",
+      "title": "Graduate Student Award Recipients",
+      "url": "https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php"
+    }
+  ]
+}

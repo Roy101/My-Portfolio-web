@@ -1,0 +1,102 @@
+### Decap CMS configuration for palashroy.me
+### Content is stored in your GitHub repo; publishing to cPanel is a rebuild + upload.
+###
+### ONE-TIME SETUP (see admin/SETUP.md):
+###  1. Register a GitHub OAuth App.
+###  2. Deploy the free OAuth proxy (Cloudflare Worker) and put its URL in `base_url` below.
+###  3. Set `branch` to the branch you build/deploy from.
+
+backend:
+  name: github
+  repo: Roy101/My-Portfolio-web        # your GitHub repository
+  branch: 2024-portfolio-update        # the branch you deploy from (change to `main` after merging)
+  base_url: https://REPLACE-WITH-YOUR-OAUTH-PROXY   # e.g. https://palashroy-cms-auth.<you>.workers.dev
+  auth_endpoint: auth
+
+# Uploaded images (pictures) are committed here and served from /images/uploads
+media_folder: "palash-portfolio/public/images/uploads"
+public_folder: "/images/uploads"
+
+publish_mode: simple
+
+collections:
+  - name: publications
+    label: "Publications"
+    files:
+      - name: list
+        label: "Publications"
+        file: "palash-portfolio/src/content/publications.json"
+        format: json
+        fields:
+          - name: items
+            label: "Papers"
+            label_singular: "Paper"
+            widget: list
+            summary: "{{fields.year}} — {{fields.title}}"
+            fields:
+              - { name: title, label: "Title", widget: string }
+              - { name: authors, label: "Authors", widget: string }
+              - { name: venue, label: "Venue", widget: string }
+              - { name: year, label: "Year", widget: string }
+              - { name: pages, label: "Pages", widget: string, required: false }
+              - { name: award, label: "Award (optional)", widget: string, required: false }
+              - { name: doi, label: "DOI (optional)", widget: string, required: false }
+              - { name: description, label: "Description", widget: text }
+              - { name: preprint, label: "PDF / preprint URL (optional)", widget: string, required: false }
+
+  - name: achievements
+    label: "Achievements & Awards"
+    files:
+      - name: list
+        label: "Achievements"
+        file: "palash-portfolio/src/content/highlights.json"
+        format: json
+        fields:
+          - name: items
+            label: "Achievements"
+            label_singular: "Achievement"
+            widget: list
+            summary: "{{fields.title}}"
+            fields:
+              - { name: title, label: "Title", widget: string }
+              - { name: organization, label: "Organization", widget: string }
+              - { name: description, label: "Description", widget: text }
+              - { name: link, label: "Link (optional)", widget: string, required: false }
+
+  - name: news
+    label: "News & Milestones"
+    files:
+      - name: list
+        label: "News"
+        file: "palash-portfolio/src/content/news.json"
+        format: json
+        fields:
+          - name: items
+            label: "Milestones"
+            label_singular: "Milestone"
+            widget: list
+            summary: "{{fields.date}} — {{fields.title}}"
+            fields:
+              - { name: date, label: "Date / period", widget: string }
+              - { name: icon, label: "Icon (emoji)", widget: string }
+              - { name: title, label: "Title", widget: string }
+              - { name: description, label: "Description", widget: text }
+
+  - name: media
+    label: "In the News (press)"
+    files:
+      - name: list
+        label: "Press coverage"
+        file: "palash-portfolio/src/content/media.json"
+        format: json
+        fields:
+          - name: items
+            label: "Articles"
+            label_singular: "Article"
+            widget: list
+            summary: "{{fields.outlet}} — {{fields.title}}"
+            fields:
+              - { name: outlet, label: "Outlet", widget: string }
+              - { name: date, label: "Date", widget: string }
+              - { name: title, label: "Title", widget: string }
+              - { name: url, label: "Article URL", widget: string }
