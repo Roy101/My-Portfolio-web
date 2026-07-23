@@ -100,3 +100,81 @@ collections:
               - { name: date, label: "Date", widget: string }
               - { name: title, label: "Title", widget: string }
               - { name: url, label: "Article URL", widget: string }
+
+  - name: pictures
+    label: "Pictures (Gallery)"
+    files:
+      - name: list
+        label: "Gallery"
+        file: "palash-portfolio/src/content/gallery.json"
+        format: json
+        fields:
+          - name: items
+            label: "Photos"
+            label_singular: "Photo"
+            widget: list
+            summary: "{{fields.title}}"
+            fields:
+              - { name: image, label: "Image", widget: image }
+              - { name: title, label: "Title", widget: string }
+              - { name: description, label: "Caption", widget: text }
+              - { name: altText, label: "Alt text (for SEO/accessibility)", widget: string, required: false }
+
+  - name: leadership
+    label: "Leadership Roles"
+    files:
+      - name: list
+        label: "Leadership"
+        file: "palash-portfolio/src/content/leadership.json"
+        format: json
+        fields:
+          - name: items
+            label: "Roles"
+            label_singular: "Role"
+            widget: list
+            summary: "{{fields.period}} — {{fields.role}}"
+            fields:
+              - { name: period, label: "Period", widget: string }
+              - { name: role, label: "Role", widget: string }
+              - { name: organization, label: "Organization", widget: string }
+              - { name: place, label: "Place", widget: string }
+              - { name: link, label: "Link (optional)", widget: string, required: false }
+
+  - name: service
+    label: "Academic Service"
+    files:
+      - name: list
+        label: "Service"
+        file: "palash-portfolio/src/content/service.json"
+        format: json
+        fields:
+          - name: items
+            label: "Service entries"
+            label_singular: "Entry"
+            widget: list
+            summary: "{{fields.period}} — {{fields.role}}"
+            fields:
+              - { name: period, label: "Period", widget: string }
+              - { name: role, label: "Role", widget: string }
+              - { name: description, label: "Description", widget: text }
+              - { name: venue, label: "Venue (optional)", widget: string, required: false }
+              - { name: venues, label: "Venues (optional, comma-separated)", widget: string, required: false }
+
+  - name: references
+    label: "References"
+    files:
+      - name: list
+        label: "References"
+        file: "palash-portfolio/src/content/references.json"
+        format: json
+        fields:
+          - name: items
+            label: "People"
+            label_singular: "Person"
+            widget: list
+            summary: "{{fields.name}}"
+            fields:
+              - { name: name, label: "Name", widget: string }
+              - { name: title, label: "Title / affiliation", widget: string }
+              - { name: image, label: "Photo", widget: image }
+              - { name: text, label: "Reference text", widget: text }

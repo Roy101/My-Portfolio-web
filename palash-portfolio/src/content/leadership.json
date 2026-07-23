@@ -1,0 +1,35 @@
+{
+  "items": [
+    {
+      "period": "2025-2026",
+      "role": "President",
+      "organization": "Graduate Students Association (GSA)",
+      "place": "University of Saskatchewan",
+      "link": "https://gsa.usask.ca"
+    },
+    {
+      "period": "2024-2025",
+      "role": "President",
+      "organization": "Bangladeshi Students' Association (BSAUS)",
+      "place": "University of Saskatchewan"
+    },
+    {
+      "period": "2023-2024",
+      "role": "Vice President Finance",
+      "organization": "Computer Science Graduate Council",
+      "place": "University of Saskatchewan"
+    },
+    {
+      "period": "2022-2023",
+      "role": "Vice President Social",
+      "organization": "Computer Science Graduate Council",
+      "place": "University of Saskatchewan"
+    },
+    {
+      "period": "2018-2021",
+      "role": "Assistant General Secretary",
+      "organization": "Robotics Club Of Brac University [ROBU]",
+      "place": "BRAC University"
+    }
+  ]
+}

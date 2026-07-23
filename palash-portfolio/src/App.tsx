@@ -5,6 +5,10 @@ import newsData from "./content/news.json";
 import mediaData from "./content/media.json";
 import metricsData from "./content/metrics.json";
 import publicationsDataRaw from "./content/publications.json";
+import leadershipDataRaw from "./content/leadership.json";
+import serviceDataRaw from "./content/service.json";
+import galleryDataRaw from "./content/gallery.json";
+import referencesDataRaw from "./content/references.json";
 
 // Publication record shape (fields beyond the core are optional)
 type Publication = {
@@ -19,6 +23,18 @@ type Publication = {
   preprint?: string;
 };
 const publicationsData: Publication[] = publicationsDataRaw.items as Publication[];
+
+type LeadershipRole = { period: string; role: string; organization: string; place: string; link?: string };
+const leadershipRolesData: LeadershipRole[] = leadershipDataRaw.items as LeadershipRole[];
+
+type ServiceItem = { period: string; role: string; description: string; venue?: string; venues?: string };
+const academicServiceData: ServiceItem[] = serviceDataRaw.items as ServiceItem[];
+
+type GalleryItem = { image: string; title: string; description: string; altText?: string };
+const galleryData: GalleryItem[] = galleryDataRaw.items as GalleryItem[];
+
+type ReferenceItem = { name: string; title: string; image: string; text: string };
+const referencesData: ReferenceItem[] = referencesDataRaw.items as ReferenceItem[];
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -48,271 +64,14 @@ import highlightsDataRaw from "./content/highlights.json";
 const highlightsData: HighlightItem[] = highlightsDataRaw.items as HighlightItem[];
 
 // Leadership roles data (renamed from volunteerWorkData)
-const leadershipRolesData = [
-  {
-    period: "2025-2026",
-    role: "President",
-    organization: "Graduate Students Association (GSA)",
-    place: "University of Saskatchewan",
-    link: "https://gsa.usask.ca"
-  },
-  {
-    period: "2024-2025",
-    role: "President",
-    organization: "Bangladeshi Students' Association (BSAUS)",
-    place: "University of Saskatchewan"
-  },
-  {
-    period: "2023-2024",
-    role: "Vice President Finance",
-    organization: "Computer Science Graduate Council",
-    place: "University of Saskatchewan"
-  },
-  {
-    period: "2022-2023",
-    role: "Vice President Social",
-    organization: "Computer Science Graduate Council",
-    place: "University of Saskatchewan"
-  },
-  {
-    period: "2018-2021",
-    role: "Assistant General Secretary",
-    organization: "Robotics Club Of Brac University [ROBU]",
-    place: "BRAC University"
-  }
-];
 
 // Academic service data - now including invited lectures
-const academicServiceData = [
-  {
-    period: "2025-2026",
-    role: "Senate Member",
-    description: "Served as a member of the University Senate, contributing to university-wide governance and academic policy.",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2026-2027",
-    role: "Search Committee Member",
-    description: "Committee member for the Provost and Vice-President Academic Search Committee.",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2025-2026",
-    role: "Governance Committee Member",
-    description: "Served on a University Governance Committee as part of graduate student leadership.",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2025-2026",
-    role: "Award Committee Member",
-    description: "Served on multiple University of Saskatchewan award selection committees, including the Distinguished Researcher Award.",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2025-2026",
-    role: "CGPS Committee Member",
-    description: "Served on College of Graduate and Postdoctoral Studies (CGPS) committees, and presented graduate-student reports to University Council and college/faculty councils.",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2026-Present",
-    role: "Graduate Peer Mentor",
-    description: "Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program, delivering small-group workshops and one-to-one sessions on academic skills and the transition into graduate studies.",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2022-Present",
-    role: "Peer Reviewer",
-    description: "Reviewed multiple Software Engineering conferences and Journal submissions",
-    venues: "ICSME, ASE, SCAM, SANER, MSR, JSS, TSE, and TOSEM"
-  },
-  {
-    period: "Spring-Summer 2024",
-    role: "Research Supervision",
-    description: "Supervised one undergraduate research student who won two undergraduate research excellence awards at ICSAC-24 and SOAR Symposium 2024",
-    venue: "Software Research lab & Interactive Software Engineering Lab, University of Saskatchewan"
-  },
-  {
-    period: "Spring-Summer 2023",
-    role: "Research Supervision",
-    description: "Supervised six undergraduate research students",
-    venue: "Software Research lab & Interactive Software Engineering Lab, University of Saskatchewan"
-  },
-  {
-    period: "2025",
-    role: "Invited Speaker",
-    description: "Large language models and Code Similarity",
-    venue: "Thompson Rivers University"
-  },
-  {
-    period: "2024",
-    role: "Invited Speaker",
-    description: "AI for Software Engineering",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2024",
-    role: "Invited Speaker",
-    description: "The Effects of Visual Embellishment on Comprehension and Memorability of Charts",
-    venue: "University of Saskatchewan"
-  },
-  {
-    period: "2023",
-    role: "Invited Speaker",
-    description: "Software Engineering in Practice",
-    venue: "BRAC University"
-  },
-  {
-    period: "2022",
-    role: "Invited Speaker",
-    description: "How to start building your first Robot?",
-    venue: "BRAC University"
-  }
-];
 
 // Pictures data - add more items here to have more carousel slides
-const picturesData = [
-  {
-    image: "/images/Pic_section/Palash-Roy_Plaza de Bolívar.jpg",
-    title: "Plaza de Bolívar, Colombia",
-    description: "Exploring the historic heart of Bogotá at Plaza de Bolívar during my research visit for ICSME-2023.",
-    altText: "Palash Ranjan Roy (Palash Roy) at Plaza de Bolívar in Bogotá during ICSME-2023 research conference"
-  },
-  {
-    image: "/images/Pic_section/Palash-Justin_Santa Fe, Bogotá, Chocó.jpg",
-    title: "Santa Fe, Bogotá, Chocó",
-    description: "Making connections with fellow researchers in beautiful Colombia during our conference travel.",
-    altText: "Palash Roy with Justin in Santa Fe, Bogotá, Chocó - Computer Science researchers at international conference"
-  },
-  {
-    image: "/images/Pic_section/Palash_Group_Chico_Norte.jpg",
-    title: "Group Photo at Chico Norte",
-    description: "Exploring Chico Norte fellow friends of mine from all over the world.",
-    altText: "Palash Ranjan Roy with international research colleagues at Chico Norte in Colombia"
-  },
-  {
-    image: "/images/Pic_section/Palash-Group_Parque_Nacional_Oriental.jpg",
-    title: "Parque Nacional Oriental",
-    description: "Taking a break from academic discussions to enjoy Colombia's natural beauty at Parque Nacional Oriental.",
-    altText: "Palash Roy with research colleagues at Parque Nacional Oriental in Colombia during academic conference"
-  },
-  {
-    image: "/images/Pic_section/Palash-Cousins_Banff_Gondola.jpg",
-    title: "Banff Gondola with Cousins",
-    description: "Enjoying the breathtaking views of the Canadian Rockies with family at the Banff Gondola.",
-    altText: "PhD student Palash Ranjan Roy with cousins at Banff Gondola in the Canadian Rockies"
-  },
-  {
-    image: "/images/Pic_section/Palash-Cousins2_banff.jpg",
-    title: "Banff National Park",
-    description: "Another memorable moment with cousins exploring the natural wonders of Banff National Park.",
-    altText: "Palash Roy and cousins visiting Banff National Park in Alberta, Canada"
-  },
-  {
-    image: "/images/Pic_section/Palash-Family_Sulphur_Mountain.jpg",
-    title: "Family at Sulphur Mountain",
-    description: "A family adventure scaling the heights of Sulphur Mountain with its spectacular panoramic views.",
-    altText: "Computer Science researcher Palash Ranjan Roy with family at Sulphur Mountain in Banff, Canada"
-  },
-  {
-    image: "/images/Pic_section/Palash-Mugdho(Cousin)_Montauk_Point_State_Park.jpg",
-    title: "Montauk Point State Park",
-    description: "An enjoyable day with my cousin Mugdho at Montauk Point State Park, taking in the coastal scenery.",
-    altText: "Palash Roy and cousin Mugdho at Montauk Point State Park in New York"
-  },
-  {
-    image: "/images/Pic_section/Palash-Roy_West_Village_NY(Friends_Building).jpg",
-    title: "West Village, New York",
-    description: "Couldn't resist visiting the iconic 'Friends' building during my trip to West Village, New York!",
-    altText: "Palash Ranjan Roy visiting the Friends TV show building in West Village, New York City"
-  },
-];
 
 // 2026 GSA Awards & Gala photos - from Palash Roy's tenure as GSA President
-const gsaGalaData = [
-  {
-    image: "/images/gsa_gala/gala-final-speech.jpg",
-    title: "Final Address as GSA President",
-    description: "Delivering my final address as President of the University of Saskatchewan Graduate Students' Association at the 2026 GSA Awards & Gala.",
-    altText: "Palash Ranjan Roy (Palash Roy) delivering his final speech as GSA President at the 2026 University of Saskatchewan Graduate Students' Association Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-awards-stage.jpg",
-    title: "Presenting the GSA Awards",
-    description: "Recognizing outstanding graduate students on stage during the 2026 GSA Awards & Gala.",
-    altText: "Palash Ranjan Roy presenting awards to graduate student recipients on stage at the 2026 University of Saskatchewan GSA Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-cgps-dean-burshtyn.jpg",
-    title: "With CGPS Dean Dr. Deborah Burshtyn",
-    description: "With Dr. Deborah (Debby) Burshtyn, Dean of the College of Graduate and Postdoctoral Studies (CGPS), at the 2026 GSA Awards & Gala.",
-    altText: "Palash Roy with Dr. Deborah Burshtyn, Dean of the College of Graduate and Postdoctoral Studies, at the 2026 University of Saskatchewan GSA Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-vice-provost-delbaere.jpg",
-    title: "With Vice-Provost Dr. Marjorie Delbaere",
-    description: "With Dr. Marjorie Delbaere, Interim Vice-Provost, Students and Learning, at the 2026 GSA Awards & Gala.",
-    altText: "Palash Ranjan Roy with Dr. Marjorie Delbaere, Interim Vice-Provost Students and Learning, at the 2026 University of Saskatchewan GSA Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-medicine-dean.jpg",
-    title: "With Medicine Dean Dr. Sarah Forgie",
-    description: "With Dr. Sarah Forgie, Dean of the College of Medicine, University of Saskatchewan, at the 2026 GSA Awards & Gala.",
-    altText: "Palash Roy with Dr. Sarah Forgie, Dean of the College of Medicine, at the 2026 University of Saskatchewan GSA Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-provost-mcdougall.jpg",
-    title: "With Provost Dr. Patti McDougall",
-    description: "With Dr. Patti McDougall, Interim Provost and Vice-President Academic, at the 2026 GSA Awards & Gala.",
-    altText: "Palash Ranjan Roy with Dr. Patti McDougall, Interim Provost and Vice-President Academic, at the 2026 University of Saskatchewan GSA Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-executive-team.jpg",
-    title: "The GSA Executive Team",
-    description: "With the University of Saskatchewan GSA executive team at the 2026 Awards & Gala.",
-    altText: "Palash Roy with the University of Saskatchewan Graduate Students' Association executive team at the 2026 GSA Awards and Gala"
-  },
-  {
-    image: "/images/gsa_gala/gala-team-celebration.jpg",
-    title: "Celebrating with the Team",
-    description: "Celebrating a successful year with the GSA team at the 2026 Awards & Gala.",
-    altText: "Palash Ranjan Roy celebrating with the University of Saskatchewan GSA team at the 2026 GSA Awards and Gala"
-  }
-];
 
 // References data - updated with all references and their images
-const referencesData = [
-  {
-    name: "Rezwana Mahfuza",
-    title: "PhD Student, Dalhousie University",
-    image: "/images/rezwana.jpg",
-    text: "Palash was an integral part of my study environment when I first started university at Brac University. Palash spent time with me not just to assist me with day-to-day tasks, but also to encourage me with many academic endeavors over the years. He inspires his team, provides important input, and works for everyone to achieve better as a groupmate."
-  },
-  {
-    name: "Farishta Kabir",
-    title: "Graduate Research and Teaching Assistant, University of Alberta",
-    image: "/images/farishta.jpg",
-    text: "I've had the pleasure of working with Palash during a few undergraduate courses and in the Robotics Club at BRAC University as a colleague. He always stood-out for his focused problem-solving approach and leadership in teamwork. Palash combines his expertise with an organizational mindset, making him a productive addition to any research project or team. Wishing him all the best for his future endeavours."
-  },
-  {
-    name: "Fahmida Nipa",
-    title: "PS & CS Core Network, Cyber Security, Datacom",
-    image: "/images/Nipa.jpg",
-    text: "Throughout my Robotics Club journey, I have seen Palash to be very enthusiastic about robotics. Not to mention the leadership and managerial quality I got to experience while working with him was quite mentionable. I believe he will do his best wherever he set his foot, as his dignity towards his responsibilities resembles how much effort he can demonstrate. He is very adaptive and can communicate fluently with anyone when working in teams. I personally teamed up with him during several events organized by the club. those works were success and naturally outstanding as he pulled out the best from the team."
-  },
-  {
-    name: "Syeda Umme Salma",
-    title: "Graduate Research Assistant, PhD Student",
-    image: "/images/omi.jpg",
-    text: "Palash is one of the greatest guys I've ever had as a collaborator, and we've worked together on multiple projects. I would strongly suggest his services to anyone in need of an software engineer. He is one of the wisest persons I have ever encountered, and his ability to solve any situation with a pleasant gesture is astonishing. Palash would be a valuable addition to any team."
-  },
-  {
-    name: "Md. Noushin Islam",
-    title: "Web Developer, Frontend Developer, MSc in Software Engineering",
-    image: "/images/saad.jpg",
-    text: "I was impressed by Palash's ability to handle any situation calmly and patiently, even in the toughest situation. His natural skill has helped us succeed in many events throughout my journey at ROBU."
-  }
-];
 
 // Experience data for the carousel
 const experienceData = [
@@ -1298,7 +1057,7 @@ export default function App() {
               </p>
             </div>
             <Carousel
-              items={[...gsaGalaData, ...picturesData]}
+              items={galleryData}
               renderItem={(item) => (
                 <div className="bg-[#181a22] h-full p-4 rounded-lg flex flex-col items-center text-center">
                   <div className="w-full h-48 sm:h-52 overflow-hidden rounded relative">
