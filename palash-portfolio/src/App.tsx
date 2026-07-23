@@ -39,13 +39,11 @@ const defaultReferences: ReferenceItem[] = referencesDataRaw.items as ReferenceI
 const navLinks = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
-  // Education and Experience removed since they're integrated in the Biography section
-  { label: "Skills", href: "#skills" },
-  { label: "Awards", href: "#highlights" },
-  { label: "News", href: "#news" },
   { label: "Publications", href: "#portfolio" },
+  { label: "News", href: "#news" },
   { label: "Leadership", href: "#leadership" },
   { label: "Service", href: "#service" },
+  { label: "Awards", href: "#highlights" },
   { label: "Gallery", href: "#pictures" },
   { label: "References", href: "#references" }
 ];
@@ -705,234 +703,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* Skills Section with centered content - updated to match the reference design */}
-          <section id="skills" className="pt-10 pb-20">
-            <div className="text-center mb-12">
-              <div className="inline-block px-4 py-2 bg-[#1c1c24] rounded-lg text-[#7ec8e3] text-sm font-semibold mb-3">
-                Competencies
-              </div>
-              <h2 className="text-4xl font-bold mb-6">Technical Competencies</h2>
-              
-              <div className="max-w-3xl mx-auto text-[#d0cccc]">
-                <p>
-                  The tools, languages, and methods I work with across research and software development.
-                </p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12 max-w-6xl mx-auto">
-              <div className="bg-[#181a22] p-8 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3] transition-colors">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-[#2a3b4d] rounded-full flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#7ec8e3" viewBox="0 0 16 16">
-                      <path d="M2.5 3.5a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1h-11zm2-2a.5.5 0 0 1 0-1h7a.5.5 0 0 1 0 1h-7zM0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6v7zm1.5.5A.5.5 0 0 1 1 13V6a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-13z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold">Research Domains</h3>
-                </div>
-                <ul className="text-[#d0cccc] space-y-1 pl-4">
-                  <li>Code Clone Detection, Program Analysis</li>
-                  <li>Code Intelligence, Code Summarization</li>
-                  <li>Code Translation, Semantic Similarity</li>
-                  <li>Source Code Embedding, Software Quality</li>
-                  <li>LLMs for Code, Software Mining</li>
-                </ul>
-              </div>
-              
-              <div className="bg-[#181a22] p-8 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3] transition-colors">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-[#2a3b4d] rounded-full flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#7ec8e3" viewBox="0 0 16 16">
-                      <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
-                      <path d="M6.854 4.646a.5.5 0 0 1 0 .708L4.207 8l2.647 2.646a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 0 1 .708 0zm2.292 0a.5.5 0 0 0 0 .708L11.793 8l-2.647 2.646a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708 0z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold">Machine Learning & NLP</h3>
-                </div>
-                <ul className="text-[#d0cccc] space-y-1 pl-4">
-                  <li>Transformer Models, CodeBERT</li>
-                  <li>GraphCodeBERT, Codex, StarCoder, GPT</li>
-                  <li>BERT, Embeddings, Fine-Tuning</li>
-                  <li>Few-Shot Learning, Attention Mechanisms</li>
-                  <li>Prompt Engineering, AI AGENT, Tokenization</li>
-                  <li>BLEU, ROUGE, CodeBLEU</li>
-                </ul>
-              </div>
-              
-              <div className="bg-[#181a22] p-8 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3] transition-colors">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-[#2a3b4d] rounded-full flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#7ec8e3" viewBox="0 0 16 16">
-                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-                      <path d="M7.5 7.793l2.646-2.647a.5.5 0 0 1 .708.708L8.207 8.5l2.647 2.646a.5.5 0 0 1-.708.708L7.5 9.207l-2.646 2.647a.5.5 0 0 1-.708-.708L6.793 8.5 4.146 5.854a.5.5 0 0 1 .708-.708L7.5 7.793z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold">Tools & Frameworks</h3>
-                </div>
-                <ul className="text-[#d0cccc] space-y-1 pl-4">
-                  <li>PyTorch, TensorFlow</li>
-                  <li>Hugging Face Transformers</li>
-                  <li>Scikit-learn, NumPy, Pandas</li>
-                  <li>Matplotlib, Tree-sitter, ANTLR</li>
-                  <li>Javalang, Gensim, OpenAI API</li>
-                </ul>
-              </div>
-              
-              <div className="bg-[#181a22] p-8 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3] transition-colors">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-[#2a3b4d] rounded-full flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#7ec8e3" viewBox="0 0 16 16">
-                      <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-                      <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.34-.1a.873.873 0 0 1 .52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.1-.34zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold">Clone Detection & Code Analysis</h3>
-                </div>
-                <ul className="text-[#d0cccc] space-y-1 pl-4">
-                  <li>SourcererCC, NiCad, Deckard</li>
-                  <li>CloneWorks, ASTs</li>
-                  <li>Control Flow Graphs (CFG)</li>
-                  <li>Data Flow Analysis</li>
-                  <li>Static & Dynamic Analysis, Code Metrics</li>
-                </ul>
-              </div>
-              
-              <div className="bg-[#181a22] p-8 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3] transition-colors">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-[#2a3b4d] rounded-full flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#7ec8e3" viewBox="0 0 16 16">
-                      <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855-.143.268-.276.56-.395.872.705.157 1.472.257 2.282.287V1.077zM4.249 3.539c.142-.384.304-.744.481-1.078a6.7 6.7 0 0 1 .597-.933A7.01 7.01 0 0 0 3.051 3.05c.362.184.763.349 1.198.49zM3.509 7.5c.036-1.07.188-2.087.436-3.008a9.124 9.124 0 0 1-1.565-.667A6.964 6.964 0 0 0 1.018 7.5h2.49zm1.4-2.741a12.344 12.344 0 0 0-.4 2.741H7.5V5.091c-.91-.03-1.783-.145-2.591-.332zM8.5 5.09V7.5h2.99a12.342 12.342 0 0 0-.399-2.741c-.808.187-1.681.301-2.591.332zM4.51 8.5c.035.987.176 1.914.399 2.741A13.612 13.612 0 0 1 7.5 10.91V8.5H4.51zm3.99 0v2.409c.91.03 1.783.145 2.591.332.223-.827.364-1.754.4-2.741H8.5zm-3.282 3.696c.12.312.252.604.395.872.552 1.035 1.218 1.65 1.887 1.855V11.91c-.81.03-1.577.13-2.282.287zm.11 2.276a6.696 6.696 0 0 1-.598-.933 8.853 8.853 0 0 1-.481-1.079 8.38 8.38 0 0 0-1.198.49 7.01 7.01 0 0 0 2.276 1.522zm-1.383-2.964A13.36 13.36 0 0 1 3.508 8.5h-2.49a6.963 6.963 0 0 0 1.362 3.675c.47-.258.995-.482 1.565-.667zm6.728 2.964a7.009 7.009 0 0 0 2.275-1.521 8.376 8.376 0 0 0-1.197-.49 8.853 8.853 0 0 1-.481 1.078 6.688 6.688 0 0 1-.597.933zM8.5 11.909v3.014c.67-.204 1.335-.82 1.887-1.855.143-.268.276-.56.395-.872A12.63 12.63 0 0 0 8.5 11.91zm3.555-.401c.57.185 1.095.409 1.565.667A6.963 6.963 0 0 0 14.982 8.5h-2.49a13.36 13.36 0 0 1-.437 3.008zM14.982 7.5a6.963 6.963 0 0 0-1.362-3.675c-.47.258-.995.482-1.565.667.248.92.4 1.938.437 3.008h2.49zM11.27 2.461c.177.334.339.694.482 1.078a8.368 8.368 0 0 0 1.196-.49 7.01 7.01 0 0 0-2.275-1.52c.218.283.418.597.597.932zm-.488 1.343a7.765 7.765 0 0 0-.395-.872C9.835 1.897 9.17 1.282 8.5 1.077V4.09c.81-.03 1.577-.13 2.282-.287z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold">Data & Experimentation</h3>
-                </div>
-                <ul className="text-[#d0cccc] space-y-1 pl-4">
-                  <li>BigCloneBench, CodeSearchNet</li>
-                  <li>POJ-104, HumanEval</li>
-                  <li>Jupyter, Git, Docker, Bash</li>
-                  <li>LaTeX, Statistical Testing</li>
-                  <li>Reproducibility, Experimental Design</li>
-                </ul>
-              </div>
-              
-              <div className="bg-[#181a22] p-8 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3] transition-colors">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-[#2a3b4d] rounded-full flex items-center justify-center mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#7ec8e3" viewBox="0 0 16 16">
-                      <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold">Programming Languages</h3>
-                </div>
-                <ul className="text-[#d0cccc] space-y-1 pl-4">
-                  <li>Python, Java, JavaScript</li>
-                  <li>C++, Bash, HTML, CSS</li>
-                  <li>SQL, JSON, YAML</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* Highlights Section with Carousel and centered content - Redesigned to match reference */}
-          <section id="highlights" className="pt-20 pb-16">
-            {/* New header format matching the reference image */}
-            <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                Highlights
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Featured Highlights</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Here are some awards, articles, documents, certificates, and whatever else I am proud of.
-              </p>
-            </div>
-            
-            {/* Carousel with highlights items */}
-            <Carousel
-              items={highlightsData}
-              renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col">
-                  {/* Display image at the top if available */}
-                  {item.image && (
-                    <div className="mb-4">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-full h-48 object-cover rounded"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
-                  )}
-                  <h3 className="font-bold text-lg mb-1">{item.title}</h3>
-                  <div className="text-[#7ec8e3] text-sm mb-2">{item.organization}</div>
-                  <p className="text-[#a9c0d4] text-sm flex-grow">{item.description}</p>
-                  {item.link && (
-                    <div className="mt-4 pt-2 border-t border-[#2d324b]">
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#7ec8e3] text-sm hover:text-[#35c7ff] flex items-center"
-                      >
-                        Read more
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-            />
-          </section>
-
-          {/* News & Milestones timeline - content from src/content/news.json */}
-          <section id="news" className="pt-2 pb-12">
-            <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                News &amp; Milestones
-              </div>
-              <h2 className="text-4xl font-bold mb-4">What's Happening</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Recent milestones, awards, and research highlights.
-              </p>
-            </div>
-            <div className="max-w-3xl mx-auto">
-              <ol className="relative border-l border-[#2d324b] ml-3">
-                {newsItems.map((n, i) => (
-                  <li key={i} className="mb-8 ml-6">
-                    <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-[#181a22] border border-[#2d324b] rounded-full text-sm">{n.icon}</span>
-                    <div className="text-xs text-[#7ec8e3] font-semibold mb-1">{n.date}</div>
-                    <h3 className="font-bold">{n.title}</h3>
-                    <p className="text-[#a9c0d4] text-sm mt-1">{n.description}</p>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </section>
-
-          {/* In the News / media coverage - content from src/content/media.json */}
-          <section id="media" className="pt-2 pb-12">
-            <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                In the News
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Featured Coverage</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Selected media coverage and university announcements.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-              {mediaItems.map((m, i) => (
-                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="bg-[#181a22] border border-[#2d324b] rounded-lg p-5 hover:border-[#7ec8e3] transition-colors flex flex-col">
-                  <div className="text-xs text-[#7ec8e3] mb-2">{m.outlet} &middot; {m.date}</div>
-                  <div className="font-semibold text-sm mb-3 flex-1">{m.title}</div>
-                  <span className="text-[#7ec8e3] text-xs">Read article &rarr;</span>
-                </a>
-              ))}
-            </div>
-          </section>
-
           {/* Publications Section with Carousel and centered content */}
           <section id="portfolio" className="pt-2 pb-12">
             <div className="text-center mb-8">
@@ -1009,6 +779,31 @@ export default function App() {
             />
           </section>
 
+          {/* News & Milestones timeline - content from src/content/news.json */}
+          <section id="news" className="pt-2 pb-12">
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
+                News &amp; Milestones
+              </div>
+              <h2 className="text-4xl font-bold mb-4">What's Happening</h2>
+              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
+                Recent milestones, awards, and research highlights.
+              </p>
+            </div>
+            <div className="max-w-3xl mx-auto">
+              <ol className="relative border-l border-[#2d324b] ml-3">
+                {newsItems.map((n, i) => (
+                  <li key={i} className="mb-8 ml-6">
+                    <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-[#181a22] border border-[#2d324b] rounded-full text-sm">{n.icon}</span>
+                    <div className="text-xs text-[#7ec8e3] font-semibold mb-1">{n.date}</div>
+                    <h3 className="font-bold">{n.title}</h3>
+                    <p className="text-[#a9c0d4] text-sm mt-1">{n.description}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
           {/* Leadership Roles Section with Carousel and centered content - updated to match other sections */}
           <section id="leadership" className="pt-2 pb-12">
             <div className="text-center mb-8">
@@ -1060,6 +855,81 @@ export default function App() {
                 </div>
               )}
             />
+          </section>
+
+          {/* Highlights Section with Carousel and centered content - Redesigned to match reference */}
+          <section id="highlights" className="pt-20 pb-16">
+            {/* New header format matching the reference image */}
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
+                Highlights
+              </div>
+              <h2 className="text-4xl font-bold mb-4">Featured Highlights</h2>
+              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
+                Here are some awards, articles, documents, certificates, and whatever else I am proud of.
+              </p>
+            </div>
+            
+            {/* Carousel with highlights items */}
+            <Carousel
+              items={highlightsData}
+              renderItem={(item) => (
+                <div className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col">
+                  {/* Display image at the top if available */}
+                  {item.image && (
+                    <div className="mb-4">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-48 object-cover rounded"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  )}
+                  <h3 className="font-bold text-lg mb-1">{item.title}</h3>
+                  <div className="text-[#7ec8e3] text-sm mb-2">{item.organization}</div>
+                  <p className="text-[#a9c0d4] text-sm flex-grow">{item.description}</p>
+                  {item.link && (
+                    <div className="mt-4 pt-2 border-t border-[#2d324b]">
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#7ec8e3] text-sm hover:text-[#35c7ff] flex items-center"
+                      >
+                        Read more
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+            />
+          </section>
+
+          {/* In the News / media coverage - content from src/content/media.json */}
+          <section id="media" className="pt-2 pb-12">
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
+                In the News
+              </div>
+              <h2 className="text-4xl font-bold mb-4">Featured Coverage</h2>
+              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
+                Selected media coverage and university announcements.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+              {mediaItems.map((m, i) => (
+                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="bg-[#181a22] border border-[#2d324b] rounded-lg p-5 hover:border-[#7ec8e3] transition-colors flex flex-col">
+                  <div className="text-xs text-[#7ec8e3] mb-2">{m.outlet} &middot; {m.date}</div>
+                  <div className="font-semibold text-sm mb-3 flex-1">{m.title}</div>
+                  <span className="text-[#7ec8e3] text-xs">Read article &rarr;</span>
+                </a>
+              ))}
+            </div>
           </section>
 
           {/* Combined Gallery Section - GSA presidency highlights and personal moments */}
