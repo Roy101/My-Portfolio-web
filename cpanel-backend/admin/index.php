@@ -94,6 +94,29 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// ---- change password (AJAX, logged-in only) ----
+if ($action === 'changepw' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!is_logged_in()) { http_response_code(401); json_out(['error' => 'Not logged in']); }
+    $body = json_decode(file_get_contents('php://input'), true);
+    require_csrf($body['csrf'] ?? '');
+    $cur = (string)($body['current'] ?? '');
+    $new = (string)($body['new'] ?? '');
+    if (strlen($new) < 10) { http_response_code(400); json_out(['error' => 'New password must be at least 10 characters']); }
+    try {
+        $stmt = db()->prepare("SELECT * FROM admin_users WHERE username = ? LIMIT 1");
+        $stmt->execute([$_SESSION['admin']]);
+        $row = $stmt->fetch();
+        if (!$row || !password_verify($cur, $row['password_hash'])) {
+            http_response_code(403); json_out(['error' => 'Current password is incorrect']);
+        }
+        db()->prepare("UPDATE admin_users SET password_hash = ? WHERE id = ?")
+            ->execute([password_hash($new, PASSWORD_DEFAULT), $row['id']]);
+        json_out(['ok' => true]);
+    } catch (Throwable $e) {
+        http_response_code(500); json_out(['error' => 'Database error']);
+    }
+}
+
 // ================= LOGIN PAGE =================
 if (!is_logged_in()) {
     $err = $_SESSION['login_error'] ?? '';
@@ -191,7 +214,8 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function renderTabs(){
   const layoutTab = `<a class="${current==='layout'?'active':''}" onclick="switchTo('layout')">⚙ Layout</a>`;
   const metricsTab = `<a class="${current==='metrics'?'active':''}" onclick="switchTo('metrics')">📊 Metrics</a>`;
-  document.getElementById('tabs').innerHTML = layoutTab + metricsTab + sections.map(s =>
+  const pwTab = `<a class="${current==='password'?'active':''}" onclick="switchTo('password')">🔑 Password</a>`;
+  document.getElementById('tabs').innerHTML = layoutTab + metricsTab + pwTab + sections.map(s =>
     `<a class="${s===current?'active':''}" onclick="switchTo('${s}')">${LABELS[s]}</a>`).join('');
 }
 window.switchTo = s => { current = s; renderTabs(); renderSection(); };
@@ -249,9 +273,32 @@ window.saveMetrics=async()=>{
   }catch(e){toast('Network error');}
 };
 
+function renderPassword(){
+  const app=document.getElementById('app');
+  app.innerHTML = `<h2>Change Password</h2><p style="color:#a2a5b9;font-size:13px;margin-bottom:14px">Update your admin login password.</p>`+
+    `<div class="item">`+
+    `<label>Current password</label><input id="pw_cur" type="password" autocomplete="current-password">`+
+    `<label>New password (10+ characters)</label><input id="pw_new" type="password" autocomplete="new-password">`+
+    `<label>Confirm new password</label><input id="pw_new2" type="password" autocomplete="new-password">`+
+    `</div>`+
+    `<div class="bar"><button class="primary" onclick="savePassword()">Update Password</button></div>`;
+}
+window.savePassword=async()=>{
+  const cur=document.getElementById('pw_cur').value, nw=document.getElementById('pw_new').value, nw2=document.getElementById('pw_new2').value;
+  if(nw.length<10){toast('New password must be 10+ characters');return;}
+  if(nw!==nw2){toast('New passwords do not match');return;}
+  try{
+    const r=await fetch('index.php?action=changepw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,current:cur,new:nw})});
+    const j=await r.json();
+    if(j.ok){ toast('Password updated ✓'); ['pw_cur','pw_new','pw_new2'].forEach(id=>document.getElementById(id).value=''); }
+    else toast('Error: '+(j.error||'failed'));
+  }catch(e){toast('Network error');}
+};
+
 function renderSection(){
   if(current==='layout'){ renderLayout(); return; }
   if(current==='metrics'){ renderMetrics(); return; }
+  if(current==='password'){ renderPassword(); return; }
   const schema = SCHEMAS[current];
   const items = DATA[current] || [];
   const app = document.getElementById('app');

@@ -107,7 +107,7 @@ const Carousel = <T extends unknown>({
   renderItem, 
   itemsPerSlide = 3, 
   autoRotate = true,
-  rotationInterval = 8000
+  rotationInterval = 11000
 }: CarouselProps<T>) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
@@ -335,6 +335,54 @@ const MobileMenu = ({ links, isOpen, setIsOpen }: MobileMenuProps) => {
     </div>
   );
 };
+
+// Publication card that flips to reveal the summary when the "i" button is clicked.
+function PublicationCard({ item }: { item: Publication }) {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <div className={`flip ${flipped ? "flipped" : ""}`}>
+      <div className="flip-inner">
+        {/* Front */}
+        <div className="flip-face bg-[#181a22] p-6 rounded-lg border border-[#2d324b]">
+          {item.award && (
+            <div className="inline-flex items-center gap-1 mb-2 px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b8860b] to-[#ffd700] text-black self-start">
+              🏆 {item.award}
+            </div>
+          )}
+          <div className="font-bold mb-1 pr-7">{item.title}</div>
+          <div className="text-[#7ec8e3] text-sm mb-1">{item.authors}</div>
+          <div className="text-[#a2a5b9] text-xs italic">{item.venue}{item.year ? `, ${item.year}` : ""}{item.pages ? `, ${item.pages}` : ""}</div>
+          <div className="flex flex-wrap gap-2 mt-auto pt-3">
+            {item.doi && (
+              <a href={`https://doi.org/${item.doi}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path><path d="M5 5a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-3.5l-1.5-1.5h-5L4 4zm7 5a1 1 0 100-2H9v2h2zm3 0a1 1 0 100-2h-2v2h2zm-9 3a1 1 0 100-2H5v2h2zm3 0a1 1 0 100-2H8v2h2zm3 0a1 1 0 100-2h-2v2h2zm3 0a1 1 0 100-2h-2v2h2z"></path></svg>
+                DOI
+              </a>
+            )}
+            {item.preprint && (
+              <a href={item.preprint} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2a3b4d] hover:bg-[#344a61] text-[#7ec8e3] transition-colors">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v16a1 1 0 01-1.581.814l-4.419-3.346-4.419 3.346A1 1 0 014 16V4zm5 0a1 1 0 00-1 1v6.5a.5.5 0 001 0V5a1 1 0 00-1-1z"></path></svg>
+                Download PDF
+              </a>
+            )}
+          </div>
+          {item.description && (
+            <button onClick={() => setFlipped(true)} title="More details" aria-label="Show summary"
+              className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#2d324b] text-[#7ec8e3] text-sm font-bold italic flex items-center justify-center hover:bg-[#7ec8e3] hover:text-black transition-colors">
+              i
+            </button>
+          )}
+        </div>
+        {/* Back */}
+        <div className="flip-face flip-back bg-[#181a22] p-6 rounded-lg border border-[#7ec8e3]/40">
+          <div className="text-[#7ec8e3] text-xs font-semibold uppercase tracking-wider mb-2">Summary</div>
+          <div className="text-[#a9c0d4] text-sm flex-1">{item.description}</div>
+          <button onClick={() => setFlipped(false)} className="mt-3 self-start text-[#7ec8e3] text-xs font-medium hover:underline">&larr; Back</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -610,46 +658,7 @@ export default function App() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl mx-auto">
               {publicationsData.map((item, idx) => (
-                <div key={idx} className="bg-[#181a22] h-full p-6 rounded-lg border border-[#2d324b] hover:border-[#7ec8e3]/50 transition-colors">
-                  {item.award && (
-                    <div className="inline-flex items-center gap-1 mb-2 px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b8860b] to-[#ffd700] text-black">
-                      🏆 {item.award}
-                    </div>
-                  )}
-                  <div className="font-bold mb-1">{item.title}</div>
-                  <div className="text-[#7ec8e3] text-sm mb-1">{item.authors}</div>
-                  <div className="text-[#a2a5b9] text-xs mb-1 italic">{item.venue}{item.year ? `, ${item.year}` : ""}{item.pages ? `, ${item.pages}` : ""}</div>
-                  <div className="flex flex-wrap gap-2 mt-2 mb-3">
-                    {item.doi && (
-                      <a 
-                        href={`https://doi.org/${item.doi}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors"
-                      >
-                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
-                          <path d="M5 5a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-3.5l-1.5-1.5h-5L4 4zm7 5a1 1 0 100-2H9v2h2zm3 0a1 1 0 100-2h-2v2h2zm-9 3a1 1 0 100-2H5v2h2zm3 0a1 1 0 100-2H8v2h2zm3 0a1 1 0 100-2h-2v2h2zm3 0a1 1 0 100-2h-2v2h2z"></path>
-                        </svg>
-                        DOI
-                      </a>
-                    )}
-                    {item.preprint && (
-                      <a 
-                        href={item.preprint} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2a3b4d] hover:bg-[#344a61] text-[#7ec8e3] transition-colors"
-                      >
-                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v16a1 1 0 01-1.581.814l-4.419-3.346-4.419 3.346A1 1 0 014 16V4zm5 0a1 1 0 00-1 1v6.5a.5.5 0 001 0V5a1 1 0 00-1-1z"></path>
-                        </svg>
-                        Download PDF
-                      </a>
-                    )}
-                  </div>
-                  <div className="text-[#a9c0d4] text-sm">{item.description}</div>
-                </div>
+                <PublicationCard key={idx} item={item} />
               ))}
             </div>
           </section>
