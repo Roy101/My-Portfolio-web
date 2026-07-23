@@ -656,11 +656,10 @@ export default function App() {
                 via <a href={metrics.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">{metrics.source}</a> &middot; updated {metrics.updated}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl mx-auto">
-              {publicationsData.map((item, idx) => (
-                <PublicationCard key={idx} item={item} />
-              ))}
-            </div>
+            <Carousel
+              items={publicationsData}
+              renderItem={(item) => (<PublicationCard item={item} />)}
+            />
           </section>
     </>),
     news: (<>
@@ -758,10 +757,10 @@ export default function App() {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-              {highlightsData.map((item, idx) => (
-                <div key={idx} className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col border border-[#2d324b]">
-                  {/* Display image at the top if available */}
+            <Carousel
+              items={highlightsData}
+              renderItem={(item) => (
+                <div className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col">
                   {item.image && (
                     <div className="mb-4">
                       <img
@@ -792,8 +791,8 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+              )}
+            />
           </section>
     </>),
     media: (<>
