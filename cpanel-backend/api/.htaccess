@@ -1,0 +1,5 @@
+# Never serve the DB credentials or the connection include directly.
+<FilesMatch "^(config\.php|config\.sample\.php|db\.php)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes

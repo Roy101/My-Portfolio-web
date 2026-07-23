@@ -22,19 +22,19 @@ type Publication = {
   doi?: string;
   preprint?: string;
 };
-const publicationsData: Publication[] = publicationsDataRaw.items as Publication[];
+const defaultPublications: Publication[] = publicationsDataRaw.items as Publication[];
 
 type LeadershipRole = { period: string; role: string; organization: string; place: string; link?: string };
-const leadershipRolesData: LeadershipRole[] = leadershipDataRaw.items as LeadershipRole[];
+const defaultLeadership: LeadershipRole[] = leadershipDataRaw.items as LeadershipRole[];
 
 type ServiceItem = { period: string; role: string; description: string; venue?: string; venues?: string };
-const academicServiceData: ServiceItem[] = serviceDataRaw.items as ServiceItem[];
+const defaultService: ServiceItem[] = serviceDataRaw.items as ServiceItem[];
 
 type GalleryItem = { image: string; title: string; description: string; altText?: string };
-const galleryData: GalleryItem[] = galleryDataRaw.items as GalleryItem[];
+const defaultGallery: GalleryItem[] = galleryDataRaw.items as GalleryItem[];
 
 type ReferenceItem = { name: string; title: string; image: string; text: string };
-const referencesData: ReferenceItem[] = referencesDataRaw.items as ReferenceItem[];
+const defaultReferences: ReferenceItem[] = referencesDataRaw.items as ReferenceItem[];
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -61,7 +61,7 @@ interface HighlightItem {
 
 // Featured Highlights data - single source in src/content/highlights.json
 import highlightsDataRaw from "./content/highlights.json";
-const highlightsData: HighlightItem[] = highlightsDataRaw.items as HighlightItem[];
+const defaultHighlights: HighlightItem[] = highlightsDataRaw.items as HighlightItem[];
 
 // Leadership roles data (renamed from volunteerWorkData)
 
@@ -340,6 +340,23 @@ const MobileMenu = ({ links, isOpen, setIsOpen }: MobileMenuProps) => {
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Live content from the cPanel API (falls back to the prerendered/baked content).
+  const [remote, setRemote] = useState<Record<string, any>>({});
+  useEffect(() => {
+    fetch("/api/content.php")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d && typeof d === "object") setRemote(d); })
+      .catch(() => {});
+  }, []);
+  const publicationsData = (remote.publications ?? defaultPublications) as Publication[];
+  const highlightsData = (remote.highlights ?? defaultHighlights) as HighlightItem[];
+  const galleryData = (remote.gallery ?? defaultGallery) as GalleryItem[];
+  const leadershipRolesData = (remote.leadership ?? defaultLeadership) as LeadershipRole[];
+  const academicServiceData = (remote.service ?? defaultService) as ServiceItem[];
+  const referencesData = (remote.references ?? defaultReferences) as ReferenceItem[];
+  const newsItems = (remote.news ?? newsData.items) as typeof newsData.items;
+  const mediaItems = (remote.media ?? mediaData.items) as typeof mediaData.items;
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -882,7 +899,7 @@ export default function App() {
             </div>
             <div className="max-w-3xl mx-auto">
               <ol className="relative border-l border-[#2d324b] ml-3">
-                {newsData.items.map((n, i) => (
+                {newsItems.map((n, i) => (
                   <li key={i} className="mb-8 ml-6">
                     <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-[#181a22] border border-[#2d324b] rounded-full text-sm">{n.icon}</span>
                     <div className="text-xs text-[#7ec8e3] font-semibold mb-1">{n.date}</div>
@@ -906,7 +923,7 @@ export default function App() {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
-              {mediaData.items.map((m, i) => (
+              {mediaItems.map((m, i) => (
                 <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="bg-[#181a22] border border-[#2d324b] rounded-lg p-5 hover:border-[#7ec8e3] transition-colors flex flex-col">
                   <div className="text-xs text-[#7ec8e3] mb-2">{m.outlet} &middot; {m.date}</div>
                   <div className="font-semibold text-sm mb-3 flex-1">{m.title}</div>

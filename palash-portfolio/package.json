@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build --outDir dist",
+    "build": "node scripts/fetch-metrics.mjs && tsc -b && vite build --outDir dist && node scripts/prerender.mjs",
     "lint": "bunx biome lint --write && bunx tsc --noEmit",
     "format": "bunx biome format --write",
     "preview": "vite preview"
@@ -55,8 +55,8 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.18.0",
     "@biomejs/biome": "1.9.4",
+    "@eslint/js": "^9.18.0",
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -78,6 +78,7 @@
     "postcss": "^8.5.1",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.10",
+    "puppeteer": "^23.11.1",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
