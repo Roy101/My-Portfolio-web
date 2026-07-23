@@ -104,6 +104,10 @@ ErrorDocument 404 /index.html
 
 # SPA routing - Support for React Router
 RewriteBase /
+# Never rewrite the PHP backend — let the API + admin run directly
+RewriteRule ^api/ - [L]
+RewriteRule ^admin/ - [L]
+RewriteRule ^create-admin\.php$ - [L]
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
