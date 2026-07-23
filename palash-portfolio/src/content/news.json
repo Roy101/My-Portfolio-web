@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2026",
+    "icon": "🏆",
+    "title": "Won the ACM SIGSOFT Distinguished Paper Award at FSE 2026",
+    "description": "\"Carbon-Taxed Transformers\" was recognized as a Distinguished Paper, one of the highest honors at a flagship software engineering conference."
+  },
+  {
+    "date": "2026",
+    "icon": "📄",
+    "title": "Published at FSE 2026 (paper and poster)",
+    "description": "Carbon-Taxed Transformers appeared as a full research paper and a poster at the ACM International Conference on the Foundations of Software Engineering."
+  },
+  {
+    "date": "2025-2026",
+    "icon": "🎓",
+    "title": "Serving as President of the USask Graduate Students' Association",
+    "description": "Elected to represent more than 4,500 graduate students, and appointed to the University Senate and Provost Search Committee."
+  },
+  {
+    "date": "2025",
+    "icon": "🏅",
+    "title": "Received the GSA Research Excellence Award (STEM)",
+    "description": "Recognized for outstanding research contributions in science, technology, engineering, and math at the University of Saskatchewan."
+  },
+  {
+    "date": "2025",
+    "icon": "🎓",
+    "title": "Awarded Best Thesis (MSc) in Computer Science",
+    "description": "Honored for exceptional research during Master's studies at the University of Saskatchewan."
+  },
+  {
+    "date": "2023",
+    "icon": "🥇",
+    "title": "Won the People's Choice Best Paper Award at IWSC 2023",
+    "description": "Paper on large language models and code clones voted best by attendees at the International Workshop on Software Clones in Bogota, Colombia."
+  }
+]

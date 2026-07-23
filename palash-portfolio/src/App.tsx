@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 
-// Add console log to debug rendering
-console.log("App component is being rendered");
+// Single-source content (editable via the /admin CMS)
+import newsData from "./content/news.json";
+import mediaData from "./content/media.json";
+import metricsData from "./content/metrics.json";
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -9,6 +11,7 @@ const navLinks = [
   // Education and Experience removed since they're integrated in the Biography section
   { label: "Skills", href: "#skills" },
   { label: "Awards", href: "#highlights" },
+  { label: "News", href: "#news" },
   { label: "Publications", href: "#portfolio" },
   { label: "Leadership", href: "#leadership" },
   { label: "Service", href: "#service" },
@@ -1252,6 +1255,53 @@ export default function App() {
             />
           </section>
 
+          {/* News & Milestones timeline - content from src/content/news.json */}
+          <section id="news" className="pt-2 pb-12">
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
+                News &amp; Milestones
+              </div>
+              <h2 className="text-4xl font-bold mb-4">What's Happening</h2>
+              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
+                Recent milestones, awards, and research highlights.
+              </p>
+            </div>
+            <div className="max-w-3xl mx-auto">
+              <ol className="relative border-l border-[#2d324b] ml-3">
+                {newsData.map((n, i) => (
+                  <li key={i} className="mb-8 ml-6">
+                    <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-[#181a22] border border-[#2d324b] rounded-full text-sm">{n.icon}</span>
+                    <div className="text-xs text-[#7ec8e3] font-semibold mb-1">{n.date}</div>
+                    <h3 className="font-bold">{n.title}</h3>
+                    <p className="text-[#a9c0d4] text-sm mt-1">{n.description}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+
+          {/* In the News / media coverage - content from src/content/media.json */}
+          <section id="media" className="pt-2 pb-12">
+            <div className="text-center mb-8">
+              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
+                In the News
+              </div>
+              <h2 className="text-4xl font-bold mb-4">Featured Coverage</h2>
+              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
+                Selected media coverage and university announcements.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+              {mediaData.map((m, i) => (
+                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="bg-[#181a22] border border-[#2d324b] rounded-lg p-5 hover:border-[#7ec8e3] transition-colors flex flex-col">
+                  <div className="text-xs text-[#7ec8e3] mb-2">{m.outlet} &middot; {m.date}</div>
+                  <div className="font-semibold text-sm mb-3 flex-1">{m.title}</div>
+                  <span className="text-[#7ec8e3] text-xs">Read article &rarr;</span>
+                </a>
+              ))}
+            </div>
+          </section>
+
           {/* Publications Section with Carousel and centered content */}
           <section id="portfolio" className="pt-2 pb-12">
             <div className="text-center mb-8">
@@ -1260,8 +1310,26 @@ export default function App() {
               </div>
               <h2 className="text-4xl font-bold mb-4">My Latest Publications</h2>
               <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                See my <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Google Scholar</a> for actual details on the following projects. This is also most likely not up to date.
+                See my <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Google Scholar</a> for the latest details on the following work.
               </p>
+              {/* Live research-impact metrics (refreshed from OpenAlex at build time) */}
+              <div className="flex flex-wrap justify-center gap-8 mt-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#7ec8e3]">{metricsData.citations}+</div>
+                  <div className="text-xs uppercase tracking-wider">Citations</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#7ec8e3]">{metricsData.hIndex}</div>
+                  <div className="text-xs uppercase tracking-wider">h-index</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-[#7ec8e3]">{metricsData.works}</div>
+                  <div className="text-xs uppercase tracking-wider">Indexed Works</div>
+                </div>
+              </div>
+              <div className="text-xs text-[#a2a5b9] mt-2">
+                Live via <a href={metricsData.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">{metricsData.source}</a> &middot; updated {metricsData.updated}
+              </div>
             </div>
             <Carousel
               items={publicationsData}
