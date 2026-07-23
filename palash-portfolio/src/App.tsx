@@ -349,8 +349,8 @@ function PublicationCard({ item }: { item: Publication }) {
               🏆 {item.award}
             </div>
           )}
-          <div className="font-bold mb-1 pr-7">{item.title}</div>
-          <div className="text-[#7ec8e3] text-sm mb-1">{item.authors}</div>
+          <div className="font-bold mb-1 pr-7 line-clamp-3" title={item.title}>{item.title}</div>
+          <div className="text-[#7ec8e3] text-sm mb-1 line-clamp-2">{item.authors}</div>
           <div className="text-[#a2a5b9] text-xs italic">{item.venue}{item.year ? `, ${item.year}` : ""}{item.pages ? `, ${item.pages}` : ""}</div>
           <div className="flex flex-wrap gap-2 mt-auto pt-3">
             {item.doi && (
