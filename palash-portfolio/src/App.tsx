@@ -517,58 +517,32 @@ export default function App() {
                   ))}
                 </div>
                 
-                {/* Education Section integrated within the Biography section */}
+                {/* Education (editable in admin) */}
                 <div className="mt-10">
                   <h3 className="text-xl font-semibold mb-4 text-[#7ec8e3]">Education</h3>
                   <div className="space-y-6">
-                    <div>
-                      <h4 className="font-bold">Ph.D. in Computer Science</h4>
-                      <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | 2024 - Present</div>
-                      <p className="text-[#d0cccc] text-sm mt-1 italic">In Progress</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-bold">M.Sc. in Computer Science</h4>
-                      <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | 2022 - 2024</div>
-                      <p className="text-[#d0cccc] text-sm mt-1 italic">Completed</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-bold">B.Sc. in Computer Science</h4>
-                      <div className="text-[#a2a5b9] text-sm">BRAC University | 2018 - 2021</div>
-                      <p className="text-[#d0cccc] text-sm mt-1 italic">Completed</p>
-                    </div>
+                    {((about as any).education || []).map((e: any, i: number) => (
+                      <div key={i}>
+                        <h4 className="font-bold">{e.degree}</h4>
+                        <div className="text-[#a2a5b9] text-sm">{e.place}</div>
+                        {e.note && <p className="text-[#d0cccc] text-sm mt-1 italic">{e.note}</p>}
+                      </div>
+                    ))}
                   </div>
                 </div>
-                
-                {/* Experience Section integrated within the Biography section */}
+
+                {/* Experience (editable in admin) */}
                 <div className="mt-10">
                   <h3 className="text-xl font-semibold mb-4 text-[#7ec8e3]">Experience</h3>
-                  <p className="text-[#a2a5b9] text-xs italic mb-4">Currently serving concurrently as Graduate Teaching Assistant, Research Technician, and Graduate Peer Mentor at the University of Saskatchewan.</p>
+                  {(about as any).expNote && <p className="text-[#a2a5b9] text-xs italic mb-4">{(about as any).expNote}</p>}
                   <div className="space-y-6">
-                    <div>
-                      <h4 className="font-bold">Graduate Teaching Assistant</h4>
-                      <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | 2022 - Present</div>
-                      <p className="text-[#d0cccc] text-sm mt-1">Instructed undergraduate students in data structures, programming, and practical computing labs.</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold">Research Technician</h4>
-                      <div className="text-[#a2a5b9] text-sm">iSE & SR Lab, University of Saskatchewan | 2022 - Present</div>
-                      <p className="text-[#d0cccc] text-sm mt-1">Supporting web-based systems, maintaining CFI equipment, and supporting the SOAR CREATE Program.</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold">Graduate Peer Mentor</h4>
-                      <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | 2026 - Present</div>
-                      <p className="text-[#d0cccc] text-sm mt-1">Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program. Sharing my own grad school experience, delivering small-group workshops, and meeting students one-to-one to support their academic skills and transition into graduate studies.</p>
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold">Visiting Research Student</h4>
-                      <div className="text-[#a2a5b9] text-sm">University of Saskatchewan | May 2022 - Aug 2022</div>
-                      <p className="text-[#d0cccc] text-sm mt-1">Developed multiple software engineering tools and published research in code clones and large language models.</p>
-                    </div>
+                    {((about as any).experience || []).map((x: any, i: number) => (
+                      <div key={i}>
+                        <h4 className="font-bold">{x.role}</h4>
+                        <div className="text-[#a2a5b9] text-sm">{x.place}</div>
+                        {x.description && <p className="text-[#d0cccc] text-sm mt-1">{x.description}</p>}
+                      </div>
+                    ))}
                   </div>
                 </div>
                 
@@ -1042,7 +1016,7 @@ export default function App() {
             {/* Status badge highlighting research identity */}
             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#12131c] border border-[#2d324b] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse"></span>
-              <span className="font-semibold text-white">Code Clone Researcher</span>
+              <span className="font-semibold text-white">{(hero as any).badge || "Software Engineering Researcher"}</span>
             </div>
           </div>
         </div>

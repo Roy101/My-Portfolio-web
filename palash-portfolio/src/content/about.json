@@ -6,12 +6,24 @@
     "Originally from Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to Canada for his graduate studies."
   ],
   "glance": [
-    { "icon": "🔬", "text": "Code clone researcher at SRLab and ISELab" },
+    { "icon": "🔬", "text": "Software Engineering researcher at SRLab and ISELab" },
     { "icon": "🎓", "text": "PhD Researcher in Computer Science, University of Saskatchewan" },
-    { "icon": "🤖", "text": "Works on clone detection, refactoring, and large language models" },
+    { "icon": "🤖", "text": "Works on code clones, clone detection, refactoring, and large language models" },
     { "icon": "📄", "text": "Newest paper \"Carbon-Taxed Transformers\" (FSE 2026)" },
     { "icon": "🏛️", "text": "President, Graduate Students' Association (2025-26)" },
     { "icon": "🏅", "text": "USask Senator and Provost Search Committee member" },
     { "icon": "📍", "text": "Saskatoon, Canada. Originally from Bangladesh 🇧🇩" }
+  ],
+  "education": [
+    { "degree": "Ph.D. in Computer Science", "place": "University of Saskatchewan | 2024 - Present", "note": "In Progress" },
+    { "degree": "M.Sc. in Computer Science", "place": "University of Saskatchewan | 2022 - 2024", "note": "Completed" },
+    { "degree": "B.Sc. in Computer Science", "place": "BRAC University | 2018 - 2021", "note": "Completed" }
+  ],
+  "expNote": "Currently serving concurrently as Graduate Teaching Assistant, Research Technician, and Graduate Peer Mentor at the University of Saskatchewan.",
+  "experience": [
+    { "role": "Graduate Teaching Assistant", "place": "University of Saskatchewan | 2022 - Present", "description": "Instructed undergraduate students in data structures, programming, and practical computing labs." },
+    { "role": "Research Technician", "place": "iSE & SR Lab, University of Saskatchewan | 2022 - Present", "description": "Supporting web-based systems, maintaining CFI equipment, and supporting the SOAR CREATE Program." },
+    { "role": "Graduate Peer Mentor", "place": "University of Saskatchewan | 2026 - Present", "description": "Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program. Sharing my own grad school experience, delivering small-group workshops, and meeting students one-to-one to support their academic skills and transition into graduate studies." },
+    { "role": "Visiting Research Student", "place": "University of Saskatchewan | May 2022 - Aug 2022", "description": "Developed multiple software engineering tools and published research in code clones and large language models." }
   ]
 }

@@ -316,8 +316,36 @@ function v(id){ return document.getElementById(id).value.trim(); }
 async function postSection(section,data,label){
   try{ const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}); const j=await r.json(); toast(j.ok?(label+' saved ✓'):('Error: '+(j.error||'failed'))); }catch(e){ toast('Network error'); }
 }
-const DEFAULT_HERO = {greeting:"👋 Hello, I'm",name:"Palash Roy,",line2:"Computer Science",line3:"PhD Researcher",pills:["🔬 Code Clone Researcher","🤖 LLMs for Software Engineering","🏛️ GSA President"],awardText:"ACM SIGSOFT Distinguished Paper Award",awardMeta:"FSE 2026",description:"I am a code clone researcher at the Software Research Lab (SRLab) and ISELab, working on clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",stats:[{value:"8+",label:"Publications"},{value:"31+",label:"Citations"},{value:"4.5K+",label:"Students Led"}]};
-const DEFAULT_ABOUT = {paragraphs:["Palash Ranjan Roy (also published as Palash Roy) is a PhD researcher in Computer Science at the University of Saskatchewan, Canada."],glance:[{icon:"🔬",text:"Code clone researcher at SRLab and ISELab"}]};
+const DEFAULT_HERO = {greeting:"👋 Hello, I'm",name:"Palash Roy,",line2:"Computer Science",line3:"PhD Researcher",pills:["🔬 Software Engineering Researcher","🤖 LLMs for Software Engineering","🏛️ GSA President"],badge:"Software Engineering Researcher",awardText:"ACM SIGSOFT Distinguished Paper Award",awardMeta:"FSE 2026",description:"I am a Software Engineering researcher at the Software Research Lab (SRLab) and ISELab, working on code clones, clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",stats:[{value:"8+",label:"Publications"},{value:"31+",label:"Citations"},{value:"4.5K+",label:"Students Led"}]};
+const DEFAULT_ABOUT = {
+  paragraphs:[
+    "Palash Ranjan Roy (also published as Palash Roy) is a PhD researcher in Computer Science at the University of Saskatchewan, Canada. He is a Software Engineering researcher whose work spans code clones, clone detection, refactoring, and the application of large language models to software engineering. He conducts his research in the Software Research Lab (SRLab) and the Interactive Software Engineering Lab (ISELab) under the supervision of Dr. Kevin Schneider.",
+    "His research has been published in flagship software engineering conferences such as ASE, FSE, ICSME, and ESEM. His most recent paper, Carbon-Taxed Transformers, appeared at FSE 2026. He has received several honors for his work, including a Research Excellence Award and a Best Thesis Award.",
+    "Beyond his research, Palash served as President of the University of Saskatchewan Graduate Students' Association (2025-26), where he represented more than 4,500 graduate students. He has contributed extensively to university governance as a member of the University Senate, the Provost Search Committee, and several College of Graduate and Postdoctoral Studies and award committees.",
+    "Originally from Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to Canada for his graduate studies."
+  ],
+  glance:[
+    {icon:"🔬",text:"Software Engineering researcher at SRLab and ISELab"},
+    {icon:"🎓",text:"PhD Researcher in Computer Science, University of Saskatchewan"},
+    {icon:"🤖",text:"Works on code clones, clone detection, refactoring, and large language models"},
+    {icon:"📄",text:"Newest paper \"Carbon-Taxed Transformers\" (FSE 2026)"},
+    {icon:"🏛️",text:"President, Graduate Students' Association (2025-26)"},
+    {icon:"🏅",text:"USask Senator and Provost Search Committee member"},
+    {icon:"📍",text:"Saskatoon, Canada. Originally from Bangladesh 🇧🇩"}
+  ],
+  education:[
+    {degree:"Ph.D. in Computer Science",place:"University of Saskatchewan | 2024 - Present",note:"In Progress"},
+    {degree:"M.Sc. in Computer Science",place:"University of Saskatchewan | 2022 - 2024",note:"Completed"},
+    {degree:"B.Sc. in Computer Science",place:"BRAC University | 2018 - 2021",note:"Completed"}
+  ],
+  expNote:"Currently serving concurrently as Graduate Teaching Assistant, Research Technician, and Graduate Peer Mentor at the University of Saskatchewan.",
+  experience:[
+    {role:"Graduate Teaching Assistant",place:"University of Saskatchewan | 2022 - Present",description:"Instructed undergraduate students in data structures, programming, and practical computing labs."},
+    {role:"Research Technician",place:"iSE & SR Lab, University of Saskatchewan | 2022 - Present",description:"Supporting web-based systems, maintaining CFI equipment, and supporting the SOAR CREATE Program."},
+    {role:"Graduate Peer Mentor",place:"University of Saskatchewan | 2026 - Present",description:"Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program."},
+    {role:"Visiting Research Student",place:"University of Saskatchewan | May 2022 - Aug 2022",description:"Developed multiple software engineering tools and published research in code clones and large language models."}
+  ]
+};
 
 function renderHero(){
   const h = DATA.hero || DEFAULT_HERO;
@@ -327,6 +355,7 @@ function renderHero(){
     `<label>Name (line 1)</label><input id="h_name" value="${escA(h.name)}">`+
     `<label>Title line 2</label><input id="h_line2" value="${escA(h.line2)}">`+
     `<label>Title line 3</label><input id="h_line3" value="${escA(h.line3)}">`+
+    `<label>Photo badge (the small tag on your photo)</label><input id="h_badge" value="${escA(h.badge)}">`+
     `<label>Short description</label><textarea id="h_desc">${escA(h.description)}</textarea>`+
     `<label>Award badge text (leave empty to hide the badge)</label><input id="h_award" value="${escA(h.awardText)}">`+
     `<label>Award detail (e.g. FSE 2026)</label><input id="h_awardmeta" value="${escA(h.awardMeta)}">`+
@@ -339,7 +368,7 @@ window.addRow=(id,cols)=>{const d=document.getElementById(id);const el=document.
 window.saveHero=async()=>{
   const pills=[...document.querySelectorAll('#h_pills [data-r]')].map(r=>r.querySelector('input').value.trim()).filter(Boolean);
   const stats=[...document.querySelectorAll('#h_stats [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {value:ins[0].value.trim(),label:ins[1].value.trim()};}).filter(s=>s.value||s.label);
-  const data={greeting:v('h_greeting'),name:v('h_name'),line2:v('h_line2'),line3:v('h_line3'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),pills,stats};
+  const data={greeting:v('h_greeting'),name:v('h_name'),line2:v('h_line2'),line3:v('h_line3'),badge:v('h_badge'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),pills,stats};
   DATA.hero=data; postSection('hero',data,'Home');
 };
 
@@ -348,14 +377,22 @@ function renderAbout(){
   document.getElementById('app').innerHTML = `<h2>Biography</h2>`+
     `<h3 style="margin:8px 0 6px;color:#7ec8e3">Paragraphs</h3><div id="a_paras">`+(a.paragraphs||[]).map(p=>`<div class="row" data-r style="align-items:flex-start"><textarea style="flex:1">${escA(p)}</textarea><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addPara()">+ Add paragraph</button>`+
     `<h3 style="margin:16px 0 6px;color:#7ec8e3">At a Glance</h3><div id="a_glance">`+(a.glance||[]).map(g=>`<div class="row" data-r><input placeholder="Icon" value="${escA(g.icon)}" style="width:60px"><input placeholder="Text" value="${escA(g.text)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addGlance()">+ Add item</button>`+
+    `<h3 style="margin:16px 0 6px;color:#7ec8e3">Education</h3><div id="a_edu">`+(a.education||[]).map(e=>`<div class="item" data-r><input placeholder="Degree" value="${escA(e.degree)}"><input placeholder="Place | Years" value="${escA(e.place)}"><input placeholder="Note (optional)" value="${escA(e.note)}"><button class="del" onclick="this.parentNode.remove()">Remove</button></div>`).join('')+`</div><button onclick="addEdu()">+ Add education</button>`+
+    `<h3 style="margin:16px 0 6px;color:#7ec8e3">Experience</h3>`+
+    `<label style="color:#a2a5b9;font-size:12px">Intro note</label><textarea id="a_expnote">${escA(a.expNote)}</textarea>`+
+    `<div id="a_exp" style="margin-top:8px">`+(a.experience||[]).map(x=>`<div class="item" data-r><input placeholder="Role" value="${escA(x.role)}"><input placeholder="Place | Years" value="${escA(x.place)}"><textarea placeholder="Description">${escA(x.description)}</textarea><button class="del" onclick="this.parentNode.remove()">Remove</button></div>`).join('')+`</div><button onclick="addExp()">+ Add experience</button>`+
     `<div class="bar"><button class="primary" onclick="saveAbout()">Save Biography</button></div>`;
 }
+window.addEdu=()=>{const d=document.getElementById('a_edu');const el=document.createElement('div');el.className='item';el.setAttribute('data-r','');el.innerHTML='<input placeholder="Degree"><input placeholder="Place | Years"><input placeholder="Note (optional)"><button class="del" onclick="this.parentNode.remove()">Remove</button>';d.appendChild(el);};
+window.addExp=()=>{const d=document.getElementById('a_exp');const el=document.createElement('div');el.className='item';el.setAttribute('data-r','');el.innerHTML='<input placeholder="Role"><input placeholder="Place | Years"><textarea placeholder="Description"></textarea><button class="del" onclick="this.parentNode.remove()">Remove</button>';d.appendChild(el);};
 window.addPara=()=>{const d=document.getElementById('a_paras');const el=document.createElement('div');el.className='row';el.setAttribute('data-r','');el.style.alignItems='flex-start';el.innerHTML='<textarea style="flex:1"></textarea><button class="del" onclick="this.parentNode.remove()">✕</button>';d.appendChild(el);};
 window.addGlance=()=>{const d=document.getElementById('a_glance');const el=document.createElement('div');el.className='row';el.setAttribute('data-r','');el.innerHTML='<input placeholder="Icon" style="width:60px"><input placeholder="Text" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button>';d.appendChild(el);};
 window.saveAbout=async()=>{
   const paragraphs=[...document.querySelectorAll('#a_paras [data-r]')].map(r=>r.querySelector('textarea').value.trim()).filter(Boolean);
   const glance=[...document.querySelectorAll('#a_glance [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {icon:ins[0].value.trim(),text:ins[1].value.trim()};}).filter(g=>g.text);
-  const data={paragraphs,glance};
+  const education=[...document.querySelectorAll('#a_edu [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {degree:ins[0].value.trim(),place:ins[1].value.trim(),note:ins[2].value.trim()};}).filter(e=>e.degree);
+  const experience=[...document.querySelectorAll('#a_exp [data-r]')].map(r=>{const ins=r.querySelectorAll('input');const ta=r.querySelector('textarea');return {role:ins[0].value.trim(),place:ins[1].value.trim(),description:ta?ta.value.trim():''};}).filter(x=>x.role);
+  const data={paragraphs,glance,education,expNote:v('a_expnote'),experience};
   DATA.about=data; postSection('about',data,'Biography');
 };
 

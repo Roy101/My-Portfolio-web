@@ -18,16 +18,6 @@
       "description": "A poster summarizing Carbon-Taxed Transformers (CTT), a pipeline for efficient, accurate, and sustainable large language models applied to software engineering tasks."
     },
     {
-      "title": "Are Classical Clone Detectors Good Enough For the AI Era?",
-      "authors": "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
-      "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
-      "year": "2025",
-      "pages": "pp. 295-307",
-      "doi": "10.1109/ICSME64153.2025.00035",
-      "description": "Evaluates the effectiveness of classical clone detection tools in the modern AI era, analyzing their performance against AI-generated code and proposing improvements for contemporary software development.",
-      "preprint": "https://arxiv.org/pdf/2509.25754"
-    },
-    {
       "title": "Towards Just-In-Time, Inclusive Clone Refactoring",
       "authors": "P. Roy",
       "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
@@ -36,6 +26,16 @@
       "doi": "10.1109/ICSME64153.2025.00099",
       "description": "Proposes a just-in-time approach to clone refactoring that is inclusive and automated, leveraging large language models and RAG techniques for trustworthy code maintenance.",
       "preprint": "/papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring.pdf"
+    },
+    {
+      "title": "Are Classical Clone Detectors Good Enough For the AI Era?",
+      "authors": "A. I. Alam, P. R. Roy, F. Al-omari, C. K. Roy, B. Roy and K. A. Schneider",
+      "venue": "2025 IEEE International Conference on Software Maintenance and Evolution (ICSME)",
+      "year": "2025",
+      "pages": "pp. 295-307",
+      "doi": "10.1109/ICSME64153.2025.00035",
+      "description": "Evaluates the effectiveness of classical clone detection tools in the modern AI era, analyzing their performance against AI-generated code and proposing improvements for contemporary software development.",
+      "preprint": "https://arxiv.org/pdf/2509.25754"
     },
     {
       "title": "Gptclonebench: A comprehensive benchmark of semantic clones and cross-language clones using gpt-3 model and semanticclonebench",
