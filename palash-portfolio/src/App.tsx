@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import newsData from "./content/news.json";
 import mediaData from "./content/media.json";
 import metricsData from "./content/metrics.json";
+import heroData from "./content/hero.json";
+import aboutData from "./content/about.json";
 import publicationsDataRaw from "./content/publications.json";
 import leadershipDataRaw from "./content/leadership.json";
 import serviceDataRaw from "./content/service.json";
@@ -404,6 +406,8 @@ export default function App() {
   const newsItems = (remote.news ?? newsData.items) as typeof newsData.items;
   const mediaItems = (remote.media ?? mediaData.items) as typeof mediaData.items;
   const metrics = ((remote.metrics && typeof remote.metrics === "object") ? remote.metrics : metricsData) as typeof metricsData;
+  const hero = ((remote.hero && typeof remote.hero === "object") ? { ...heroData, ...remote.hero } : heroData) as typeof heroData;
+  const about = ((remote.about && typeof remote.about === "object") ? { ...aboutData, ...remote.about } : aboutData) as typeof aboutData;
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -490,13 +494,9 @@ export default function App() {
                 <div className="mt-8 w-full bg-[#181a22] border border-[#2d324b] rounded-xl p-5 text-sm">
                   <h3 className="text-[#7ec8e3] font-semibold mb-3 uppercase tracking-wider text-xs">At a Glance</h3>
                   <ul className="space-y-2.5 text-[#d0cccc]">
-                    <li className="flex gap-2"><span>🔬</span><span>Code clone researcher at SRLab and ISELab</span></li>
-                    <li className="flex gap-2"><span>🎓</span><span>PhD Researcher in Computer Science, University of Saskatchewan</span></li>
-                    <li className="flex gap-2"><span>🤖</span><span>Works on clone detection, refactoring, and large language models</span></li>
-                    <li className="flex gap-2"><span>📄</span><span>Newest paper "Carbon-Taxed Transformers" (FSE 2026)</span></li>
-                    <li className="flex gap-2"><span>🏛️</span><span>President, Graduate Students' Association (2025-26)</span></li>
-                    <li className="flex gap-2"><span>🏅</span><span>USask Senator and Provost Search Committee member</span></li>
-                    <li className="flex gap-2"><span>📍</span><span>Saskatoon, Canada. Originally from Bangladesh 🇧🇩</span></li>
+                    {about.glance.map((g, i) => (
+                      <li key={i} className="flex gap-2"><span>{g.icon}</span><span>{g.text}</span></li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -512,21 +512,9 @@ export default function App() {
                 </div>
                 
                 <div className="text-[#d0cccc] space-y-4 leading-relaxed">
-                  <p>
-                    <strong>Palash Ranjan Roy</strong> (also published as <strong>Palash Roy</strong>) is a PhD researcher in Computer Science at the University of Saskatchewan, Canada. He is a <strong>code clone researcher</strong> whose work spans clone detection, refactoring, and the application of <strong>large language models</strong> to software engineering. He conducts his research in the <a href="https://srlab.usask.ca/members/" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and the <a href="https://ise.usask.ca/team/" className="text-[#7ec8e3] hover:underline">Interactive Software Engineering Lab (ISELab)</a> under the supervision of Dr. Kevin Schneider.
-                  </p>
-
-                  <p>
-                    His research has been published in flagship software engineering conferences such as ASE, FSE, ICSME, and ESEM. His most recent paper, <em>Carbon-Taxed Transformers</em>, appeared at FSE 2026. He has received several honors for his work, including a Research Excellence Award and a Best Thesis Award.
-                  </p>
-
-                  <p>
-                    Beyond his research, Palash served as President of the University of Saskatchewan Graduate Students' Association (2025-26), where he represented more than 4,500 graduate students. He has contributed extensively to university governance as a member of the University Senate, the Provost Search Committee, and several College of Graduate and Postdoctoral Studies and award committees.
-                  </p>
-
-                  <p>
-                    Originally from Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to Canada for his graduate studies.
-                  </p>
+                  {about.paragraphs.map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
                 </div>
                 
                 {/* Education Section integrated within the Biography section */}
@@ -994,43 +982,37 @@ export default function App() {
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col md:flex-row justify-between items-center relative z-1">
           <div className="flex-1 max-w-2xl">
-            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">👋 Hello, I'm</h2>
+            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">{hero.greeting}</h2>
             <h1 className="text-6xl md:text-7xl font-bold mb-5">
-              Palash Roy,<br />
-              <span className="bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">Computer Science</span><br />
-              <span className="text-[#ff4081]">PhD Researcher</span>
+              {hero.name}<br />
+              <span className="bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">{hero.line2}</span><br />
+              <span className="text-[#ff4081]">{hero.line3}</span>
             </h1>
 
-            {/* Role pills - lead with research identity, then leadership and personality */}
+            {/* Role pills (editable in admin) */}
             <div className="flex flex-wrap gap-2 mb-6">
-              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🔬 Code Clone Researcher</span>
-              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🤖 LLMs for Software Engineering</span>
-              <span className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">🏛️ GSA President</span>
+              {hero.pills.map((p, i) => (
+                <span key={i} className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">{p}</span>
+              ))}
             </div>
 
-            <a href="#portfolio" className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-gradient-to-r from-[#3a2c05] to-[#5c4708] border border-[#ffd700]/40 text-sm hover:border-[#ffd700] transition-colors">
-              <span>🏆</span>
-              <span className="text-[#ffd700] font-semibold">ACM SIGSOFT Distinguished Paper Award</span>
-              <span className="text-[#d0cccc]">&middot; FSE 2026</span>
-            </a>
+            {hero.awardText && (
+              <a href="#portfolio" className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-gradient-to-r from-[#3a2c05] to-[#5c4708] border border-[#ffd700]/40 text-sm hover:border-[#ffd700] transition-colors">
+                <span>🏆</span>
+                <span className="text-[#ffd700] font-semibold">{hero.awardText}</span>
+                {hero.awardMeta && <span className="text-[#d0cccc]">&middot; {hero.awardMeta}</span>}
+              </a>
+            )}
 
-            <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">
-              I am a <strong>code clone researcher</strong> at the <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Software Research Lab (SRLab)</a> and <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">ISELab</a>, working on <strong>clone detection</strong>, <strong>refactoring</strong>, and <strong>large language models</strong> under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.
-            </p>
+            <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">{hero.description}</p>
 
             <div className="grid grid-cols-3 gap-3 mb-8 max-w-md">
-              <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
-                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">8+</div>
-                <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Publications</div>
-              </div>
-              <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
-                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">{metrics.citations}+</div>
-                <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Citations</div>
-              </div>
-              <div className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
-                <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">4.5K+</div>
-                <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">Students Led</div>
-              </div>
+              {hero.stats.map((s, i) => (
+                <div key={i} className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
+                  <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">{s.value}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">{s.label}</div>
+                </div>
+              ))}
             </div>
 
             <div className="flex flex-wrap gap-4">

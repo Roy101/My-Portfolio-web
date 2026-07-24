@@ -169,7 +169,13 @@ header{position:sticky;top:0;background:#12131c;border-bottom:1px solid #2d324b;
 header h1{font-size:16px;margin:0;flex:1}
 nav a{color:#a2a5b9;margin-right:12px;text-decoration:none;font-size:14px;cursor:pointer}
 nav a.active{color:#7ec8e3;font-weight:600}
-a.logout{color:#ff6b6b;text-decoration:none;font-size:14px}
+.account{position:relative}
+.account-btn{background:#181a22;border:1px solid #2d324b;color:#e8e8ef;padding:7px 12px;border-radius:8px;cursor:pointer;font-size:14px}
+.account-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#181a22;border:1px solid #2d324b;border-radius:10px;min-width:170px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:20}
+.account-menu.open{display:block}
+.account-menu a{display:block;padding:11px 16px;color:#e8e8ef;text-decoration:none;font-size:14px;cursor:pointer}
+.account-menu a:hover{background:#2d324b}
+.row{display:flex;gap:6px;margin-bottom:8px}
 main{max-width:820px;margin:20px auto;padding:0 16px}
 .section{display:none}.section.active{display:block}
 .item{background:#181a22;border:1px solid #2d324b;border-radius:10px;padding:16px;margin-bottom:14px}
@@ -192,7 +198,13 @@ small{color:#6b6f85}
 <header>
   <h1>Content Admin</h1>
   <nav id="tabs"></nav>
-  <a class="logout" href="index.php?action=logout">Log out</a>
+  <div class="account">
+    <button class="account-btn" onclick="toggleAccount(event)">👤 Account ▾</button>
+    <div class="account-menu" id="accountMenu">
+      <a onclick="switchTo('password');closeAccount()">Change password</a>
+      <a href="index.php?action=logout">Log out</a>
+    </div>
+  </div>
 </header>
 <main id="app"></main>
 <div class="toast" id="toast"></div>
@@ -210,12 +222,16 @@ let layoutOrder = (Array.isArray(DATA.sectionOrder) ? DATA.sectionOrder.filter(i
 DEFAULT_ORDER.forEach(id=>{ if(!layoutOrder.includes(id)) layoutOrder.push(id); });
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+window.toggleAccount=(e)=>{e.stopPropagation();document.getElementById('accountMenu').classList.toggle('open');};
+window.closeAccount=()=>{const m=document.getElementById('accountMenu');if(m)m.classList.remove('open');};
+document.addEventListener('click',closeAccount);
 
 function renderTabs(){
+  const homeTab = `<a class="${current==='hero'?'active':''}" onclick="switchTo('hero')">🏠 Home</a>`;
+  const bioTab = `<a class="${current==='about'?'active':''}" onclick="switchTo('about')">📝 Biography</a>`;
   const layoutTab = `<a class="${current==='layout'?'active':''}" onclick="switchTo('layout')">⚙ Layout</a>`;
   const metricsTab = `<a class="${current==='metrics'?'active':''}" onclick="switchTo('metrics')">📊 Metrics</a>`;
-  const pwTab = `<a class="${current==='password'?'active':''}" onclick="switchTo('password')">🔑 Password</a>`;
-  document.getElementById('tabs').innerHTML = layoutTab + metricsTab + pwTab + sections.map(s =>
+  document.getElementById('tabs').innerHTML = homeTab + bioTab + layoutTab + metricsTab + sections.map(s =>
     `<a class="${s===current?'active':''}" onclick="switchTo('${s}')">${LABELS[s]}</a>`).join('');
 }
 window.switchTo = s => { current = s; renderTabs(); renderSection(); };
@@ -295,7 +311,57 @@ window.savePassword=async()=>{
   }catch(e){toast('Network error');}
 };
 
+const escA = v => (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function v(id){ return document.getElementById(id).value.trim(); }
+async function postSection(section,data,label){
+  try{ const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}); const j=await r.json(); toast(j.ok?(label+' saved ✓'):('Error: '+(j.error||'failed'))); }catch(e){ toast('Network error'); }
+}
+const DEFAULT_HERO = {greeting:"👋 Hello, I'm",name:"Palash Roy,",line2:"Computer Science",line3:"PhD Researcher",pills:["🔬 Code Clone Researcher","🤖 LLMs for Software Engineering","🏛️ GSA President"],awardText:"ACM SIGSOFT Distinguished Paper Award",awardMeta:"FSE 2026",description:"I am a code clone researcher at the Software Research Lab (SRLab) and ISELab, working on clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",stats:[{value:"8+",label:"Publications"},{value:"31+",label:"Citations"},{value:"4.5K+",label:"Students Led"}]};
+const DEFAULT_ABOUT = {paragraphs:["Palash Ranjan Roy (also published as Palash Roy) is a PhD researcher in Computer Science at the University of Saskatchewan, Canada."],glance:[{icon:"🔬",text:"Code clone researcher at SRLab and ISELab"}]};
+
+function renderHero(){
+  const h = DATA.hero || DEFAULT_HERO;
+  document.getElementById('app').innerHTML = `<h2>Home / Hero</h2>`+
+    `<div class="item">`+
+    `<label>Greeting</label><input id="h_greeting" value="${escA(h.greeting)}">`+
+    `<label>Name (line 1)</label><input id="h_name" value="${escA(h.name)}">`+
+    `<label>Title line 2</label><input id="h_line2" value="${escA(h.line2)}">`+
+    `<label>Title line 3</label><input id="h_line3" value="${escA(h.line3)}">`+
+    `<label>Short description</label><textarea id="h_desc">${escA(h.description)}</textarea>`+
+    `<label>Award badge text (leave empty to hide the badge)</label><input id="h_award" value="${escA(h.awardText)}">`+
+    `<label>Award detail (e.g. FSE 2026)</label><input id="h_awardmeta" value="${escA(h.awardMeta)}">`+
+    `</div>`+
+    `<h3 style="margin:16px 0 6px;color:#7ec8e3">Role pills</h3><div id="h_pills">`+(h.pills||[]).map(p=>`<div class="row" data-r><input value="${escA(p)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addRow('h_pills',1)">+ Add pill</button>`+
+    `<h3 style="margin:16px 0 6px;color:#7ec8e3">Stats</h3><div id="h_stats">`+(h.stats||[]).map(s=>`<div class="row" data-r><input placeholder="Value" value="${escA(s.value)}" style="width:90px"><input placeholder="Label" value="${escA(s.label)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addRow('h_stats',2)">+ Add stat</button>`+
+    `<div class="bar"><button class="primary" onclick="saveHero()">Save Home</button></div>`;
+}
+window.addRow=(id,cols)=>{const d=document.getElementById(id);const el=document.createElement('div');el.className='row';el.setAttribute('data-r','');el.innerHTML=(cols===2?'<input placeholder="Value" style="width:90px"><input placeholder="Label" style="flex:1">':'<input style="flex:1">')+'<button class="del" onclick="this.parentNode.remove()">✕</button>';d.appendChild(el);};
+window.saveHero=async()=>{
+  const pills=[...document.querySelectorAll('#h_pills [data-r]')].map(r=>r.querySelector('input').value.trim()).filter(Boolean);
+  const stats=[...document.querySelectorAll('#h_stats [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {value:ins[0].value.trim(),label:ins[1].value.trim()};}).filter(s=>s.value||s.label);
+  const data={greeting:v('h_greeting'),name:v('h_name'),line2:v('h_line2'),line3:v('h_line3'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),pills,stats};
+  DATA.hero=data; postSection('hero',data,'Home');
+};
+
+function renderAbout(){
+  const a = DATA.about || DEFAULT_ABOUT;
+  document.getElementById('app').innerHTML = `<h2>Biography</h2>`+
+    `<h3 style="margin:8px 0 6px;color:#7ec8e3">Paragraphs</h3><div id="a_paras">`+(a.paragraphs||[]).map(p=>`<div class="row" data-r style="align-items:flex-start"><textarea style="flex:1">${escA(p)}</textarea><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addPara()">+ Add paragraph</button>`+
+    `<h3 style="margin:16px 0 6px;color:#7ec8e3">At a Glance</h3><div id="a_glance">`+(a.glance||[]).map(g=>`<div class="row" data-r><input placeholder="Icon" value="${escA(g.icon)}" style="width:60px"><input placeholder="Text" value="${escA(g.text)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addGlance()">+ Add item</button>`+
+    `<div class="bar"><button class="primary" onclick="saveAbout()">Save Biography</button></div>`;
+}
+window.addPara=()=>{const d=document.getElementById('a_paras');const el=document.createElement('div');el.className='row';el.setAttribute('data-r','');el.style.alignItems='flex-start';el.innerHTML='<textarea style="flex:1"></textarea><button class="del" onclick="this.parentNode.remove()">✕</button>';d.appendChild(el);};
+window.addGlance=()=>{const d=document.getElementById('a_glance');const el=document.createElement('div');el.className='row';el.setAttribute('data-r','');el.innerHTML='<input placeholder="Icon" style="width:60px"><input placeholder="Text" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button>';d.appendChild(el);};
+window.saveAbout=async()=>{
+  const paragraphs=[...document.querySelectorAll('#a_paras [data-r]')].map(r=>r.querySelector('textarea').value.trim()).filter(Boolean);
+  const glance=[...document.querySelectorAll('#a_glance [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {icon:ins[0].value.trim(),text:ins[1].value.trim()};}).filter(g=>g.text);
+  const data={paragraphs,glance};
+  DATA.about=data; postSection('about',data,'Biography');
+};
+
 function renderSection(){
+  if(current==='hero'){ renderHero(); return; }
+  if(current==='about'){ renderAbout(); return; }
   if(current==='layout'){ renderLayout(); return; }
   if(current==='metrics'){ renderMetrics(); return; }
   if(current==='password'){ renderPassword(); return; }

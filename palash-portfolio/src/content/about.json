@@ -1,0 +1,17 @@
+{
+  "paragraphs": [
+    "Palash Ranjan Roy (also published as Palash Roy) is a PhD researcher in Computer Science at the University of Saskatchewan, Canada. He is a code clone researcher whose work spans clone detection, refactoring, and the application of large language models to software engineering. He conducts his research in the Software Research Lab (SRLab) and the Interactive Software Engineering Lab (ISELab) under the supervision of Dr. Kevin Schneider.",
+    "His research has been published in flagship software engineering conferences such as ASE, FSE, ICSME, and ESEM. His most recent paper, Carbon-Taxed Transformers, appeared at FSE 2026. He has received several honors for his work, including a Research Excellence Award and a Best Thesis Award.",
+    "Beyond his research, Palash served as President of the University of Saskatchewan Graduate Students' Association (2025-26), where he represented more than 4,500 graduate students. He has contributed extensively to university governance as a member of the University Senate, the Provost Search Committee, and several College of Graduate and Postdoctoral Studies and award committees.",
+    "Originally from Bangladesh, Palash completed his undergraduate studies at BRAC University before moving to Canada for his graduate studies."
+  ],
+  "glance": [
+    { "icon": "🔬", "text": "Code clone researcher at SRLab and ISELab" },
+    { "icon": "🎓", "text": "PhD Researcher in Computer Science, University of Saskatchewan" },
+    { "icon": "🤖", "text": "Works on clone detection, refactoring, and large language models" },
+    { "icon": "📄", "text": "Newest paper \"Carbon-Taxed Transformers\" (FSE 2026)" },
+    { "icon": "🏛️", "text": "President, Graduate Students' Association (2025-26)" },
+    { "icon": "🏅", "text": "USask Senator and Provost Search Committee member" },
+    { "icon": "📍", "text": "Saskatoon, Canada. Originally from Bangladesh 🇧🇩" }
+  ]
+}

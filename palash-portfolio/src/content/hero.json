@@ -1,0 +1,19 @@
+{
+  "greeting": "👋 Hello, I'm",
+  "name": "Palash Roy,",
+  "line2": "Computer Science",
+  "line3": "PhD Researcher",
+  "pills": [
+    "🔬 Code Clone Researcher",
+    "🤖 LLMs for Software Engineering",
+    "🏛️ GSA President"
+  ],
+  "awardText": "ACM SIGSOFT Distinguished Paper Award",
+  "awardMeta": "FSE 2026",
+  "description": "I am a code clone researcher at the Software Research Lab (SRLab) and ISELab, working on clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",
+  "stats": [
+    { "value": "8+", "label": "Publications" },
+    { "value": "31+", "label": "Citations" },
+    { "value": "4.5K+", "label": "Students Led" }
+  ]
+}
