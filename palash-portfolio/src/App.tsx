@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 // Single-source content (editable via the /admin CMS)
 import newsData from "./content/news.json";
@@ -6,6 +7,9 @@ import mediaData from "./content/media.json";
 import metricsData from "./content/metrics.json";
 import heroData from "./content/hero.json";
 import aboutData from "./content/about.json";
+import settingsData from "./content/settings.json";
+import headingsData from "./content/headings.json";
+import researchData from "./content/research.json";
 import publicationsDataRaw from "./content/publications.json";
 import leadershipDataRaw from "./content/leadership.json";
 import serviceDataRaw from "./content/service.json";
@@ -23,6 +27,7 @@ type Publication = {
   award?: string;
   doi?: string;
   preprint?: string;
+  bibtex?: string;
 };
 const defaultPublications: Publication[] = publicationsDataRaw.items as Publication[];
 
@@ -38,17 +43,6 @@ const defaultGallery: GalleryItem[] = galleryDataRaw.items as GalleryItem[];
 type ReferenceItem = { name: string; title: string; image: string; text: string };
 const defaultReferences: ReferenceItem[] = referencesDataRaw.items as ReferenceItem[];
 
-const navLinks = [
-  { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
-  { label: "Publications", href: "#portfolio" },
-  { label: "News", href: "#news" },
-  { label: "Leadership", href: "#leadership" },
-  { label: "Service", href: "#service" },
-  { label: "Awards", href: "#highlights" },
-  { label: "Gallery", href: "#pictures" },
-  { label: "References", href: "#references" }
-];
 
 // Define interface for highlight items to include optional image property
 interface HighlightItem {
@@ -231,7 +225,7 @@ const Carousel = <T extends unknown>({
     <div className="relative w-full">
       <div className="overflow-hidden">
         <div
-          className="flex transition-transform duration-500 ease-in-out"
+          className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
           {slides.map((slide, slideIndex) => (
@@ -261,7 +255,7 @@ const Carousel = <T extends unknown>({
       {needsNavigation && (
         <>
           <button
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#181a22] p-2 rounded-full z-10 text-[#7ec8e3] hover:bg-[#232333] transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 bg-[var(--c-surface)] p-2 rounded-full z-10 text-[var(--c-accent)] hover:bg-[var(--c-surface2)] transition-colors"
             onClick={prevSlide}
             aria-label="Previous slide"
           >
@@ -270,7 +264,7 @@ const Carousel = <T extends unknown>({
             </svg>
           </button>
           <button
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#181a22] p-2 rounded-full z-10 text-[#7ec8e3] hover:bg-[#232333] transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 bg-[var(--c-surface)] p-2 rounded-full z-10 text-[var(--c-accent)] hover:bg-[var(--c-surface2)] transition-colors"
             onClick={nextSlide}
             aria-label="Next slide"
           >
@@ -283,16 +277,16 @@ const Carousel = <T extends unknown>({
 
       {/* Dots navigation - only show if needed */}
       {needsNavigation && totalSlides > 1 && (
-        <div className="flex justify-center gap-3 mt-4">
+        <div className="flex justify-center gap-1 mt-4">
           {Array.from({ length: totalSlides }).map((_, index) => (
             <button
               key={index}
-              className={`w-3 h-3 rounded-full ${
-                index === currentIndex ? "bg-[#7ec8e3]" : "bg-[#2d324b]"
-              } transition-colors`}
+              className="w-6 h-6 flex items-center justify-center rounded-full"
               onClick={() => goToSlide(index)}
               aria-label={`Go to slide ${index + 1}`}
-            />
+            >
+              <span className={`block w-3 h-3 rounded-full ${index === currentIndex ? "bg-[var(--c-accent)]" : "bg-[var(--c-surface2)]"} transition-colors`} />
+            </button>
           ))}
         </div>
       )}
@@ -311,10 +305,10 @@ const MobileMenu = ({ links, isOpen, setIsOpen }: MobileMenuProps) => {
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] bg-opacity-95 backdrop-blur-sm z-50 flex flex-col justify-center items-center animate-fadeIn">
-      <button 
+    <div className="fixed inset-0 app-page-bg backdrop-blur-sm z-50 flex flex-col justify-center items-center animate-fadeIn">
+      <button
         onClick={() => setIsOpen(false)}
-        className="absolute top-5 right-5 text-white p-2"
+        className="absolute top-5 right-5 text-[var(--c-text)] p-2"
         aria-label="Close menu"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
@@ -326,7 +320,7 @@ const MobileMenu = ({ links, isOpen, setIsOpen }: MobileMenuProps) => {
           <li key={link.href}>
             <a
               href={link.href}
-              className="text-white hover:text-[#7ec8e3] text-xl font-semibold transition-colors duration-150"
+              className="text-[var(--c-text)] hover:text-[var(--c-accent)] text-xl font-semibold transition-colors duration-150"
               onClick={() => setIsOpen(false)}
             >
               {link.label}
@@ -338,31 +332,390 @@ const MobileMenu = ({ links, isOpen, setIsOpen }: MobileMenuProps) => {
   );
 };
 
+const floatBtn = "w-11 h-11 rounded-full bg-[var(--c-surface)] border border-[var(--c-border)] text-[var(--c-accent)] backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-[var(--c-accent)] hover:text-black transition-colors";
+
+// Sun/moon theme toggle used in the floating control cluster.
+function ThemeToggle({ theme, setTheme }: { theme: "dark" | "light"; setTheme: (t: "dark" | "light") => void }) {
+  return (
+    <button
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      title={theme === "dark" ? "Light mode" : "Dark mode"}
+      className={floatBtn}
+    >
+      {theme === "dark" ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.708-.708l1.415-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.9.707a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.708l1.415 1.415a.5.5 0 0 1 0 .707zM4.464 4.464a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707z"/></svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/></svg>
+      )}
+    </button>
+  );
+}
+
+// Floating cluster on the right: theme toggle above, scroll-to-top/bottom below.
+function FloatingControls({ theme, setTheme }: { theme: "dark" | "light"; setTheme: (t: "dark" | "light") => void }) {
+  const [atTop, setAtTop] = useState(true);
+  useEffect(() => {
+    const onScroll = () => setAtTop(window.scrollY < 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const go = () =>
+    window.scrollTo({ top: atTop ? document.body.scrollHeight : 0, behavior: "smooth" });
+  return (
+    <div className="fixed right-4 bottom-6 z-50 flex flex-col items-center gap-3">
+      <ThemeToggle theme={theme} setTheme={setTheme} />
+      <button
+        onClick={go}
+        aria-label={atTop ? "Scroll to bottom" : "Scroll to top"}
+        title={atTop ? "Scroll to bottom" : "Scroll to top"}
+        className={floatBtn}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" className={atTop ? "" : "rotate-180"}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// Turn an editable URL into a safe href: allow http(s)/mailto/tel/relative/anchor
+// as-is, auto-prepend https:// to a bare domain (e.g. srlab.usask.ca), else reject.
+function normUrl(u: string): string | null {
+  const t = u.trim();
+  if (/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(t)) return t;
+  if (/^[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(t)) return "https://" + t;
+  return null;
+}
+
+// Lightweight inline formatting for editable text. Links accept both
+// [label](url) and [label][url]; plus **bold** and *italic*.
+// Builds React nodes (never raw HTML) so it stays safe from injection.
+function renderRich(text: any): React.ReactNode {
+  const s = text == null ? "" : String(text);
+  if (!s) return s;
+  const RE = /\[([^\]]+)\]\(([^)\s]+)\)|\[([^\]]+)\]\[([^\]\s]+)\]|\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+  const out: React.ReactNode[] = [];
+  let last = 0, m: RegExpExecArray | null, k = 0;
+  while ((m = RE.exec(s)) !== null) {
+    if (m.index > last) out.push(s.slice(last, m.index));
+    const label = m[1] !== undefined ? m[1] : m[3];
+    const rawUrl = m[1] !== undefined ? m[2] : (m[3] !== undefined ? m[4] : undefined);
+    if (label !== undefined && rawUrl !== undefined) {
+      const url = normUrl(rawUrl);
+      if (url) {
+        const ext = /^https?:\/\//i.test(url);
+        out.push(
+          <a key={k++} href={url} target={ext ? "_blank" : undefined} rel="noopener noreferrer" className="text-[var(--c-accent)] hover:underline">{label}</a>
+        );
+      } else {
+        out.push(label);
+      }
+    } else if (m[5] !== undefined) {
+      out.push(<strong key={k++}>{m[5]}</strong>);
+    } else if (m[6] !== undefined) {
+      out.push(<em key={k++}>{m[6]}</em>);
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) out.push(s.slice(last));
+  return out;
+}
+
+// Live network of research topics: two hubs + related nodes that gently drift,
+// with the connecting edges following them. Motion pauses off-screen and honours
+// prefers-reduced-motion.
+function ResearchGraph({ data }: { data: any }) {
+  const hubs: string[] = Array.isArray(data?.hubs) ? data.hubs : [];
+  const leaves: string[] = Array.isArray(data?.leaves) ? data.leaves : [];
+  // base layout + per-node drift (amplitude px, phase)
+  const BASE: Record<string, { x: number; y: number; ax: number; ay: number; ph: number }> = {
+    H0: { x: 225, y: 205, ax: 5, ay: 6, ph: 0.0 },
+    H1: { x: 370, y: 415, ax: 6, ay: 5, ph: 1.7 },
+    L0: { x: 75, y: 150, ax: 7, ay: 8, ph: 0.9 },
+    L1: { x: 430, y: 120, ax: 8, ay: 7, ph: 2.3 },
+    L2: { x: 525, y: 280, ax: 7, ay: 9, ph: 3.5 },
+    L3: { x: 150, y: 385, ax: 8, ay: 6, ph: 4.6 },
+  };
+  const HL = [{ dx: 0, dy: -42 }, { dx: 0, dy: 56 }];
+  const LL = [{ dx: 0, dy: 26 }, { dx: 0, dy: -16 }, { dx: 0, dy: 26 }, { dx: 0, dy: 26 }];
+  const edges: [string, string][] = [["L0", "H0"], ["L0", "L3"], ["H0", "L1"], ["H0", "H1"], ["L1", "H1"], ["L1", "L2"], ["L2", "H1"], ["L3", "H1"]];
+  const has: Record<string, boolean> = { H0: !!hubs[0], H1: !!hubs[1], L0: !!leaves[0], L1: !!leaves[1], L2: !!leaves[2], L3: !!leaves[3] };
+
+  const [mounted, setMounted] = useState(false);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => { const id = setTimeout(() => setMounted(true), 80); return () => clearTimeout(id); }, []);
+  // Animate by mutating SVG attributes directly in the rAF loop — no React re-renders,
+  // so this stays off the main-thread budget Lighthouse measures. Pauses off-screen
+  // and honours prefers-reduced-motion.
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const svg = wrap?.querySelector("svg");
+    if (!wrap || !svg) return;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    const movers = Array.from(svg.querySelectorAll("[data-k]")) as unknown as SVGElement[];
+    const lines = Array.from(svg.querySelectorAll("line[data-a]")) as unknown as SVGLineElement[];
+    const P: Record<string, { x: number; y: number }> = {};
+    const compute = (t: number) => { for (const k in BASE) { const b = BASE[k]; P[k] = { x: b.x + b.ax * Math.sin(t * 0.6 + b.ph), y: b.y + b.ay * Math.cos(t * 0.5 + b.ph) }; } };
+    let raf = 0; let running = true;
+    const loop = (ts: number) => {
+      if (!running) return;
+      compute(ts / 1000);
+      for (const el of movers) {
+        const p = P[el.dataset.k as string]; if (!p) continue;
+        if (el.tagName === "text") { el.setAttribute("x", String(p.x + Number(el.dataset.ox || 0))); el.setAttribute("y", String(p.y + Number(el.dataset.oy || 0))); }
+        else { el.setAttribute("cx", String(p.x)); el.setAttribute("cy", String(p.y)); }
+      }
+      for (const l of lines) {
+        const a = P[l.dataset.a as string]; const b = P[l.dataset.b as string];
+        if (a) { l.setAttribute("x1", String(a.x)); l.setAttribute("y1", String(a.y)); }
+        if (b) { l.setAttribute("x2", String(b.x)); l.setAttribute("y2", String(b.y)); }
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    let io: IntersectionObserver | undefined;
+    if ("IntersectionObserver" in window) {
+      io = new IntersectionObserver(([e]) => {
+        if (e.isIntersecting && !running) { running = true; raf = requestAnimationFrame(loop); }
+        else if (!e.isIntersecting && running) { running = false; cancelAnimationFrame(raf); }
+      }, { threshold: 0 });
+      io.observe(wrap);
+    }
+    return () => { running = false; cancelAnimationFrame(raf); io && io.disconnect(); };
+  }, [hubs.join("|"), leaves.join("|")]);
+
+  if (!hubs.length && !leaves.length) return null;
+  return (
+    <div ref={wrapRef} className="max-w-2xl mx-auto" style={{ opacity: mounted ? 1 : 0, transition: "opacity .7s ease" }}>
+      <svg viewBox="0 0 600 500" className="w-full h-auto" role="img" aria-label="Network of research topics">
+        {edges.filter(([a, b]) => has[a] && has[b]).map(([a, b], i) => (
+          <line key={i} data-a={a} data-b={b} x1={BASE[a].x} y1={BASE[a].y} x2={BASE[b].x} y2={BASE[b].y} className="stroke-[var(--c-border)]" strokeWidth={2} />
+        ))}
+        {leaves.map((lbl, i) => { const key = "L" + i; if (!has[key] || !lbl) return null; const b = BASE[key]; const o = LL[i];
+          return (
+            <g key={key}>
+              <circle data-k={key} cx={b.x} cy={b.y} r={9} className="fill-[var(--c-text)]" />
+              <text data-k={key} data-ox={o.dx} data-oy={o.dy} x={b.x + o.dx} y={b.y + o.dy} textAnchor="middle" className="fill-[var(--c-muted)]" fontSize={13}>{lbl}</text>
+            </g>
+          );
+        })}
+        {hubs.map((lbl, i) => { const key = "H" + i; if (!has[key] || !lbl) return null; const b = BASE[key]; const o = HL[i];
+          return (
+            <g key={key}>
+              <circle data-k={key} cx={b.x} cy={b.y} r={30} fill="none" className="stroke-[var(--c-accent)]" strokeWidth={2} opacity={0.45} />
+              <circle data-k={key} cx={b.x} cy={b.y} r={20} className="fill-[var(--c-accent)]" />
+              <text data-k={key} data-ox={o.dx} data-oy={o.dy} x={b.x + o.dx} y={b.y + o.dy} textAnchor="middle" className="fill-[var(--c-accent)] font-bold" fontSize={16}>{lbl}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// Contact form — posts to the PHP mailer (api/contact.php). Includes a honeypot.
+function ContactForm() {
+  const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [err, setErr] = useState("");
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = e.currentTarget;
+    const val = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | HTMLTextAreaElement)?.value ?? "";
+    const data = { name: val("name"), email: val("email"), subject: val("subject"), message: val("message"), website: val("website") };
+    setStatus("sending"); setErr("");
+    try {
+      const r = await fetch("/api/contact.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      const j = await r.json();
+      if (j.ok) { setStatus("ok"); f.reset(); }
+      else { setStatus("error"); setErr(j.error || "Something went wrong. Please try again."); }
+    } catch { setStatus("error"); setErr("Network error. Please try again, or email contact@palashroy.me."); }
+  };
+  const field = "w-full px-3 py-2 rounded-lg bg-[var(--c-bg)] border border-[var(--c-border)] text-[var(--c-text)] focus:border-[var(--c-accent)] outline-none transition-colors";
+  return (
+    <form onSubmit={submit} className="max-w-xl mx-auto bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl p-6 sm:p-8">
+      {/* honeypot — hidden from humans, tempting to bots */}
+      <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-[var(--c-muted)] mb-1">Name</label>
+          <input name="name" required maxLength={120} className={field} placeholder="Your name" />
+        </div>
+        <div>
+          <label className="block text-xs text-[var(--c-muted)] mb-1">Email</label>
+          <input name="email" type="email" required maxLength={160} className={field} placeholder="you@example.com" />
+        </div>
+      </div>
+      <div className="mt-4">
+        <label className="block text-xs text-[var(--c-muted)] mb-1">Subject <span className="opacity-60">(optional)</span></label>
+        <input name="subject" maxLength={160} className={field} placeholder="What's this about?" />
+      </div>
+      <div className="mt-4">
+        <label className="block text-xs text-[var(--c-muted)] mb-1">Message</label>
+        <textarea name="message" required maxLength={5000} rows={5} className={`${field} resize-y`} placeholder="Write your message…" />
+      </div>
+      <div className="mt-5 flex items-center gap-4">
+        <button type="submit" disabled={status === "sending"}
+          className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60">
+          {status === "sending" ? "Sending…" : "Send message"}
+        </button>
+        {status === "ok" && <span className="text-sm text-[#3ddc84]">Thanks! Your message has been sent. ✓</span>}
+        {status === "error" && <span className="text-sm text-[#ff6b6b]">{err}</span>}
+      </div>
+    </form>
+  );
+}
+
+// Editable section heading (badge + title + subtitle), driven by content/headings.json
+function SectionHead({ h }: { h: any }) {
+  if (!h) return null;
+  return (
+    <>
+      {h.badge && <div className="inline-block px-3 py-1 bg-[var(--c-surface)] text-[var(--c-accent)] text-sm font-medium mb-2 rounded">{h.badge}</div>}
+      {h.title && <h2 className="text-4xl font-bold mb-4">{h.title}</h2>}
+      {h.subtitle && <p className="text-[var(--c-muted)] text-lg max-w-3xl mx-auto">{renderRich(h.subtitle)}</p>}
+    </>
+  );
+}
+
+// Build BibTeX / APA / IEEE citation strings from a publication's fields.
+function buildCitations(item: Publication) {
+  const authorsList = item.authors.split(/\s*,\s*|\s+and\s+/).map((a) => a.trim()).filter(Boolean);
+  const bibAuthors = authorsList.join(" and ");
+  const surname = ((authorsList[0] || "").split(/\s+/).pop() || "ref").replace(/[^A-Za-z]/g, "").toLowerCase() || "ref";
+  const firstWord = ((item.title.match(/[A-Za-z]+/) || ["ref"])[0]).toLowerCase();
+  const key = `${surname}${item.year || ""}${firstWord}`;
+  const pageStr = item.pages ? item.pages.replace(/^\s*pp\.\s*/i, "") : "";
+  const doiUrl = item.doi ? `https://doi.org/${item.doi}` : "";
+  // Use the official publisher BibTeX when provided; otherwise build one from the fields.
+  const bibtex = (item.bibtex && item.bibtex.trim())
+    ? item.bibtex.trim()
+    : [
+      `@inproceedings{${key},`,
+      `  author    = {${bibAuthors}},`,
+      `  title     = {${item.title}},`,
+      `  booktitle = {${item.venue}},`,
+      item.year ? `  year      = {${item.year}},` : null,
+      pageStr ? `  pages     = {${pageStr}},` : null,
+      item.doi ? `  doi       = {${item.doi}},` : null,
+      `}`,
+    ].filter(Boolean).join("\n");
+  const apa = `${item.authors} (${item.year}). ${item.title}. ${item.venue}${pageStr ? `, ${pageStr}` : ""}.${doiUrl ? ` ${doiUrl}` : ""}`;
+  const ieee = `${item.authors}, "${item.title}," ${item.venue}, ${item.year}${pageStr ? `, pp. ${pageStr}` : ""}.${item.doi ? ` doi: ${item.doi}.` : ""}`;
+  return { bibtex, apa, ieee };
+}
+
+// Modal that shows copyable citations. Rendered through a portal so it escapes
+// the carousel's overflow + transform (fixed-position would otherwise be clipped).
+function CiteModal({ item, onClose }: { item: Publication; onClose: () => void }) {
+  const [fmt, setFmt] = useState<"bibtex" | "apa" | "ieee">("bibtex");
+  const [copied, setCopied] = useState(false);
+  const cites = buildCitations(item);
+  const text = cites[fmt];
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl max-w-2xl w-full p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="text-sm font-semibold text-[var(--c-text)] line-clamp-2">{item.title}</div>
+          <button onClick={onClose} aria-label="Close" className="text-[var(--c-muted)] hover:text-[var(--c-text)] shrink-0 text-lg leading-none">✕</button>
+        </div>
+        <div className="flex gap-2 mb-3">
+          {(["bibtex", "apa", "ieee"] as const).map((f) => (
+            <button key={f} onClick={() => setFmt(f)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${fmt === f ? "bg-[var(--c-accent)] text-black" : "bg-[var(--c-surface2)] text-[var(--c-muted)] hover:text-[var(--c-text)]"}`}>
+              {f === "bibtex" ? "BibTeX" : f.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <pre className="bg-[var(--c-bg)] border border-[var(--c-border)] rounded-lg p-3 text-xs text-[var(--c-muted)] overflow-x-auto whitespace-pre-wrap break-words max-h-64">{text}</pre>
+        <div className="flex justify-end mt-3">
+          <button onClick={copy} className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+            {copied ? "Copied ✓" : "Copy to clipboard"}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// "Publications per year" bar chart, derived live from the publication list.
+// Bars rise one-by-one (staggered) the first time the chart scrolls into view.
+function PubYearChart({ items }: { items: Publication[] }) {
+  const counts: Record<string, number> = {};
+  items.forEach((p) => { const y = (p.year || "").trim(); if (/^\d{4}$/.test(y)) counts[y] = (counts[y] || 0) + 1; });
+  const years = Object.keys(counts).sort();
+  const max = Math.max(1, ...Object.values(counts));
+  const [grown, setGrown] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !("IntersectionObserver" in window)) { setGrown(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) { setGrown(true); io.disconnect(); }
+    }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  if (years.length < 2) return null;
+  return (
+    <div ref={ref} className="max-w-md mx-auto">
+      <div className="flex items-end justify-center gap-3 sm:gap-5 h-36 px-2">
+        {years.map((y, i) => (
+          <div key={y} className="flex flex-col items-center justify-end gap-1 flex-1 max-w-[52px] h-full">
+            <div className="text-sm font-bold text-[var(--c-accent)] transition-all duration-500"
+              style={{ opacity: grown ? 1 : 0, transform: grown ? "translateY(0)" : "translateY(6px)", transitionDelay: `${300 + i * 140}ms` }}>{counts[y]}</div>
+            <div className="w-7 sm:w-9 rounded-t bg-gradient-to-t from-[#35c7ff] to-[#ff4081] transition-[height] duration-700 ease-out"
+              style={{ height: grown ? `${Math.max(8, (counts[y] / max) * 100)}%` : "0%", transitionDelay: `${i * 140}ms` }} />
+            <div className="text-[11px] text-[var(--c-muted)] mt-1">{y}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Publication card that flips to reveal the summary when the "i" button is clicked.
 function PublicationCard({ item }: { item: Publication }) {
   const [flipped, setFlipped] = useState(false);
+  const [citeOpen, setCiteOpen] = useState(false);
   return (
     <div className={`flip ${flipped ? "flipped" : ""}`}>
       <div className="flip-inner">
         {/* Front */}
-        <div className="flip-face bg-[#181a22] p-6 rounded-lg border border-[#2d324b]">
+        <div className="flip-face bg-[var(--c-surface)] p-6 rounded-lg border border-[var(--c-border)]">
           {item.award && (
             <div className="inline-flex items-center gap-1 mb-2 px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#b8860b] to-[#ffd700] text-black self-start">
               🏆 {item.award}
             </div>
           )}
           <div className="font-bold mb-1 pr-7 line-clamp-3" title={item.title}>{item.title}</div>
-          <div className="text-[#7ec8e3] text-sm mb-1 line-clamp-2">{item.authors}</div>
-          <div className="text-[#a2a5b9] text-xs italic">{item.venue}{item.year ? `, ${item.year}` : ""}{item.pages ? `, ${item.pages}` : ""}</div>
+          <div className="text-[var(--c-accent)] text-sm mb-1 line-clamp-2">{item.authors}</div>
+          <div className="text-[var(--c-muted)] text-xs italic">{item.venue}{item.year ? `, ${item.year}` : ""}{item.pages ? `, ${item.pages}` : ""}</div>
           <div className="flex flex-wrap gap-2 mt-auto pt-3">
+            <button onClick={() => setCiteOpen(true)} className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] text-[var(--c-accent)] hover:bg-[var(--c-chip)] transition-colors" title="Copy citation">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M12 12a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1h-1.388q0-.527.062-1.054.093-.558.31-.992.217-.434.559-.683.34-.279.868-.279V3q-.868 0-1.52.372a3.3 3.3 0 0 0-1.085.992 4.9 4.9 0 0 0-.62 1.458A7.7 7.7 0 0 0 8.5 7.558V11a1 1 0 0 0 1 1zm-6 0a1 1 0 0 0 1-1V8.558a1 1 0 0 0-1-1H4.612q0-.527.062-1.054.094-.558.31-.992.217-.434.559-.683.34-.279.868-.279V3q-.868 0-1.52.372a3.3 3.3 0 0 0-1.085.992 4.9 4.9 0 0 0-.62 1.458A7.7 7.7 0 0 0 2.5 7.558V11a1 1 0 0 0 1 1z"/></svg>
+              Cite
+            </button>
             {item.doi && (
-              <a href={`https://doi.org/${item.doi}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+              <a href={`https://doi.org/${item.doi}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] hover:bg-[var(--c-surface2)] transition-colors">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path><path d="M5 5a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-3.5l-1.5-1.5h-5L4 4zm7 5a1 1 0 100-2H9v2h2zm3 0a1 1 0 100-2h-2v2h2zm-9 3a1 1 0 100-2H5v2h2zm3 0a1 1 0 100-2H8v2h2zm3 0a1 1 0 100-2h-2v2h2zm3 0a1 1 0 100-2h-2v2h2z"></path></svg>
                 DOI
               </a>
             )}
             {item.preprint && (
-              <a href={item.preprint} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2a3b4d] hover:bg-[#344a61] text-[#7ec8e3] transition-colors">
+              <a href={item.preprint} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-chip)] hover:bg-[var(--c-surface2)] text-[var(--c-accent)] transition-colors">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v16a1 1 0 01-1.581.814l-4.419-3.346-4.419 3.346A1 1 0 014 16V4zm5 0a1 1 0 00-1 1v6.5a.5.5 0 001 0V5a1 1 0 00-1-1z"></path></svg>
                 Download PDF
               </a>
@@ -370,31 +723,52 @@ function PublicationCard({ item }: { item: Publication }) {
           </div>
           {item.description && (
             <button onClick={() => setFlipped(true)} title="More details" aria-label="Show summary"
-              className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#2d324b] text-[#7ec8e3] text-sm font-bold italic flex items-center justify-center hover:bg-[#7ec8e3] hover:text-black transition-colors">
+              className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[var(--c-surface2)] text-[var(--c-accent)] text-sm font-bold italic flex items-center justify-center hover:bg-[var(--c-accent)] hover:text-black transition-colors">
               i
             </button>
           )}
         </div>
         {/* Back */}
-        <div className="flip-face flip-back bg-[#181a22] p-6 rounded-lg border border-[#7ec8e3]/40">
-          <div className="text-[#7ec8e3] text-xs font-semibold uppercase tracking-wider mb-2">Summary</div>
-          <div className="text-[#a9c0d4] text-sm flex-1">{item.description}</div>
-          <button onClick={() => setFlipped(false)} className="mt-3 self-start text-[#7ec8e3] text-xs font-medium hover:underline">&larr; Back</button>
+        <div className="flip-face flip-back bg-[var(--c-surface)] p-6 rounded-lg border border-[var(--c-accent)]/40">
+          <div className="text-[var(--c-accent)] text-xs font-semibold uppercase tracking-wider mb-2">Summary</div>
+          <div className="text-[var(--c-muted)] text-sm flex-1">{item.description}</div>
+          <button onClick={() => setFlipped(false)} className="mt-3 self-start text-[var(--c-accent)] text-xs font-medium hover:underline">&larr; Back</button>
         </div>
       </div>
+      {citeOpen && <CiteModal item={item} onClose={() => setCiteOpen(false)} />}
     </div>
   );
 }
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Light / dark theme — defaults to dark, remembers the visitor's choice.
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      const saved = window.localStorage.getItem("theme");
+      if (saved === "light" || saved === "dark") return saved;
+    }
+    return "dark";
+  });
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { window.localStorage.setItem("theme", theme); } catch { /* ignore */ }
+  }, [theme]);
 
   // Live content from the cPanel API (falls back to the prerendered/baked content).
   const [remote, setRemote] = useState<Record<string, any>>({});
   useEffect(() => {
+    // The page is already correct from the prerendered/baked content, so apply the
+    // live update during idle time — keeps the big re-render out of the interactivity
+    // (TBT) window.
+    const apply = (d: Record<string, any>) => {
+      const run = () => setRemote(d);
+      if ("requestIdleCallback" in window) (window as any).requestIdleCallback(run, { timeout: 2500 });
+      else setTimeout(run, 200);
+    };
     fetch("/api/content.php")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d && typeof d === "object") setRemote(d); })
+      .then((d) => { if (d && typeof d === "object") apply(d); })
       .catch(() => {});
   }, []);
   const publicationsData = (remote.publications ?? defaultPublications) as Publication[];
@@ -408,6 +782,10 @@ export default function App() {
   const metrics = ((remote.metrics && typeof remote.metrics === "object") ? remote.metrics : metricsData) as typeof metricsData;
   const hero = ((remote.hero && typeof remote.hero === "object") ? { ...heroData, ...remote.hero } : heroData) as typeof heroData;
   const about = ((remote.about && typeof remote.about === "object") ? { ...aboutData, ...remote.about } : aboutData) as typeof aboutData;
+  const settings = ((remote.settings && typeof remote.settings === "object") ? { ...settingsData, ...remote.settings } : settingsData) as any;
+  const headings = ((remote.headings && typeof remote.headings === "object") ? { ...headingsData, ...remote.headings } : headingsData) as any;
+  const research = ((remote.research && typeof remote.research === "object") ? { ...researchData, ...remote.research } : researchData) as any;
+  const sliderMs = (Number(settings.sliderSeconds) || 11) * 1000;
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -439,15 +817,17 @@ export default function App() {
   const sectionMap: Record<string, React.ReactNode> = {
     about: (<>
           <section id="about" className="pt-16 pb-16">
-            <h2 className="text-3xl font-bold mb-8 border-b border-[#2d324b] pb-3">Biography</h2>
+            <h2 className="text-3xl font-bold mb-8 border-b border-[var(--c-border)] pb-3">{headings.about?.title || "Biography"}</h2>
             
             <div className="flex flex-col md:flex-row gap-10">
               {/* Left column with profile image and social links */}
               <div className="md:w-1/3 flex flex-col items-center">
-                <div className="rounded-full overflow-hidden border-4 border-[#2d324b] bg-[#233343] w-64 h-64">
+                <div className="rounded-full overflow-hidden border-4 border-[var(--c-border)] bg-[var(--c-surface2)] w-64 h-64">
                   <img
                     src="/images/palash_roy.jpg"
                     alt="Palash Roy - AI Researcher and Computer Science PhD Student at University of Saskatchewan"
+                    width={512}
+                    height={448}
                     className="w-full h-full object-cover"
                     loading="lazy"
                     decoding="async"
@@ -491,11 +871,11 @@ export default function App() {
                 </div>
 
                 {/* At-a-glance highlights card - surfaces the most important facts */}
-                <div className="mt-8 w-full bg-[#181a22] border border-[#2d324b] rounded-xl p-5 text-sm">
-                  <h3 className="text-[#7ec8e3] font-semibold mb-3 uppercase tracking-wider text-xs">At a Glance</h3>
-                  <ul className="space-y-2.5 text-[#d0cccc]">
+                <div className="mt-8 w-full bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl p-5 text-sm">
+                  <h3 className="text-[var(--c-accent)] font-semibold mb-3 uppercase tracking-wider text-xs">At a Glance</h3>
+                  <ul className="space-y-2.5 text-[var(--c-muted)]">
                     {about.glance.map((g, i) => (
-                      <li key={i} className="flex gap-2"><span>{g.icon}</span><span>{g.text}</span></li>
+                      <li key={i} className="flex gap-2"><span>{g.icon}</span><span>{renderRich(g.text)}</span></li>
                     ))}
                   </ul>
                 </div>
@@ -505,27 +885,27 @@ export default function App() {
               <div className="md:w-2/3">
                 {/* Name Variants Badge Component - Added for SEO */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="bg-[#2a3b4d] text-[#7ec8e3] px-3 py-1 rounded-full text-sm">Palash Ranjan Roy</span>
-                  <span className="bg-[#2a3b4d] text-[#7ec8e3] px-3 py-1 rounded-full text-sm">Palash Roy</span>
-                  <span className="bg-[#2a3b4d] text-[#7ec8e3] px-3 py-1 rounded-full text-sm">P. R. Roy</span>
-                  <span className="bg-[#2a3b4d] text-[#7ec8e3] px-3 py-1 rounded-full text-sm">Palash R. Roy</span>
+                  <span className="bg-[var(--c-chip)] text-[var(--c-accent)] px-3 py-1 rounded-full text-sm">Palash Ranjan Roy</span>
+                  <span className="bg-[var(--c-chip)] text-[var(--c-accent)] px-3 py-1 rounded-full text-sm">Palash Roy</span>
+                  <span className="bg-[var(--c-chip)] text-[var(--c-accent)] px-3 py-1 rounded-full text-sm">P. R. Roy</span>
+                  <span className="bg-[var(--c-chip)] text-[var(--c-accent)] px-3 py-1 rounded-full text-sm">Palash R. Roy</span>
                 </div>
                 
-                <div className="text-[#d0cccc] space-y-4 leading-relaxed">
+                <div className="text-[var(--c-muted)] space-y-4 leading-relaxed">
                   {about.paragraphs.map((para, i) => (
-                    <p key={i}>{para}</p>
+                    <p key={i}>{renderRich(para)}</p>
                   ))}
                 </div>
                 
                 {/* Education (editable in admin) */}
                 <div className="mt-10">
-                  <h3 className="text-xl font-semibold mb-4 text-[#7ec8e3]">Education</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-[var(--c-accent)]">Education</h3>
                   <div className="space-y-6">
                     {((about as any).education || []).map((e: any, i: number) => (
                       <div key={i}>
                         <h4 className="font-bold">{e.degree}</h4>
-                        <div className="text-[#a2a5b9] text-sm">{e.place}</div>
-                        {e.note && <p className="text-[#d0cccc] text-sm mt-1 italic">{e.note}</p>}
+                        <div className="text-[var(--c-muted)] text-sm">{e.place}</div>
+                        {e.note && <p className="text-[var(--c-muted)] text-sm mt-1 italic">{e.note}</p>}
                       </div>
                     ))}
                   </div>
@@ -533,14 +913,14 @@ export default function App() {
 
                 {/* Experience (editable in admin) */}
                 <div className="mt-10">
-                  <h3 className="text-xl font-semibold mb-4 text-[#7ec8e3]">Experience</h3>
-                  {(about as any).expNote && <p className="text-[#a2a5b9] text-xs italic mb-4">{(about as any).expNote}</p>}
+                  <h3 className="text-xl font-semibold mb-4 text-[var(--c-accent)]">Experience</h3>
+                  {(about as any).expNote && <p className="text-[var(--c-muted)] text-xs italic mb-4">{renderRich((about as any).expNote)}</p>}
                   <div className="space-y-6">
                     {((about as any).experience || []).map((x: any, i: number) => (
                       <div key={i}>
                         <h4 className="font-bold">{x.role}</h4>
-                        <div className="text-[#a2a5b9] text-sm">{x.place}</div>
-                        {x.description && <p className="text-[#d0cccc] text-sm mt-1">{x.description}</p>}
+                        <div className="text-[var(--c-muted)] text-sm">{x.place}</div>
+                        {x.description && <p className="text-[var(--c-muted)] text-sm mt-1">{renderRich(x.description)}</p>}
                       </div>
                     ))}
                   </div>
@@ -548,35 +928,35 @@ export default function App() {
                 
                 {/* Academic Links at the bottom */}
                 <div className="mt-8">
-                  <h3 className="text-lg font-semibold mb-2 text-[#7ec8e3]">Academic Profiles</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-[var(--c-accent)]">Academic Profiles</h3>
                   <div className="flex flex-wrap gap-3">
-                    <a href="https://orcid.org/0000-0001-9470-4233" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                    <a href="https://orcid.org/0000-0001-9470-4233" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] hover:bg-[var(--c-surface2)] transition-colors">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM6.5 5.5a1 1 0 11-2 0 1 1 0 012 0zM5.5 8h2v6.5h-2V8zm3.5 0h1.9v.9h.03c.27-.5.92-1.05 1.9-1.05 2.03 0 2.4 1.27 2.4 2.95v3.7h-2v-3.28c0-.78-.01-1.79-1.1-1.79-1.1 0-1.27.86-1.27 1.74v3.33H9V8z" clipRule="evenodd"></path>
                       </svg>
                       ORCID
                     </a>
-                    <a href="https://dblp.org/pid/355/4465.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                    <a href="https://dblp.org/pid/355/4465.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] hover:bg-[var(--c-surface2)] transition-colors">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M5 4a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2H5zm2 3h6v1.5H7V7zm0 3h6v1.5H7V10zm0 3h4v1.5H7V13z"></path>
                       </svg>
                       dblp
                     </a>
-                    <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                    <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] hover:bg-[var(--c-surface2)] transition-colors">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                         <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"></path>
                       </svg>
                       Google Scholar
                     </a>
-                    <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                    <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] hover:bg-[var(--c-surface2)] transition-colors">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
                         <path d="M5 5a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-3.5l-1.5-1.5h-5L4 4zm7 5a1 1 0 100-2H9v2h2zm3 0a1 1 0 100-2h-2v2h2zm-9 3a1 1 0 100-2H5v2h2zm3 0a1 1 0 100-2H8v2h2zm3 0a1 1 0 100-2h-2v2h2zm3 0a1 1 0 100-2h-2v2h2z"></path>
                       </svg>
                       SRLab Profile
                     </a>
-                    <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[#2d324b] hover:bg-[#363c5a] transition-colors">
+                    <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-[var(--c-surface2)] hover:bg-[var(--c-surface2)] transition-colors">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                         <path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v16a1 1 0 01-1.581.814l-4.419-3.346-4.419 3.346A1 1 0 014 16V4zm5 0a1 1 0 00-1 1v6.5a.5.5 0 001 0V5a1 1 0 00-1-1z"></path>
                       </svg>
@@ -592,33 +972,39 @@ export default function App() {
           {/* Publications Section with Carousel and centered content */}
           <section id="portfolio" className="pt-16 pb-16">
             <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                Publications
-              </div>
-              <h2 className="text-4xl font-bold mb-4">My Latest Publications</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                See my <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">Google Scholar</a> for the latest details on the following work.
-              </p>
+              <SectionHead h={headings.portfolio} />
               {/* Live research-impact metrics (refreshed from OpenAlex at build time) */}
               <div className="flex flex-wrap justify-center gap-8 mt-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#7ec8e3]">{metrics.citations}+</div>
+                  <div className="text-3xl font-bold text-[var(--c-accent)]">{metrics.citations}+</div>
                   <div className="text-xs uppercase tracking-wider">Citations</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#7ec8e3]">{metrics.hIndex}</div>
+                  <div className="text-3xl font-bold text-[var(--c-accent)]">{metrics.hIndex}</div>
                   <div className="text-xs uppercase tracking-wider">h-index</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-[#7ec8e3]">{metrics.works}</div>
+                  <div className="text-3xl font-bold text-[var(--c-accent)]">{metrics.works}</div>
                   <div className="text-xs uppercase tracking-wider">Indexed Works</div>
                 </div>
               </div>
-              <div className="text-xs text-[#a2a5b9] mt-2">
-                via <a href={metrics.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[#7ec8e3] hover:underline">{metrics.source}</a> &middot; updated {metrics.updated}
+              <div className="text-xs text-[var(--c-muted)] mt-2">
+                via <a href={metrics.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--c-accent)] hover:underline">{metrics.source}</a> &middot; updated {metrics.updated}
+              </div>
+            </div>
+            {/* Two visuals side by side: output over time + what the research is about */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-6 items-center max-w-5xl mx-auto mb-12">
+              <div>
+                <div className="text-xs uppercase tracking-wider text-[var(--c-muted)] mb-4 text-center">Publications per year</div>
+                <PubYearChart items={publicationsData} />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-[var(--c-muted)] mb-1 text-center">What I work on</div>
+                <ResearchGraph data={research} />
               </div>
             </div>
             <Carousel
+              rotationInterval={sliderMs}
               items={publicationsData}
               renderItem={(item) => (<PublicationCard item={item} />)}
             />
@@ -628,22 +1014,18 @@ export default function App() {
           {/* News & Milestones timeline - content from src/content/news.json */}
           <section id="news" className="pt-16 pb-16">
             <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                News &amp; Milestones
-              </div>
-              <h2 className="text-4xl font-bold mb-4">What's Happening</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Recent milestones, awards, and research highlights.
-              </p>
+              <SectionHead h={headings.news} />
             </div>
             <div className="max-w-3xl mx-auto">
-              <ol className="relative border-l border-[#2d324b] ml-3">
+              <ol className="relative border-l border-[var(--c-border)] ml-3">
                 {newsItems.map((n, i) => (
                   <li key={i} className="mb-8 ml-6">
-                    <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-[#181a22] border border-[#2d324b] rounded-full text-sm">{n.icon}</span>
-                    <div className="text-xs text-[#7ec8e3] font-semibold mb-1">{n.date}</div>
-                    <h3 className="font-bold">{n.title}</h3>
-                    <p className="text-[#a9c0d4] text-sm mt-1">{n.description}</p>
+                    <span className="absolute -left-3 flex items-center justify-center w-6 h-6 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-full text-sm">{n.icon}</span>
+                    <div className="text-xs text-[var(--c-accent)] font-semibold mb-1">{n.date}</div>
+                    <h3 className="font-bold">{(n as any).url ? (
+                      <a href={(n as any).url} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] transition-colors">{n.title}</a>
+                    ) : n.title}</h3>
+                    <p className="text-[var(--c-muted)] text-sm mt-1">{renderRich(n.description)}</p>
                   </li>
                 ))}
               </ol>
@@ -654,26 +1036,21 @@ export default function App() {
           {/* Leadership Roles Section with Carousel and centered content - updated to match other sections */}
           <section id="leadership" className="pt-16 pb-16">
             <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                Leadership
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Titles I Didn't Ask For but Took Anyway</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                A curated list of leadership roles where I herded humans, orchestrated controlled chaos, and occasionally made important decisions while pretending to know what I was doing.
-              </p>
+              <SectionHead h={headings.leadership} />
             </div>
             <Carousel
+              rotationInterval={sliderMs}
               items={leadershipRolesData}
               renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-6 rounded-lg">
+                <div className="bg-[var(--c-surface)] h-full p-6 rounded-lg">
                   <div className="font-bold mb-1">{item.role}</div>
-                  <div className="text-[#7ec8e3] text-sm mb-1">
+                  <div className="text-[var(--c-accent)] text-sm mb-1">
                     {item.link ? (
                       <a 
                         href={item.link} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="hover:text-[#35c7ff] transition-colors hover:underline"
+                        className="hover:text-[var(--c-accent2)] transition-colors hover:underline"
                       >
                         {item.organization}
                       </a>
@@ -681,8 +1058,8 @@ export default function App() {
                       item.organization
                     )}
                   </div>
-                  <div className="text-[#a2a5b9] text-xs mb-1 italic">{item.place}</div>
-                  <div className="text-[#a9c0d4] text-sm">{item.period}</div>
+                  <div className="text-[var(--c-muted)] text-xs mb-1 italic">{item.place}</div>
+                  <div className="text-[var(--c-muted)] text-sm">{item.period}</div>
                 </div>
               )}
             />
@@ -691,15 +1068,18 @@ export default function App() {
     service: (<>
           {/* Academic Service Section with Carousel and centered content */}
           <section id="service" className="pt-16 pb-16">
-            <h2 className="text-2xl font-semibold mb-8">Academic Service</h2>
+            <div className="text-center mb-8">
+              <SectionHead h={headings.service} />
+            </div>
             <Carousel
+              rotationInterval={sliderMs}
               items={academicServiceData}
               renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-6 rounded-lg">
+                <div className="bg-[var(--c-surface)] h-full p-6 rounded-lg">
                   <div className="font-bold mb-1">{item.role}</div>
-                  <div className="text-[#7ec8e3] text-sm mb-1">{item.venues || item.venue}</div>
-                  <div className="text-[#d0cccc] text-sm mb-1">{item.period}</div>
-                  <div className="text-[#a9c0d4] text-sm">{item.description}</div>
+                  <div className="text-[var(--c-accent)] text-sm mb-1">{item.venues || item.venue}</div>
+                  <div className="text-[var(--c-muted)] text-sm mb-1">{item.period}</div>
+                  <div className="text-[var(--c-muted)] text-sm">{item.description}</div>
                 </div>
               )}
             />
@@ -710,19 +1090,14 @@ export default function App() {
           <section id="highlights" className="pt-16 pb-16">
             {/* New header format matching the reference image */}
             <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                Highlights
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Featured Highlights</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Here are some awards, articles, documents, certificates, and whatever else I am proud of.
-              </p>
+              <SectionHead h={headings.highlights} />
             </div>
             
             <Carousel
+              rotationInterval={sliderMs}
               items={highlightsData}
               renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-6 rounded-lg flex flex-col">
+                <div className="bg-[var(--c-surface)] h-full p-6 rounded-lg flex flex-col">
                   {item.image && (
                     <div className="mb-4">
                       <img
@@ -735,15 +1110,16 @@ export default function App() {
                     </div>
                   )}
                   <h3 className="font-bold text-lg mb-1">{item.title}</h3>
-                  <div className="text-[#7ec8e3] text-sm mb-2">{item.organization}</div>
-                  <p className="text-[#a9c0d4] text-sm flex-grow">{item.description}</p>
+                  <div className="text-[var(--c-accent)] text-sm mb-2">{item.organization}</div>
+                  <p className="text-[var(--c-muted)] text-sm flex-grow">{item.description}</p>
                   {item.link && (
-                    <div className="mt-4 pt-2 border-t border-[#2d324b]">
+                    <div className="mt-4 pt-2 border-t border-[var(--c-border)]">
                       <a
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#7ec8e3] text-sm hover:text-[#35c7ff] flex items-center"
+                        aria-label={`Read more about ${item.title}`}
+                        className="text-[var(--c-accent)] text-sm hover:text-[var(--c-accent2)] flex items-center"
                       >
                         Read more
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -761,20 +1137,14 @@ export default function App() {
           {/* In the News / media coverage - content from src/content/media.json */}
           <section id="media" className="pt-16 pb-16">
             <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                In the News
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Featured Coverage</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                Selected media coverage and university announcements.
-              </p>
+              <SectionHead h={headings.media} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto">
               {mediaItems.map((m, i) => (
-                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="bg-[#181a22] border border-[#2d324b] rounded-lg p-5 hover:border-[#7ec8e3] transition-colors flex flex-col">
-                  <div className="text-xs text-[#7ec8e3] mb-2">{m.outlet} &middot; {m.date}</div>
+                <a key={i} href={m.url} target="_blank" rel="noopener noreferrer" className="bg-[var(--c-surface)] border border-[var(--c-border)] rounded-lg p-5 hover:border-[var(--c-accent)] transition-colors flex flex-col">
+                  <div className="text-xs text-[var(--c-accent)] mb-2">{m.outlet} &middot; {m.date}</div>
                   <div className="font-semibold text-sm mb-3 flex-1">{m.title}</div>
-                  <span className="text-[#7ec8e3] text-xs">Read article &rarr;</span>
+                  <span className="text-[var(--c-accent)] text-xs">Read article &rarr;</span>
                 </a>
               ))}
             </div>
@@ -784,21 +1154,16 @@ export default function App() {
           {/* Combined Gallery Section - GSA presidency highlights and personal moments */}
           <section id="pictures" className="pt-16 pb-16">
             <div className="text-center mb-8">
-              <div className="inline-block px-3 py-1 bg-[#181a22] text-[#7ec8e3] text-sm font-medium mb-2 rounded">
-                Gallery
-              </div>
-              <h2 className="text-4xl font-bold mb-4">Beyond the Research</h2>
-              <p className="text-[#d0cccc] text-lg max-w-3xl mx-auto">
-                From representing 4,500+ graduate students as GSA President to exploring the world with family and friends.
-              </p>
+              <SectionHead h={headings.pictures} />
             </div>
             <Carousel
+              rotationInterval={sliderMs}
               items={galleryData}
               renderItem={(item) => (
-                <div className="bg-[#181a22] h-full p-4 rounded-lg flex flex-col items-center text-center">
+                <div className="bg-[var(--c-surface)] h-full p-4 rounded-lg flex flex-col items-center text-center">
                   <div className="w-full h-48 sm:h-52 overflow-hidden rounded relative">
                     {/* Loading placeholder */}
-                    <div className="absolute inset-0 bg-[#232333] animate-pulse"></div>
+                    <div className="absolute inset-0 bg-[var(--c-surface2)] animate-pulse"></div>
 
                     <img
                       src={item.image}
@@ -822,7 +1187,7 @@ export default function App() {
                     />
                   </div>
                   <div className="font-bold mt-3 mb-1">{item.title}</div>
-                  <div className="text-xs text-[#d0cccc]">"{item.description}"</div>
+                  <div className="text-xs text-[var(--c-muted)]">"{item.description}"</div>
                 </div>
               )}
             />
@@ -832,45 +1197,31 @@ export default function App() {
           {/* References Section - updated with new style matching the image */}
           <section id="references" className="pt-16 pb-16">
             <div className="text-center mb-8">
-              <div className="inline-block px-4 py-2 bg-[#1c1c24] rounded-lg text-[#7ec8e3] text-sm font-semibold mb-3">
-                References
-              </div>
-              <h2 className="text-4xl font-bold mb-3">References</h2>
-              <p className="max-w-3xl mx-auto text-[#d0cccc]">
-                Here are some of the amazing people who I have worked with in the past that I 
-                could reach out to for a reference if needed.
-              </p>
-              
-              <p className="mt-6 text-[#d0cccc] italic">
-                I really need to update this to add all my amazing computer science references! 
-                But that will be for another day.
-              </p>
-              
-              <div className="mt-8 text-[#a2a5b9] max-w-3xl mx-auto">
-                <p className="font-medium">
-                  I have had the privilege to work with
-                  <a href="https://artsandscience.usask.ca/profile/KSchneider" className="text-[#7ec8e3] hover:underline ml-1">Dr. Kevin Schneider</a>,
-                  <a href="https://clones.usask.ca/" className="text-[#7ec8e3] hover:underline ml-1">Dr. Chanchal Roy</a>,
-                  <a href="https://www.tru.ca/science/departments/engineering/Faculty.html" className="text-[#7ec8e3] hover:underline ml-1">Dr. Farouq Al-Omari</a>,
-                  <a href="https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php" className="text-[#7ec8e3] hover:underline ml-1">Dr. Banani Roy</a>,
-                  <a href="https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips" className="text-[#7ec8e3] hover:underline ml-1">Dr. Cody Phillips</a>
-                </p>
-              </div>
+              <SectionHead h={headings.references} />
+              {headings.references?.note && (
+                <p className="mt-6 text-[var(--c-muted)] italic max-w-3xl mx-auto">{renderRich(headings.references.note)}</p>
+              )}
+              {headings.references?.mentors && (
+                <div className="mt-8 text-[var(--c-muted)] max-w-3xl mx-auto">
+                  <p className="font-medium">{renderRich(headings.references.mentors)}</p>
+                </div>
+              )}
             </div>
 
             {/* Reference testimonials in cards - kept from original design */}
             <Carousel
+              rotationInterval={sliderMs}
               items={referencesData}
               renderItem={(item) => (
-                <div className="bg-gradient-to-br from-[#1c1c24] to-[#13131a] h-full p-4 sm:p-6 rounded-lg text-[#d0cccc] flex flex-col items-start relative overflow-hidden">
+                <div className="bg-[var(--c-surface)] border border-[var(--c-border)] h-full p-4 sm:p-6 rounded-lg text-[var(--c-muted)] flex flex-col items-start relative overflow-hidden">
                   {/* Quote marks in background */}
-                  <div className="absolute right-2 top-2 text-[100px] leading-none text-[#1d1d27] font-serif opacity-70">
+                  <div className="absolute right-2 top-2 text-[100px] leading-none text-[var(--c-surface2)] font-serif opacity-70">
                     "
                   </div>
                   
                   <div className="flex items-center mb-4 relative z-10 w-full">
                     {/* Profile image - fixed size for all screen sizes */}
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-[#7ec8e3] mr-3 sm:mr-4 flex-shrink-0">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-[var(--c-accent)] mr-3 sm:mr-4 flex-shrink-0">
                       <img
                         src={item.image.replace('.png', '.jpg')}
                         alt={item.name}
@@ -884,8 +1235,8 @@ export default function App() {
                     
                     {/* Name and title - with proper wrapping */}
                     <div className="min-w-0 flex-1">
-                      <div className="font-bold text-base sm:text-lg text-white truncate">{item.name}</div>
-                      <div className="text-xs sm:text-sm text-[#7ec8e3] truncate">{item.title}</div>
+                      <div className="font-bold text-base sm:text-lg text-[var(--c-text)] truncate">{item.name}</div>
+                      <div className="text-xs sm:text-sm text-[var(--c-accent)] truncate">{item.title}</div>
                     </div>
                   </div>
                   
@@ -897,16 +1248,30 @@ export default function App() {
             />
           </section>
     </>),
+    contact: (<>
+          <section id="contact" className="pt-16 pb-16">
+            <div className="text-center mb-8">
+              <SectionHead h={headings.contact} />
+            </div>
+            <ContactForm />
+          </section>
+    </>),
   };
-  const defaultSectionOrder = ['about','portfolio','news','leadership','service','highlights','media','pictures','references'];
+  const defaultSectionOrder = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','contact'];
   const roRaw = Array.isArray((remote as any).sectionOrder) ? ((remote as any).sectionOrder as string[]) : defaultSectionOrder;
   const sectionOrder = roRaw.filter((id) => sectionMap[id]);
   defaultSectionOrder.forEach((id) => { if (!sectionOrder.includes(id)) sectionOrder.push(id); });
 
+  // Nav bar follows the same order as the sections (editable via layout + headings)
+  const navLinks = [
+    { label: (hero as any).navHome || "Home", href: "#home" },
+    ...sectionOrder.map((id) => ({ label: (headings[id] && headings[id].nav) || id, href: `#${id}` })),
+  ];
+
   return (
-    <div className="min-h-screen bg-black font-sans text-white relative overflow-hidden">
-      {/* Background gradient overlay with red/purple accents - applied to the entire site */}
-      <div className="fixed inset-0 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] z-0 pointer-events-none"></div>
+    <div className="app-root min-h-screen bg-[var(--c-bg)] font-sans text-[var(--c-text)] relative overflow-hidden">
+      {/* Background gradient overlay - theme-aware (dark by default, light when toggled) */}
+      <div className="fixed inset-0 app-page-bg z-0 pointer-events-none"></div>
       <div className="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjMDAwMDAwMDYiPjwvcmVjdD4KPHBhdGggZD0iTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVoiIHN0cm9rZT0iIzMzMDAzMzA5IiBzdHJva2Utd2lkdGg9IjAuNSI+PC9wYXRoPgo8L3N2Zz4=')] opacity-30 z-0 pointer-events-none"></div>
       
       {/* Mobile Menu */}
@@ -917,12 +1282,13 @@ export default function App() {
       />
       
       {/* Navigation - Updated to be fixed at the top with improved background blending */}
-      <nav className="fixed top-0 left-0 right-0 flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 bg-gradient-to-tr from-black via-[#0e071b] to-[#200216] bg-opacity-95 backdrop-blur-sm shadow-md z-40">
-        <div className="text-3xl font-bold tracking-wide text-[#7ec8e3]">PALASH</div>
-        
+      <nav className="fixed top-0 left-0 right-0 flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 app-nav-bg backdrop-blur-sm shadow-md z-40">
+        <div className="text-3xl font-bold tracking-wide text-[var(--c-accent)]">PALASH</div>
+
+        <div className="flex items-center gap-4">
         {/* Mobile hamburger menu button */}
-        <button 
-          className="lg:hidden text-white"
+        <button
+          className="lg:hidden text-[var(--c-text)]"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
         >
@@ -937,13 +1303,14 @@ export default function App() {
             <li key={link.href} className="whitespace-nowrap">
               <a
                 href={link.href}
-                className="hover:text-[#69b0e0] transition-colors duration-150 font-semibold text-base"
+                className="hover:text-[var(--c-accent2)] transition-colors duration-150 font-semibold text-base"
               >
                 {link.label}
               </a>
             </li>
           ))}
         </ul>
+        </div>
       </nav>
       
       {/* Add padding to the top of the header to account for the fixed navbar */}
@@ -956,7 +1323,7 @@ export default function App() {
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col md:flex-row justify-between items-center relative z-1">
           <div className="flex-1 max-w-2xl">
-            <h2 className="text-xl font-light uppercase tracking-wider text-gray-400 mb-2">{hero.greeting}</h2>
+            <h2 className="text-xl font-light uppercase tracking-wider text-[var(--c-muted)] mb-2">{hero.greeting}</h2>
             <h1 className="text-6xl md:text-7xl font-bold mb-5">
               {hero.name}<br />
               <span className="bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">{hero.line2}</span><br />
@@ -966,7 +1333,7 @@ export default function App() {
             {/* Role pills (editable in admin) */}
             <div className="flex flex-wrap gap-2 mb-6">
               {hero.pills.map((p, i) => (
-                <span key={i} className="bg-[#181a22] border border-[#2d324b] text-[#d0cccc] px-3 py-1 rounded-full text-sm">{p}</span>
+                <span key={i} className="bg-[var(--c-surface)] border border-[var(--c-border)] text-[var(--c-muted)] px-3 py-1 rounded-full text-sm">{p}</span>
               ))}
             </div>
 
@@ -974,17 +1341,17 @@ export default function App() {
               <a href="#portfolio" className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-gradient-to-r from-[#3a2c05] to-[#5c4708] border border-[#ffd700]/40 text-sm hover:border-[#ffd700] transition-colors">
                 <span>🏆</span>
                 <span className="text-[#ffd700] font-semibold">{hero.awardText}</span>
-                {hero.awardMeta && <span className="text-[#d0cccc]">&middot; {hero.awardMeta}</span>}
+                {hero.awardMeta && <span className="text-[var(--c-muted)]">&middot; {hero.awardMeta}</span>}
               </a>
             )}
 
-            <p className="text-lg text-[#a9c0d4] mb-8 max-w-xl">{hero.description}</p>
+            <p className="text-lg text-[var(--c-muted)] mb-8 max-w-xl">{renderRich(hero.description)}</p>
 
             <div className="grid grid-cols-3 gap-3 mb-8 max-w-md">
               {hero.stats.map((s, i) => (
-                <div key={i} className="bg-[#181a22]/70 border border-[#2d324b] rounded-xl px-3 py-3 text-center">
+                <div key={i} className="bg-[var(--c-surface)]/70 border border-[var(--c-border)] rounded-xl px-3 py-3 text-center">
                   <div className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#35c7ff] to-[#ff4081] bg-clip-text text-transparent">{s.value}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#a2a5b9] mt-1">{s.label}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--c-muted)] mt-1">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -994,29 +1361,40 @@ export default function App() {
                 View Publications
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>
               </a>
-              <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#2d324b] text-[#d0cccc] text-sm font-semibold hover:border-[#7ec8e3] hover:text-white transition-colors">
+              <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[var(--c-border)] text-[var(--c-muted)] text-sm font-semibold hover:border-[var(--c-accent)] hover:text-[var(--c-text)] transition-colors">
                 Google Scholar
               </a>
+              {settings.resumeUrl && (
+                <a href={settings.resumeUrl} target="_blank" rel="noopener noreferrer" download className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[var(--c-border)] text-[var(--c-muted)] text-sm font-semibold hover:border-[var(--c-accent)] hover:text-[var(--c-text)] transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                  Download Resume
+                </a>
+              )}
             </div>
           </div>
           
           <div className="relative mt-12 md:mt-0 md:ml-14 shrink-0">
             {/* Soft animated glow ring behind the portrait */}
             <div className="absolute -inset-3 bg-gradient-to-tr from-[#35c7ff] to-[#ff4081] opacity-20 blur-2xl rounded-[2rem] animate-pulse" style={{ animationDuration: '5s' }}></div>
-            <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(122,205,235,0.18)] border-4 border-[#2d324b] bg-[#171830]">
-              {/* Profile photo with improved alt text for SEO */}
-              <img
-                src="/images/palash_roy_headshot.jpg"
-                alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
-                className="w-full h-full object-cover"
-                decoding="async"
-                fetchPriority="high"
-              />
+            <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(122,205,235,0.18)] border-4 border-[var(--c-border)] bg-[var(--c-surface2)]">
+              {/* Profile photo with improved alt text for SEO. WebP with JPG fallback (LCP). */}
+              <picture>
+                <source srcSet="/images/palash_roy_headshot.webp" type="image/webp" />
+                <img
+                  src="/images/palash_roy_headshot.jpg"
+                  alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
+                  width={640}
+                  height={552}
+                  className="w-full h-full object-cover"
+                  decoding="async"
+                  fetchPriority="high"
+                />
+              </picture>
             </div>
             {/* Status badge highlighting research identity */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#12131c] border border-[#2d324b] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[var(--c-surface2)] border border-[var(--c-border)] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#3ddc84] animate-pulse"></span>
-              <span className="font-semibold text-white">{(hero as any).badge || "Software Engineering Researcher"}</span>
+              <span className="font-semibold text-[var(--c-text)]">{(hero as any).badge || "Software Engineering Researcher"}</span>
             </div>
           </div>
         </div>
@@ -1024,25 +1402,25 @@ export default function App() {
       
       {/* Content Container - Removed gradient background to use the global background */}
       <div className="relative z-10">
-        {/* About Section with centered content - Updated to match reference style */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main content landmark */}
+        <main id="main" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 {sectionOrder.map((id) => (
             <React.Fragment key={id}>{sectionMap[id]}</React.Fragment>
           ))}
-        </div>
+        </main>
 
         {/* Footer with centered content and academic credentials */}
-        <div className="bg-[#0d0d0d]">
-          <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-gray-400 mt-8">
+        <div className="bg-[var(--c-footer)]">
+          <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-[var(--c-muted)] mt-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
               <div>
-                <h3 className="text-white text-lg font-semibold mb-3">Contact</h3>
+                <h3 className="text-[var(--c-text)] text-lg font-semibold mb-3">Contact</h3>
                 <ul className="space-y-2">
                   <li className="flex items-center">
                     <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    <a href="mailto:palash.roy@usask.ca" className="hover:text-[#7ec8e3]">palash.roy@usask.ca</a>
+                    <a href="mailto:palash.roy@usask.ca" className="hover:text-[var(--c-accent)]">palash.roy@usask.ca</a>
                   </li>
                   <li className="flex items-center">
                     <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1054,10 +1432,10 @@ export default function App() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-white text-lg font-semibold mb-3">Academic Profiles</h3>
+                <h3 className="text-[var(--c-text)] text-lg font-semibold mb-3">Academic Profiles</h3>
                 <ul className="space-y-2">
                   <li>
-                    <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3] flex items-center">
+                    <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
                       <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
@@ -1065,7 +1443,7 @@ export default function App() {
                     </a>
                   </li>
                   <li>
-                    <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3] flex items-center">
+                    <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
                       <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
@@ -1073,7 +1451,7 @@ export default function App() {
                     </a>
                   </li>
                   <li>
-                    <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3] flex items-center">
+                    <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
                       <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
@@ -1083,10 +1461,10 @@ export default function App() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-white text-lg font-semibold mb-3">Recent Awards</h3>
+                <h3 className="text-[var(--c-text)] text-lg font-semibold mb-3">Recent Awards</h3>
                 <ul className="space-y-2">
                   <li>
-                    <a href="https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3] flex items-center">
+                    <a href="https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
                       <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                       </svg>
@@ -1094,7 +1472,7 @@ export default function App() {
                     </a>
                   </li>
                   <li>
-                    <a href="#highlights" className="hover:text-[#7ec8e3] flex items-center">
+                    <a href="#highlights" className="hover:text-[var(--c-accent)] flex items-center">
                       <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                       </svg>
@@ -1102,7 +1480,7 @@ export default function App() {
                     </a>
                   </li>
                   <li>
-                    <a href="https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3] flex items-center">
+                    <a href="https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
                       <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                       </svg>
@@ -1112,17 +1490,18 @@ export default function App() {
                 </ul>
               </div>
             </div>
-            <div className="pt-6 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
+            <div className="pt-6 border-t border-[var(--c-border)] flex flex-col md:flex-row justify-between items-center">
               <div>© 2026 Palash Ranjan Roy | All rights reserved</div>
               <div className="flex gap-4 mt-2 md:mt-0">
-                <a href="https://github.com/Roy101" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">GitHub</a>
-                <a href="https://www.linkedin.com/in/palashranjanroy/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">LinkedIn</a>
-                <a href="https://www.researchgate.net/profile/Palash_Roy" target="_blank" rel="noopener noreferrer" className="hover:text-[#7ec8e3]">ResearchGate</a>
+                <a href="https://github.com/Roy101" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)]">GitHub</a>
+                <a href="https://www.linkedin.com/in/palashranjanroy/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)]">LinkedIn</a>
+                <a href="https://www.researchgate.net/profile/Palash_Roy" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)]">ResearchGate</a>
               </div>
             </div>
           </footer>
         </div>
       </div>
+      <FloatingControls theme={theme} setTheme={setTheme} />
     </div>
   );
 }

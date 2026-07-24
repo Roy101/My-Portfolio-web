@@ -1,0 +1,4 @@
+{
+  "hubs": ["Code Clones", "Large Language Models"],
+  "leaves": ["Clone Detection", "Cross-language Clones", "Green AI", "Clone Refactoring"]
+}

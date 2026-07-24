@@ -42,6 +42,11 @@ for (let y = 0; y <= 9000; y += 700) {
   await page.evaluate((v) => window.scrollTo(0, v), y);
   await new Promise((r) => setTimeout(r, 70));
 }
+// Remove any analytics script tags that got injected by the lazy-loader during
+// prerender (scrolling triggers it) so GA is NOT baked eager into the static HTML.
+await page.evaluate(() => {
+  document.querySelectorAll('script[src*="googletagmanager.com"], script[src*="google-analytics.com"]').forEach((s) => s.remove());
+});
 const html = await page.content();
 await writeFile(path.join(DIST, "index.html"), html);
 await browser.close();

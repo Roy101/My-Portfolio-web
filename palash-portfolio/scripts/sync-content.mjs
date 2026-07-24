@@ -20,12 +20,12 @@ try {
       n++;
     }
   }
-  for (const obj of ["metrics", "hero", "about"]) {
+  for (const obj of ["metrics", "hero", "about", "settings", "headings", "research"]) {
     if (d[obj] && typeof d[obj] === "object" && !Array.isArray(d[obj])) {
       writeFileSync(dir + obj + ".json", JSON.stringify(d[obj], null, 2) + "\n");
     }
   }
-  console.log(`  synced ${n} content sections + metrics/hero/about from the live database`);
+  console.log(`  synced ${n} content sections + metrics/hero/about/settings/headings from the live database`);
 } catch (e) {
   console.log("  content sync skipped (using committed files):", e.message);
 }

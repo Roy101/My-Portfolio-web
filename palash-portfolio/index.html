@@ -5,6 +5,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Apply the saved light/dark theme before first paint (no flash) -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        document.documentElement.setAttribute('data-theme', (t === 'light' || t === 'dark') ? t : 'dark');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+
   <!-- Updated SEO Meta Tags with focused keywords -->
   <title>Palash Ranjan Roy (Palash Roy) | Code Clone Researcher & Computer Science PhD | University of Saskatchewan</title>
   <meta name="description" content="Official site of Palash Ranjan Roy (Palash Roy), a Computer Science PhD researcher and code clone researcher at the University of Saskatchewan. Research on code clones, refactoring, large language models, and AI-driven software engineering, with publications at FSE, ICSME, ESEM, and IWSC." />
@@ -163,17 +175,34 @@
   }
   </script>
   
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2999Q8H3Z"></script>
+  <!-- Google Analytics — loaded lazily (first interaction, or 3s after load) so it
+       stays off the initial main-thread budget (better TBT) while still tracking. -->
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-D2999Q8H3Z');
+    (function () {
+      var loaded = false;
+      function loadGA() {
+        if (loaded) return; loaded = true;
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-D2999Q8H3Z';
+        document.head.appendChild(s);
+      }
+      ['scroll', 'mousemove', 'touchstart', 'keydown', 'click'].forEach(function (evt) {
+        window.addEventListener(evt, loadGA, { once: true, passive: true });
+      });
+      window.addEventListener('load', function () { setTimeout(loadGA, 3000); });
+    })();
   </script>
 
-  <!-- Preload the above-the-fold hero image (LCP) -->
-  <link rel="preload" href="/images/palash_roy_headshot.jpg" as="image" fetchpriority="high" />
+  <!-- Preload the above-the-fold hero image (LCP) — WebP, matches the <picture> source -->
+  <link rel="preload" href="/images/palash_roy_headshot.webp" as="image" type="image/webp" fetchpriority="high" />
+  <!-- Warm up the analytics origins so the beacon doesn't block later -->
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin />
   
   <!-- Performance optimization meta tags -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.unsplash.com https://news.usask.ca https://www.google-analytics.com data:; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; font-src 'self' data:;" />

@@ -3,18 +3,28 @@
   "name": "Palash Roy,",
   "line2": "Computer Science",
   "line3": "PhD Researcher",
+  "navHome": "Home",
+  "badge": "Software Engineering Researcher",
+  "description": "I am a Software Engineering researcher at the [Software Research Lab (SRLab)](https://srlab.usask.ca/) and [Interactive Software Engineering and Analytics (iSE) Lab](https://ise.usask.ca/), working on code clones, clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",
+  "awardText": "ACM SIGSOFT Distinguished Paper Award",
+  "awardMeta": "FSE 2026",
   "pills": [
     "🔬 Software Engineering Researcher",
     "🤖 LLMs for Software Engineering",
     "🏛️ GSA President"
   ],
-  "badge": "Software Engineering Researcher",
-  "awardText": "ACM SIGSOFT Distinguished Paper Award",
-  "awardMeta": "FSE 2026",
-  "description": "I am a Software Engineering researcher at the Software Research Lab (SRLab) and ISELab, working on code clones, clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",
   "stats": [
-    { "value": "8+", "label": "Publications" },
-    { "value": "31+", "label": "Citations" },
-    { "value": "4.5K+", "label": "Students Led" }
+    {
+      "value": "8+",
+      "label": "Publications"
+    },
+    {
+      "value": "97+",
+      "label": "Citations"
+    },
+    {
+      "value": "4.5K+",
+      "label": "Students Led"
+    }
   ]
 }

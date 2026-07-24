@@ -1,0 +1,64 @@
+{
+  "about": {
+    "nav": "About",
+    "badge": "",
+    "title": "Biography",
+    "subtitle": ""
+  },
+  "portfolio": {
+    "nav": "Publications",
+    "badge": "Publications",
+    "title": "My Latest Publications",
+    "subtitle": "See my Google Scholar for the latest details on the following work."
+  },
+  "news": {
+    "nav": "News",
+    "badge": "News & Milestones",
+    "title": "What's Happening",
+    "subtitle": "Recent milestones, awards, and research highlights."
+  },
+  "leadership": {
+    "nav": "Leadership",
+    "badge": "Leadership",
+    "title": "Titles I Didn't Ask For but Took Anyway",
+    "subtitle": "A curated list of leadership roles where I herded humans, orchestrated controlled chaos, and occasionally made important decisions while pretending to know what I was doing."
+  },
+  "service": {
+    "nav": "Service",
+    "badge": "Service",
+    "title": "Academic Service",
+    "subtitle": ""
+  },
+  "highlights": {
+    "nav": "Awards",
+    "badge": "Highlights",
+    "title": "Featured Highlights",
+    "subtitle": "Here are some awards, articles, documents, certificates, and whatever else I am proud of."
+  },
+  "media": {
+    "nav": "Media",
+    "badge": "In the News",
+    "title": "Featured Coverage",
+    "subtitle": "Selected media coverage and university announcements."
+  },
+  "pictures": {
+    "nav": "Gallery",
+    "badge": "Gallery",
+    "title": "Beyond the Research",
+    "subtitle": "From representing 4,500+ graduate students as GSA President to exploring the world with family and friends."
+  },
+  "references": {
+    "nav": "References",
+    "badge": "References",
+    "title": "References",
+    "subtitle": "Here are some of the amazing people who I have worked with in the past that I could reach out to for a reference if needed.",
+    "note": "I have had the privilege to work with [Dr. Kevin Schneider](https://artsandscience.usask.ca/profile/KSchneider), [Dr. Chanchal Roy](https://clones.usask.ca/), [Dr. Farouq Al-Omari](https://www.tru.ca/science/departments/engineering/Faculty.html), [Dr. Banani Roy](https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php), and [Dr. Cody Phillips](https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips).",
+    "mentors": "I really need to update this to add all my amazing computer science references! But that will be for another day."
+  },
+  "contact": {
+    "nav": "Contact",
+    "badge": "Contact",
+    "title": "Get in Touch",
+    "subtitle": "Have a question, an opportunity, or just want to say hi? Send me a message and I'll get back to you."
+  }
+}

@@ -91,3 +91,49 @@ body {
 .flip-face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
 .flip-face::-webkit-scrollbar { display: none; }
 .flip-back { transform: rotateY(180deg); }
+
+/* =========================================================
+   Theme tokens — dark is the default, light is optional.
+   Toggled by setting data-theme on <html>.
+   Distinct --c-* names so they never clash with shadcn tokens.
+   ========================================================= */
+:root, :root[data-theme="dark"] {
+  --c-bg: #0c0d16;
+  --c-surface: #181a22;
+  --c-surface2: #232333;
+  --c-chip: #2a3b4d;
+  --c-text: #ffffff;
+  --c-muted: #a9c0d4;
+  --c-border: #2d324b;
+  --c-accent: #7ec8e3;
+  --c-accent2: #35c7ff;
+  --c-footer: #0d0d0d;
+  --c-page-grad: linear-gradient(to top right, #000000, #0e071b, #200216);
+  --c-nav-grad: linear-gradient(to top right, rgba(6,4,12,.92), rgba(14,7,27,.92), rgba(32,2,22,.92));
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --c-bg: #eef1f7;
+  --c-surface: #ffffff;
+  --c-surface2: #e7ecf4;
+  --c-chip: #dfeaf4;
+  --c-text: #171b24;
+  --c-muted: #495264;
+  --c-border: #d7dee9;
+  --c-accent: #0a6284;
+  --c-accent2: #0a55aa;
+  --c-footer: #e5eaf2;
+  --c-page-grad: linear-gradient(to top right, #f7f9fd, #eef2f9, #f5eef8);
+  --c-nav-grad: linear-gradient(to top right, rgba(255,255,255,.85), rgba(240,244,250,.85), rgba(247,239,245,.85));
+  color-scheme: light;
+}
+html, body { background: var(--c-bg); }
+.app-page-bg { background-image: var(--c-page-grad); }
+.app-nav-bg  { background-image: var(--c-nav-grad); }
+
+/* Smooth cross-fade when switching themes.
+   Kept narrow (backgrounds only) so it never overrides element-level
+   transitions like the carousel slide or the publication flip cards. */
+html, body, .app-root, .app-page-bg, .app-nav-bg {
+  transition: background-color .35s ease, background-image .35s ease;
+}

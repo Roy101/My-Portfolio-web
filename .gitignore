@@ -1,3 +1,6 @@
 
 # cPanel backend secrets (never commit)
 cpanel-backend/api/config.php
+
+# Deploy artifacts (regenerable zips)
+/deploy/
