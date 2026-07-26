@@ -35,5 +35,5 @@ function db(): PDO
 const ALLOWED_SECTIONS = [
     'publications', 'highlights', 'news', 'media',
     'gallery', 'leadership', 'service', 'references', 'metrics',
-    'sectionOrder', 'hero', 'about', 'settings', 'headings', 'research',
+    'sectionOrder', 'sectionsHidden', 'customSections', 'hero', 'about', 'settings', 'headings', 'research',
 ];

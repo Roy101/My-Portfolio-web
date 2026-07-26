@@ -19,16 +19,18 @@ if (empty($_SESSION['admin'])) { http_response_code(401); out(['error' => 'Not l
 if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) { http_response_code(403); out(['error' => 'Bad CSRF token — reload the page.']); }
 if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) { http_response_code(400); out(['error' => 'No file received or upload error']); }
 
-$kind = ($_POST['kind'] ?? 'image') === 'resume' ? 'resume' : 'image';
+$kindRaw = $_POST['kind'] ?? 'image';
+$kind = in_array($kindRaw, ['resume', 'pdf'], true) ? 'pdf' : 'image'; // both resume + preprints are PDFs
+$prefix = $kindRaw === 'resume' ? 'resume-' : ($kind === 'pdf' ? 'doc-' : 'img-');
 $f    = $_FILES['file'];
 
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mime  = $finfo->file($f['tmp_name']);
 $imgTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
 
-if ($kind === 'resume') {
-    if ($mime !== 'application/pdf') { http_response_code(400); out(['error' => 'Resume must be a PDF file']); }
-    if ($f['size'] > 15 * 1024 * 1024) { http_response_code(400); out(['error' => 'PDF too large (max 15 MB)']); }
+if ($kind === 'pdf') {
+    if ($mime !== 'application/pdf') { http_response_code(400); out(['error' => 'File must be a PDF']); }
+    if ($f['size'] > 20 * 1024 * 1024) { http_response_code(400); out(['error' => 'PDF too large (max 20 MB)']); }
     $ext = 'pdf';
 } else {
     if (!isset($imgTypes[$mime])) { http_response_code(400); out(['error' => 'Unsupported image type (use JPG, PNG, WebP or GIF)']); }
@@ -45,7 +47,7 @@ if (!file_exists($ht)) {
     @file_put_contents($ht, "RemoveHandler .php .phtml .php3 .php4 .php5 .php6 .php7 .phps\nRemoveType .php .phtml\n");
 }
 
-$name = ($kind === 'resume' ? 'resume-' : 'img-') . bin2hex(random_bytes(8)) . '.' . $ext;
+$name = $prefix . bin2hex(random_bytes(8)) . '.' . $ext;
 $dest = $dir . '/' . $name;
 if (!move_uploaded_file($f['tmp_name'], $dest)) { http_response_code(500); out(['error' => 'Could not save the uploaded file']); }
 @chmod($dest, 0644);

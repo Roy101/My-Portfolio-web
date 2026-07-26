@@ -1,4 +1,9 @@
 {
   "sliderSeconds": 11,
+  "sliderPerSection": {
+    "leadership": 20,
+    "service": 10,
+    "pictures": 5
+  },
   "resumeUrl": ""
 }

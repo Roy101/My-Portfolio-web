@@ -275,19 +275,26 @@ const Carousel = <T extends unknown>({
         </>
       )}
 
-      {/* Dots navigation - only show if needed */}
+      {/* Dots navigation with a highlight that "jumps" between dots */}
       {needsNavigation && totalSlides > 1 && (
-        <div className="flex justify-center gap-1 mt-4">
-          {Array.from({ length: totalSlides }).map((_, index) => (
-            <button
-              key={index}
-              className="w-6 h-6 flex items-center justify-center rounded-full"
-              onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}`}
-            >
-              <span className={`block w-3 h-3 rounded-full ${index === currentIndex ? "bg-[var(--c-accent)]" : "bg-[var(--c-surface2)]"} transition-colors`} />
-            </button>
-          ))}
+        <div className="flex justify-center mt-4">
+          <div className="relative inline-flex gap-1">
+            {Array.from({ length: totalSlides }).map((_, index) => (
+              <button
+                key={index}
+                className="w-6 h-6 flex items-center justify-center rounded-full relative z-10"
+                onClick={() => goToSlide(index)}
+                aria-label={`Go to slide ${index + 1}`}
+              >
+                <span className="block w-3 h-3 rounded-full bg-[var(--c-surface2)]" />
+              </button>
+            ))}
+            {/* moving accent dot (28px pitch = 24px button + 4px gap; +6px centers the 12px dot) */}
+            <span
+              className="pointer-events-none absolute top-1/2 left-0 w-3 h-3 rounded-full bg-[var(--c-accent)]"
+              style={{ transform: `translate(${currentIndex * 28 + 6}px, -50%)`, transition: "transform .5s cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+            />
+          </div>
         </div>
       )}
     </div>
@@ -423,53 +430,81 @@ function renderRich(text: any): React.ReactNode {
   return out;
 }
 
-// Live network of research topics: two hubs + related nodes that gently drift,
-// with the connecting edges following them. Motion pauses off-screen and honours
-// prefers-reduced-motion.
+// Live network of research topics — any number of nodes. "Main" nodes are the big
+// central hubs; the rest orbit around them and auto-connect to the nearest hub. The
+// graph lays itself out, gently drifts (edges follow), pauses off-screen, and honours
+// prefers-reduced-motion. Supports {nodes:[{label,main}]} and legacy {hubs,leaves}.
 function ResearchGraph({ data }: { data: any }) {
-  const hubs: string[] = Array.isArray(data?.hubs) ? data.hubs : [];
-  const leaves: string[] = Array.isArray(data?.leaves) ? data.leaves : [];
-  // base layout + per-node drift (amplitude px, phase)
-  const BASE: Record<string, { x: number; y: number; ax: number; ay: number; ph: number }> = {
-    H0: { x: 225, y: 205, ax: 5, ay: 6, ph: 0.0 },
-    H1: { x: 370, y: 415, ax: 6, ay: 5, ph: 1.7 },
-    L0: { x: 75, y: 150, ax: 7, ay: 8, ph: 0.9 },
-    L1: { x: 430, y: 120, ax: 8, ay: 7, ph: 2.3 },
-    L2: { x: 525, y: 280, ax: 7, ay: 9, ph: 3.5 },
-    L3: { x: 150, y: 385, ax: 8, ay: 6, ph: 4.6 },
+  let nodes: { label: string; main: boolean }[] = [];
+  if (Array.isArray(data?.nodes)) {
+    nodes = data.nodes.map((n: any) => (typeof n === "string" ? { label: n, main: false } : { label: String(n?.label || ""), main: !!n?.main })).filter((n: any) => n.label);
+  } else {
+    const hubs = Array.isArray(data?.hubs) ? data.hubs : [];
+    const leaves = Array.isArray(data?.leaves) ? data.leaves : [];
+    nodes = [...hubs.map((l: string) => ({ label: String(l), main: true })), ...leaves.map((l: string) => ({ label: String(l), main: false }))].filter((n) => n.label);
+  }
+
+  const cx = 300, cy = 250;
+  // deterministic pseudo-random (stable across renders/prerender) for organic scatter
+  const rnd = (i: number, salt: number) => { const x = Math.sin((i + 1) * 12.9898 + salt * 78.233) * 43758.5453; return x - Math.floor(x); };
+  const mainIdx = nodes.map((n, i) => ({ n, i })).filter((x) => x.n.main);
+  const subIdx = nodes.map((n, i) => ({ n, i })).filter((x) => !x.n.main);
+  const base: { x: number; y: number }[] = new Array(nodes.length);
+  if (!mainIdx.length) {
+    subIdx.forEach((s, k) => { const c = Math.max(1, subIdx.length); const ang = -Math.PI / 2 + (k / c) * Math.PI * 2 + (rnd(s.i, 2) - 0.5) * 0.5; const rf = 0.85 + rnd(s.i, 3) * 0.3; base[s.i] = { x: cx + Math.cos(ang) * 215 * rf, y: cy + Math.sin(ang) * 175 * rf }; });
+  } else {
+    mainIdx.forEach((m, k) => {
+      const c = mainIdx.length;
+      const t = c === 1 ? 0.5 : k / (c - 1);
+      const x = c === 1 ? cx : cx + (t - 0.5) * Math.min(150, 100 + c * 18);
+      const y = cy + (c === 1 ? 0 : (k % 2 === 0 ? -30 : 26)) + (rnd(m.i, 1) - 0.5) * 18;
+      base[m.i] = { x, y };
+    });
+    subIdx.forEach((s, k) => {
+      const c = Math.max(1, subIdx.length);
+      const ang = -Math.PI / 2 + (k / c) * Math.PI * 2 + (rnd(s.i, 2) - 0.5) * 0.55;
+      const rf = 0.82 + rnd(s.i, 3) * 0.34;
+      base[s.i] = { x: cx + Math.cos(ang) * 232 * rf, y: cy + Math.sin(ang) * 186 * rf };
+    });
+  }
+
+  const edges: [number, number][] = [];
+  for (let a = 0; a < mainIdx.length; a++) for (let b = a + 1; b < mainIdx.length; b++) edges.push([mainIdx[a].i, mainIdx[b].i]);
+  if (mainIdx.length) {
+    subIdx.forEach((s) => { let best = mainIdx[0].i, bd = Infinity; mainIdx.forEach((m) => { const dx = base[m.i].x - base[s.i].x, dy = base[m.i].y - base[s.i].y; const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = m.i; } }); edges.push([s.i, best]); });
+  } else { for (let i = 0; i < nodes.length; i++) edges.push([i, (i + 1) % nodes.length]); }
+
+  const labelFor = (i: number, main: boolean) => {
+    const p = base[i];
+    if (main) return { x: p.x, y: p.y + 46, anchor: "middle" as const };
+    const dx = p.x - cx, dy = p.y - cy, len = Math.hypot(dx, dy) || 1;
+    const anchor = dx < -40 ? "end" : dx > 40 ? "start" : "middle";
+    return { x: p.x + (dx / len) * 22, y: p.y + (dy / len) * 22 + (dy > 0 ? 12 : 2), anchor };
   };
-  const HL = [{ dx: 0, dy: -42 }, { dx: 0, dy: 56 }];
-  const LL = [{ dx: 0, dy: 26 }, { dx: 0, dy: -16 }, { dx: 0, dy: 26 }, { dx: 0, dy: 26 }];
-  const edges: [string, string][] = [["L0", "H0"], ["L0", "L3"], ["H0", "L1"], ["H0", "H1"], ["L1", "H1"], ["L1", "L2"], ["L2", "H1"], ["L3", "H1"]];
-  const has: Record<string, boolean> = { H0: !!hubs[0], H1: !!hubs[1], L0: !!leaves[0], L1: !!leaves[1], L2: !!leaves[2], L3: !!leaves[3] };
 
   const [mounted, setMounted] = useState(false);
   const wrapRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => { const id = setTimeout(() => setMounted(true), 80); return () => clearTimeout(id); }, []);
-  // Animate by mutating SVG attributes directly in the rAF loop — no React re-renders,
-  // so this stays off the main-thread budget Lighthouse measures. Pauses off-screen
-  // and honours prefers-reduced-motion.
   useEffect(() => {
     const wrap = wrapRef.current;
     const svg = wrap?.querySelector("svg");
     if (!wrap || !svg) return;
-    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) return;
-    const movers = Array.from(svg.querySelectorAll("[data-k]")) as unknown as SVGElement[];
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const movers = Array.from(svg.querySelectorAll("[data-i]")) as unknown as SVGElement[];
     const lines = Array.from(svg.querySelectorAll("line[data-a]")) as unknown as SVGLineElement[];
-    const P: Record<string, { x: number; y: number }> = {};
-    const compute = (t: number) => { for (const k in BASE) { const b = BASE[k]; P[k] = { x: b.x + b.ax * Math.sin(t * 0.6 + b.ph), y: b.y + b.ay * Math.cos(t * 0.5 + b.ph) }; } };
+    const P: { x: number; y: number }[] = [];
+    const compute = (t: number) => { for (let i = 0; i < base.length; i++) { const b = base[i]; if (!b) continue; const ph = i * 1.3; P[i] = { x: b.x + 6 * Math.sin(t * 0.6 + ph), y: b.y + 6 * Math.cos(t * 0.5 + ph) }; } };
     let raf = 0; let running = true;
     const loop = (ts: number) => {
       if (!running) return;
       compute(ts / 1000);
       for (const el of movers) {
-        const p = P[el.dataset.k as string]; if (!p) continue;
+        const p = P[Number(el.dataset.i)]; if (!p) continue;
         if (el.tagName === "text") { el.setAttribute("x", String(p.x + Number(el.dataset.ox || 0))); el.setAttribute("y", String(p.y + Number(el.dataset.oy || 0))); }
         else { el.setAttribute("cx", String(p.x)); el.setAttribute("cy", String(p.y)); }
       }
       for (const l of lines) {
-        const a = P[l.dataset.a as string]; const b = P[l.dataset.b as string];
+        const a = P[Number(l.dataset.a)]; const b = P[Number(l.dataset.b)];
         if (a) { l.setAttribute("x1", String(a.x)); l.setAttribute("y1", String(a.y)); }
         if (b) { l.setAttribute("x2", String(b.x)); l.setAttribute("y2", String(b.y)); }
       }
@@ -485,29 +520,27 @@ function ResearchGraph({ data }: { data: any }) {
       io.observe(wrap);
     }
     return () => { running = false; cancelAnimationFrame(raf); io && io.disconnect(); };
-  }, [hubs.join("|"), leaves.join("|")]);
+  }, [nodes.map((n) => n.label + (n.main ? "*" : "")).join("|")]);
 
-  if (!hubs.length && !leaves.length) return null;
+  if (!nodes.length) return null;
   return (
     <div ref={wrapRef} className="max-w-2xl mx-auto" style={{ opacity: mounted ? 1 : 0, transition: "opacity .7s ease" }}>
-      <svg viewBox="0 0 600 500" className="w-full h-auto" role="img" aria-label="Network of research topics">
-        {edges.filter(([a, b]) => has[a] && has[b]).map(([a, b], i) => (
-          <line key={i} data-a={a} data-b={b} x1={BASE[a].x} y1={BASE[a].y} x2={BASE[b].x} y2={BASE[b].y} className="stroke-[var(--c-border)]" strokeWidth={2} />
+      <svg viewBox="-70 0 740 500" className="w-full h-auto" role="img" aria-label="Network of research topics">
+        {edges.map(([a, b], i) => (
+          <line key={"e" + i} data-a={a} data-b={b} x1={base[a].x} y1={base[a].y} x2={base[b].x} y2={base[b].y} className="stroke-[var(--c-border)]" strokeWidth={2} />
         ))}
-        {leaves.map((lbl, i) => { const key = "L" + i; if (!has[key] || !lbl) return null; const b = BASE[key]; const o = LL[i];
-          return (
-            <g key={key}>
-              <circle data-k={key} cx={b.x} cy={b.y} r={9} className="fill-[var(--c-text)]" />
-              <text data-k={key} data-ox={o.dx} data-oy={o.dy} x={b.x + o.dx} y={b.y + o.dy} textAnchor="middle" className="fill-[var(--c-muted)]" fontSize={13}>{lbl}</text>
+        {nodes.map((n, i) => {
+          const p = base[i]; const lab = labelFor(i, n.main); const ox = lab.x - p.x, oy = lab.y - p.y;
+          return n.main ? (
+            <g key={i}>
+              <circle data-i={i} cx={p.x} cy={p.y} r={30} fill="none" className="stroke-[var(--c-accent)]" strokeWidth={2} opacity={0.45} />
+              <circle data-i={i} cx={p.x} cy={p.y} r={20} className="fill-[var(--c-accent)]" />
+              <text data-i={i} data-ox={ox} data-oy={oy} x={lab.x} y={lab.y} textAnchor={lab.anchor} className="fill-[var(--c-accent)] font-bold" fontSize={15}>{n.label}</text>
             </g>
-          );
-        })}
-        {hubs.map((lbl, i) => { const key = "H" + i; if (!has[key] || !lbl) return null; const b = BASE[key]; const o = HL[i];
-          return (
-            <g key={key}>
-              <circle data-k={key} cx={b.x} cy={b.y} r={30} fill="none" className="stroke-[var(--c-accent)]" strokeWidth={2} opacity={0.45} />
-              <circle data-k={key} cx={b.x} cy={b.y} r={20} className="fill-[var(--c-accent)]" />
-              <text data-k={key} data-ox={o.dx} data-oy={o.dy} x={b.x + o.dx} y={b.y + o.dy} textAnchor="middle" className="fill-[var(--c-accent)] font-bold" fontSize={16}>{lbl}</text>
+          ) : (
+            <g key={i}>
+              <circle data-i={i} cx={p.x} cy={p.y} r={9} className="fill-[var(--c-text)]" />
+              <text data-i={i} data-ox={ox} data-oy={oy} x={lab.x} y={lab.y} textAnchor={lab.anchor} className="fill-[var(--c-muted)]" fontSize={12}>{n.label}</text>
             </g>
           );
         })}
@@ -740,6 +773,68 @@ function PublicationCard({ item }: { item: Publication }) {
   );
 }
 
+// Responsive grid of cards for a custom "card list" section.
+function CardGrid({ cards }: { cards: any[] }) {
+  const list = Array.isArray(cards) ? cards.filter((c) => c && (c.title || c.description || c.image)) : [];
+  if (!list.length) return null;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+      {list.map((c, i) => (
+        <div key={i} className="bg-[var(--c-surface)] border border-[var(--c-border)] rounded-lg p-5 flex flex-col">
+          {c.image && (
+            <img src={c.image} alt={c.title || ""} loading="lazy" decoding="async" className="w-full h-40 object-cover rounded mb-3" />
+          )}
+          {c.title && <h3 className="font-bold mb-1">{c.title}</h3>}
+          {c.description && <p className="text-[var(--c-muted)] text-sm flex-1">{renderRich(c.description)}</p>}
+          {c.link && (
+            <a href={c.link} target="_blank" rel="noopener noreferrer" aria-label={`Learn more about ${c.title || "this item"}`}
+              className="text-[var(--c-accent)] text-sm mt-3 hover:underline inline-flex items-center">Learn more &rarr;</a>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// One content block inside a custom section: text, image, or a card grid.
+function CustomBlock({ b }: { b: any }) {
+  if (!b) return null;
+  if (b.type === "image") {
+    if (!b.image) return null;
+    return (
+      <figure className="max-w-3xl mx-auto">
+        <img src={b.image} alt={b.caption || ""} loading="lazy" decoding="async" className="w-full rounded-lg border border-[var(--c-border)]" />
+        {b.caption && <figcaption className="text-center text-sm text-[var(--c-muted)] mt-2">{b.caption}</figcaption>}
+      </figure>
+    );
+  }
+  if (b.type === "cards") return <CardGrid cards={b.cards} />;
+  // default: rich text
+  return (
+    <div className="max-w-3xl mx-auto text-[var(--c-muted)] leading-relaxed space-y-4">
+      {String(b.text || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).map((para, i) => (
+        <p key={i}>{renderRich(para)}</p>
+      ))}
+    </div>
+  );
+}
+
+// A user-defined section (added from admin) — an ordered list of text/image/card blocks.
+function CustomSection({ data }: { data: any }) {
+  const head = { badge: data.badge, title: data.title, subtitle: data.subtitle };
+  const blocks = Array.isArray(data.blocks) ? data.blocks
+    : data.type === "cards" ? [{ type: "cards", cards: data.cards }]
+    : [{ type: "text", text: data.body }];
+  return (
+    <section id={data.id} className="pt-16 pb-16">
+      <div className="text-center mb-8"><SectionHead h={head} /></div>
+      <div className="space-y-8">
+        {blocks.map((b: any, i: number) => <CustomBlock key={i} b={b} />)}
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Light / dark theme — defaults to dark, remembers the visitor's choice.
@@ -779,13 +874,16 @@ export default function App() {
   const referencesData = (remote.references ?? defaultReferences) as ReferenceItem[];
   const newsItems = (remote.news ?? newsData.items) as typeof newsData.items;
   const mediaItems = (remote.media ?? mediaData.items) as typeof mediaData.items;
-  const metrics = ((remote.metrics && typeof remote.metrics === "object") ? remote.metrics : metricsData) as typeof metricsData;
+  // In "auto" mode the live row only carries a flag; the real numbers are the
+  // OpenAlex values baked at build time (metricsData). Manual mode uses the live row.
+  const metrics = ((remote.metrics && (remote.metrics as any).auto !== true && typeof remote.metrics === "object") ? remote.metrics : metricsData) as typeof metricsData;
   const hero = ((remote.hero && typeof remote.hero === "object") ? { ...heroData, ...remote.hero } : heroData) as typeof heroData;
   const about = ((remote.about && typeof remote.about === "object") ? { ...aboutData, ...remote.about } : aboutData) as typeof aboutData;
   const settings = ((remote.settings && typeof remote.settings === "object") ? { ...settingsData, ...remote.settings } : settingsData) as any;
   const headings = ((remote.headings && typeof remote.headings === "object") ? { ...headingsData, ...remote.headings } : headingsData) as any;
   const research = ((remote.research && typeof remote.research === "object") ? { ...researchData, ...remote.research } : researchData) as any;
-  const sliderMs = (Number(settings.sliderSeconds) || 11) * 1000;
+  // Slider speed: per-section override, else the global default.
+  const secMs = (id: string) => (Number((settings.sliderPerSection || {})[id]) || Number(settings.sliderSeconds) || 11) * 1000;
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -824,7 +922,7 @@ export default function App() {
               <div className="md:w-1/3 flex flex-col items-center">
                 <div className="rounded-full overflow-hidden border-4 border-[var(--c-border)] bg-[var(--c-surface2)] w-64 h-64">
                   <img
-                    src="/images/palash_roy.jpg"
+                    src={(about as any).photo || "/images/palash_roy.jpg"}
                     alt="Palash Roy - AI Researcher and Computer Science PhD Student at University of Saskatchewan"
                     width={512}
                     height={448}
@@ -1004,7 +1102,7 @@ export default function App() {
               </div>
             </div>
             <Carousel
-              rotationInterval={sliderMs}
+              rotationInterval={secMs('portfolio')}
               items={publicationsData}
               renderItem={(item) => (<PublicationCard item={item} />)}
             />
@@ -1039,7 +1137,7 @@ export default function App() {
               <SectionHead h={headings.leadership} />
             </div>
             <Carousel
-              rotationInterval={sliderMs}
+              rotationInterval={secMs('leadership')}
               items={leadershipRolesData}
               renderItem={(item) => (
                 <div className="bg-[var(--c-surface)] h-full p-6 rounded-lg">
@@ -1072,7 +1170,7 @@ export default function App() {
               <SectionHead h={headings.service} />
             </div>
             <Carousel
-              rotationInterval={sliderMs}
+              rotationInterval={secMs('service')}
               items={academicServiceData}
               renderItem={(item) => (
                 <div className="bg-[var(--c-surface)] h-full p-6 rounded-lg">
@@ -1094,7 +1192,7 @@ export default function App() {
             </div>
             
             <Carousel
-              rotationInterval={sliderMs}
+              rotationInterval={secMs('highlights')}
               items={highlightsData}
               renderItem={(item) => (
                 <div className="bg-[var(--c-surface)] h-full p-6 rounded-lg flex flex-col">
@@ -1157,7 +1255,7 @@ export default function App() {
               <SectionHead h={headings.pictures} />
             </div>
             <Carousel
-              rotationInterval={sliderMs}
+              rotationInterval={secMs('pictures')}
               items={galleryData}
               renderItem={(item) => (
                 <div className="bg-[var(--c-surface)] h-full p-4 rounded-lg flex flex-col items-center text-center">
@@ -1210,7 +1308,7 @@ export default function App() {
 
             {/* Reference testimonials in cards - kept from original design */}
             <Carousel
-              rotationInterval={sliderMs}
+              rotationInterval={secMs('references')}
               items={referencesData}
               renderItem={(item) => (
                 <div className="bg-[var(--c-surface)] border border-[var(--c-border)] h-full p-4 sm:p-6 rounded-lg text-[var(--c-muted)] flex flex-col items-start relative overflow-hidden">
@@ -1257,15 +1355,30 @@ export default function App() {
           </section>
     </>),
   };
+  // User-defined sections (added from admin → Custom Sections)
+  const customSections = (Array.isArray((remote as any).customSections) ? (remote as any).customSections : []).filter((c: any) => c && c.id);
+  customSections.forEach((cs: any) => { sectionMap[cs.id] = <CustomSection data={cs} />; });
+
   const defaultSectionOrder = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','contact'];
   const roRaw = Array.isArray((remote as any).sectionOrder) ? ((remote as any).sectionOrder as string[]) : defaultSectionOrder;
-  const sectionOrder = roRaw.filter((id) => sectionMap[id]);
-  defaultSectionOrder.forEach((id) => { if (!sectionOrder.includes(id)) sectionOrder.push(id); });
+  const fullOrder = roRaw.filter((id) => sectionMap[id]);
+  defaultSectionOrder.forEach((id) => { if (!fullOrder.includes(id)) fullOrder.push(id); });
+  // Show custom sections even if they aren't in the saved order yet (append at end)
+  customSections.forEach((cs: any) => { if (!fullOrder.includes(cs.id)) fullOrder.push(cs.id); });
+  // Sections the user has hidden from the live site (editable in admin → Layout)
+  const hiddenSet = new Set(Array.isArray((remote as any).sectionsHidden) ? ((remote as any).sectionsHidden as string[]) : []);
+  const sectionOrder = fullOrder.filter((id) => !hiddenSet.has(id));
 
-  // Nav bar follows the same order as the sections (editable via layout + headings)
+  const navLabelOf = (id: string) => {
+    if (headings[id] && headings[id].nav) return headings[id].nav;
+    const cs = customSections.find((c: any) => c.id === id);
+    if (cs) return cs.nav || cs.title || "Section";
+    return id;
+  };
+  // Nav bar follows the same order as the visible sections (editable via layout + headings)
   const navLinks = [
     { label: (hero as any).navHome || "Home", href: "#home" },
-    ...sectionOrder.map((id) => ({ label: (headings[id] && headings[id].nav) || id, href: `#${id}` })),
+    ...sectionOrder.map((id) => ({ label: navLabelOf(id), href: `#${id}` })),
   ];
 
   return (
@@ -1377,19 +1490,29 @@ export default function App() {
             {/* Soft animated glow ring behind the portrait */}
             <div className="absolute -inset-3 bg-gradient-to-tr from-[#35c7ff] to-[#ff4081] opacity-20 blur-2xl rounded-[2rem] animate-pulse" style={{ animationDuration: '5s' }}></div>
             <div className="relative w-64 h-64 md:w-80 md:h-80 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(122,205,235,0.18)] border-4 border-[var(--c-border)] bg-[var(--c-surface2)]">
-              {/* Profile photo with improved alt text for SEO. WebP with JPG fallback (LCP). */}
-              <picture>
-                <source srcSet="/images/palash_roy_headshot.webp" type="image/webp" />
+              {/* Profile photo. Custom upload (admin) wins; otherwise the optimized WebP+JPG default (LCP). */}
+              {(hero as any).photo ? (
                 <img
-                  src="/images/palash_roy_headshot.jpg"
+                  src={(hero as any).photo}
                   alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
-                  width={640}
-                  height={552}
                   className="w-full h-full object-cover"
                   decoding="async"
                   fetchPriority="high"
                 />
-              </picture>
+              ) : (
+                <picture>
+                  <source srcSet="/images/palash_roy_headshot.webp" type="image/webp" />
+                  <img
+                    src="/images/palash_roy_headshot.jpg"
+                    alt="Palash Ranjan Roy (Palash Roy) - Computer Science PhD Student at University of Saskatchewan specializing in AI and Software Engineering"
+                    width={640}
+                    height={552}
+                    className="w-full h-full object-cover"
+                    decoding="async"
+                    fetchPriority="high"
+                  />
+                </picture>
+              )}
             </div>
             {/* Status badge highlighting research identity */}
             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[var(--c-surface2)] border border-[var(--c-border)] px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">

@@ -177,7 +177,7 @@ try {
 
 // field schemas: which keys each section's items have, and which are long text / images
 $schemas = [
-    'publications' => ['title'=>'text','authors'=>'text','venue'=>'text','year'=>'text','pages'=>'text','award'=>'text','doi'=>'text','description'=>'area','preprint'=>'text','bibtex'=>'area'],
+    'publications' => ['title'=>'text','authors'=>'text','venue'=>'text','year'=>'text','pages'=>'text','award'=>'text','doi'=>'text','description'=>'area','preprint'=>'pdf','bibtex'=>'area'],
     'highlights'   => ['title'=>'text','organization'=>'text','description'=>'area','link'=>'text','image'=>'image'],
     'news'         => ['date'=>'text','icon'=>'text','title'=>'text','description'=>'area','url'=>'url'],
     'media'        => ['outlet'=>'text','date'=>'text','title'=>'text','url'=>'url'],
@@ -248,7 +248,7 @@ code{background:#0c0d16;border:1px solid #2d324b;border-radius:4px;padding:1px 5
 </style></head><body>
 <div class="shell">
   <aside class="sidebar" id="sidebar">
-    <div class="brand">🛠️ Content Admin<small>palashroy.me</small></div>
+    <div class="brand">Content Admin<small>palashroy.me</small></div>
     <div class="side-scroll"><nav id="nav"></nav></div>
     <div class="side-foot">
       <div class="who">Signed in as <b><?= htmlspecialchars($_SESSION['admin']) ?></b></div>
@@ -274,26 +274,27 @@ const LABELS = {publications:'Publications',highlights:'Achievements',news:'News
 // Sidebar navigation groups
 const NAV = [
   {group:'Content', items:[
-    {id:'hero',label:'Home / Hero',icon:'🏠'},
-    {id:'about',label:'Biography',icon:'📝'},
-    {id:'headings',label:'Sections & Headings',icon:'🏷️'},
-    {id:'publications',label:'Publications',icon:'📚'},
-    {id:'research',label:'Research Graph',icon:'🕸️'},
-    {id:'highlights',label:'Achievements',icon:'🏅'},
-    {id:'news',label:'News & Milestones',icon:'🗞️'},
-    {id:'media',label:'In the News',icon:'📰'},
-    {id:'gallery',label:'Pictures',icon:'🖼️'},
-    {id:'leadership',label:'Leadership',icon:'🎖️'},
-    {id:'service',label:'Academic Service',icon:'🤝'},
-    {id:'references',label:'References',icon:'💬'},
+    {id:'hero',label:'Home / Hero'},
+    {id:'about',label:'Biography'},
+    {id:'headings',label:'Sections & Headings'},
+    {id:'publications',label:'Publications'},
+    {id:'research',label:'Research Graph'},
+    {id:'highlights',label:'Achievements'},
+    {id:'news',label:'News & Milestones'},
+    {id:'media',label:'In the News'},
+    {id:'gallery',label:'Pictures'},
+    {id:'leadership',label:'Leadership'},
+    {id:'service',label:'Academic Service'},
+    {id:'references',label:'References'},
   ]},
   {group:'Site', items:[
-    {id:'layout',label:'Page Layout',icon:'⚙️'},
-    {id:'settings',label:'Slider & Resume',icon:'🎚️'},
-    {id:'metrics',label:'Research Metrics',icon:'📊'},
+    {id:'layout',label:'Page Layout'},
+    {id:'custom',label:'Custom Sections'},
+    {id:'settings',label:'Slider & Resume'},
+    {id:'metrics',label:'Research Metrics'},
   ]},
   {group:'Account', items:[
-    {id:'password',label:'Change Password',icon:'🔒'},
+    {id:'password',label:'Change Password'},
   ]},
 ];
 const TITLES = {};
@@ -304,8 +305,15 @@ let current = 'hero';
 // Page-layout (section order) editing
 const SECTION_LABELS = {about:'About / Biography',portfolio:'Publications',news:'News & Milestones',leadership:'Leadership',service:'Academic Service',highlights:'Awards',media:'In the News',pictures:'Pictures',references:'References',contact:'Contact'};
 const DEFAULT_ORDER = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','contact'];
-let layoutOrder = (Array.isArray(DATA.sectionOrder) ? DATA.sectionOrder.filter(id=>SECTION_LABELS[id]) : DEFAULT_ORDER.slice());
+// Custom (user-added) sections
+let customSections = Array.isArray(DATA.customSections) ? DATA.customSections.filter(c=>c&&c.id) : [];
+// Label for any section id (built-in or custom)
+function sectionLabel(id){ if(SECTION_LABELS[id]) return SECTION_LABELS[id]; const c=customSections.find(x=>x.id===id); return c ? ((c.title||c.nav||'Custom section')) : id; }
+function knownSection(id){ return !!SECTION_LABELS[id] || customSections.some(c=>c.id===id); }
+let layoutOrder = (Array.isArray(DATA.sectionOrder) ? DATA.sectionOrder.filter(knownSection) : DEFAULT_ORDER.slice());
 DEFAULT_ORDER.forEach(id=>{ if(!layoutOrder.includes(id)) layoutOrder.push(id); });
+customSections.forEach(c=>{ if(!layoutOrder.includes(c.id)) layoutOrder.push(c.id); });
+let hiddenSet = new Set(Array.isArray(DATA.sectionsHidden) ? DATA.sectionsHidden.filter(knownSection) : []);
 
 // Sections whose headings/descriptions are editable, in page order
 const HSECTIONS = [
@@ -334,7 +342,7 @@ const DEFAULT_HEADINGS = {
   contact:{nav:'Contact',badge:'Contact',title:'Get in Touch',subtitle:"Have a question, an opportunity, or just want to say hi? Send me a message and I'll get back to you."},
 };
 
-const FMT_HINT = `<p class="lead" style="background:#12131c;border:1px solid #23263a;border-radius:8px;padding:10px 12px">✏️ <b style="color:#7ec8e3">Formatting:</b> link = <code>[text](https://link.com)</code> — put the URL in <b>(round brackets)</b>. Bold = <code>**word**</code>, italic = <code>*word*</code>. A bare address like <code>srlab.usask.ca</code> becomes a link automatically. Works in descriptions, paragraphs, hero text and section subtitles.</p>`;
+const FMT_HINT = `<p class="lead" style="background:#12131c;border:1px solid #23263a;border-radius:8px;padding:10px 12px"><b style="color:#7ec8e3">Formatting:</b> link = <code>[text](https://link.com)</code> — put the URL in <b>(round brackets)</b>. Bold = <code>**word**</code>, italic = <code>*word*</code>. A bare address like <code>srlab.usask.ca</code> becomes a link automatically. Works in descriptions, paragraphs, hero text and section subtitles.</p>`;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 const escA = v => (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function v(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
@@ -343,7 +351,7 @@ const app = ()=>document.getElementById('app');
 function renderNav(){
   document.getElementById('nav').innerHTML = NAV.map(g=>
     `<div class="grp">${g.group}</div>` + g.items.map(i=>
-      `<a class="navlink ${i.id===current?'active':''}" onclick="switchTo('${i.id}')"><span class="ic">${i.icon}</span>${i.label}</a>`
+      `<a class="navlink ${i.id===current?'active':''}" onclick="switchTo('${i.id}')">${i.label}</a>`
     ).join('')
   ).join('');
 }
@@ -380,6 +388,13 @@ window.onPickImage=(fi)=>{
   });
   fi.value='';
 };
+window.onPickPdf=(fi)=>{
+  const f=fi.files[0]; if(!f) return;
+  const wrap=fi.closest('.imgfield');
+  const txt=wrap.querySelector('input[data-k]');
+  uploadFile(f,'pdf',url=>{ txt.value=url; });
+  fi.value='';
+};
 
 // Fetch an article's title from its URL and fill in the Title (and Outlet, if empty).
 window.fetchTitle=async(btn)=>{
@@ -400,24 +415,46 @@ window.fetchTitle=async(btn)=>{
 
 // ---- Page Layout ----
 function renderLayout(){
-  app().innerHTML = `<h2>Page Layout</h2><p class="lead">Reorder the sections of your homepage. This also reorders the top navigation menu on the website.</p>`+
-    `<div>`+layoutOrder.map((id,i)=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center"><b style="color:#7ec8e3">${(i+1)+'. '+SECTION_LABELS[id]}</b><span class="acts"><button class="mv" onclick="moveSection(${i},-1)">↑</button><button class="mv" onclick="moveSection(${i},1)">↓</button></span></div>`).join('')+`</div>`+
+  app().innerHTML = `<h2>Page Layout</h2><p class="lead">Reorder your homepage sections with the arrows, or use Show/Hide to control visibility. Hidden sections disappear from the website and the top navigation menu (but keep their content, so you can bring them back anytime). This order also drives the nav menu.</p>`+
+    `<div>`+layoutOrder.map((id,i)=>{
+      const off = hiddenSet.has(id);
+      return `<div class="item" style="display:flex;justify-content:space-between;align-items:center;${off?'opacity:.5':''}">`+
+        `<b style="color:${off?'#6b6f85':'#7ec8e3'}">${(i+1)+'. '+sectionLabel(id)}${off?' <span style="font-weight:400;font-size:12px">(hidden)</span>':''}</b>`+
+        `<span class="acts">`+
+        `<button class="mv" title="${off?'Show on website':'Hide from website'}" onclick="toggleHidden('${id}')">${off?'Show':'Hide'}</button>`+
+        `<button class="mv" title="Move up" onclick="moveSection(${i},-1)">↑</button>`+
+        `<button class="mv" title="Move down" onclick="moveSection(${i},1)">↓</button>`+
+        `</span></div>`;
+    }).join('')+`</div>`+
     `<div class="bar"><button class="primary" onclick="saveLayout()">Save Layout</button></div>`;
 }
 window.moveSection=(i,dir)=>{const j=i+dir;if(j<0||j>=layoutOrder.length)return;[layoutOrder[i],layoutOrder[j]]=[layoutOrder[j],layoutOrder[i]];renderLayout();};
-window.saveLayout=()=>postSection('sectionOrder',layoutOrder,'Layout');
+window.toggleHidden=(id)=>{ if(hiddenSet.has(id)) hiddenSet.delete(id); else hiddenSet.add(id); renderLayout(); };
+window.saveLayout=async()=>{
+  try{
+    const body=(section,data)=>fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}).then(r=>r.json());
+    const [a,b]=await Promise.all([body('sectionOrder',layoutOrder), body('sectionsHidden',[...hiddenSet])]);
+    toast((a.ok&&b.ok)?'Layout & visibility saved ✓':('Error: '+((a.error||b.error)||'failed')));
+  }catch(e){ toast('Network error'); }
+};
 
 // ---- Slider & Resume settings ----
+const SLIDER_SECTIONS=[['portfolio','Publications'],['leadership','Leadership'],['service','Academic Service'],['highlights','Achievements'],['pictures','Pictures'],['references','References']];
 function renderSettings(){
-  const s = Object.assign({sliderSeconds:11,resumeUrl:''}, DATA.settings||{});
+  const s = Object.assign({sliderSeconds:11,resumeUrl:'',sliderPerSection:{}}, DATA.settings||{});
+  const per = s.sliderPerSection||{};
   app().innerHTML = `<h2>Slider & Resume</h2><p class="lead">Control how fast the sliders rotate and upload the resume people can download.</p>`+
     `<div class="item">`+
-    `<label>Slider speed — seconds between slides</label><input id="st_slider" type="number" min="2" max="60" value="${escA(s.sliderSeconds||11)}">`+
-    `<small>Applies to every rotating carousel (Publications, Leadership, Pictures, etc.).</small>`+
+    `<label>Default slider speed — seconds between slides</label><input id="st_slider" type="number" min="2" max="60" value="${escA(s.sliderSeconds||11)}">`+
+    `<small>Used by every rotating carousel unless you set a per-section override below.</small>`+
+    `</div>`+
+    `<div class="item"><div class="item-head"><b>Per-section speed (optional)</b></div>`+
+    `<small style="margin-bottom:6px">Leave a box blank to use the default. Seconds between slides.</small>`+
+    SLIDER_SECTIONS.map(([id,label])=>`<label>${label}</label><input class="st_per" data-sec="${id}" type="number" min="2" max="60" placeholder="default (${s.sliderSeconds||11})" value="${escA(per[id]||'')}">`).join('')+
     `</div>`+
     `<div class="item imgfield">`+
     `<label>Resume / CV (PDF)</label>`+
-    `<div class="uprow"><input data-k="resume" id="st_resume" value="${escA(s.resumeUrl)}" placeholder="/uploads/resume.pdf"><button type="button" class="up" onclick="this.nextElementSibling.click()">📤 Upload PDF</button><input type="file" accept="application/pdf" hidden onchange="onPickResume(this)"></div>`+
+    `<div class="uprow"><input data-k="resume" id="st_resume" value="${escA(s.resumeUrl)}" placeholder="/uploads/resume.pdf"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload PDF</button><input type="file" accept="application/pdf" hidden onchange="onPickResume(this)"></div>`+
     (s.resumeUrl?`<small>Current: <a href="${escA(s.resumeUrl)}" target="_blank" style="color:#7ec8e3">${escA(s.resumeUrl)}</a></small>`:'')+
     `<small>A "Download Resume" button appears in your hero when this is set. Leave blank to hide it.</small>`+
     `</div>`+
@@ -425,7 +462,9 @@ function renderSettings(){
 }
 window.onPickResume=(fi)=>{ const f=fi.files[0]; if(!f) return; uploadFile(f,'resume',url=>{ document.getElementById('st_resume').value=url; }); fi.value=''; };
 window.saveSettings=()=>{
-  const data={sliderSeconds:parseInt(document.getElementById('st_slider').value)||11,resumeUrl:v('st_resume')};
+  const per={};
+  document.querySelectorAll('.st_per').forEach(i=>{ const n=parseInt(i.value); if(n>0) per[i.dataset.sec]=n; });
+  const data={sliderSeconds:parseInt(document.getElementById('st_slider').value)||11,sliderPerSection:per,resumeUrl:v('st_resume')};
   DATA.settings=data; postSection('settings',data,'Settings');
 };
 
@@ -459,47 +498,144 @@ window.saveHeadings=()=>{
   DATA.headings=out; postSection('headings',out,'Sections & Headings');
 };
 
-// ---- Research graph ----
-function renderResearch(){
-  const r = Object.assign({hubs:['Code Clones','Large Language Models'],leaves:['Clone Detection','Cross-language Clones','Green AI','Clone Refactoring']}, DATA.research||{});
-  const h = r.hubs||[], lv = r.leaves||[];
-  app().innerHTML = `<h2>Research Graph</h2><p class="lead">A network diagram of your research. The two big circles are your main research areas; the four smaller nodes are related topics they connect to. Keep labels short so they fit.</p>`+
-    `<div class="item"><div class="item-head"><b>Main areas (big circles)</b></div>`+
-    `<label>Main area 1</label><input id="rg_h0" value="${escA(h[0]||'')}">`+
-    `<label>Main area 2</label><input id="rg_h1" value="${escA(h[1]||'')}"></div>`+
-    `<div class="item"><div class="item-head"><b>Related topics (small nodes)</b></div>`+
-    [0,1,2,3].map(i=>`<label>Topic ${i+1}</label><input class="rg_leaf" value="${escA(lv[i]||'')}">`).join('')+
-    `</div>`+
-    `<div class="bar"><button class="primary" onclick="saveResearch()">Save Research Graph</button></div>`;
+// ---- Research graph (any number of nodes) ----
+function rgNodes(){
+  if(Array.isArray(DATA.research&&DATA.research.nodes)) return DATA.research.nodes.map(n=> typeof n==='string'?{label:n,main:false}:{label:n.label||'',main:!!n.main});
+  const r=DATA.research||{};
+  const hubs=Array.isArray(r.hubs)?r.hubs:['Code Clones','Large Language Models'];
+  const leaves=Array.isArray(r.leaves)?r.leaves:['Clone Detection','Cross-language Clones','Green AI','Clone Refactoring'];
+  return [...hubs.map(l=>({label:l,main:true})), ...leaves.map(l=>({label:l,main:false}))];
 }
+function rgRow(n){ n=n||{}; return `<div class="row" data-rg style="align-items:center;gap:8px"><input data-rgl value="${escA(n.label)}" placeholder="Topic label" style="flex:1"><label style="display:flex;align-items:center;gap:5px;margin:0;text-transform:none;white-space:nowrap;color:#7ec8e3;font-size:13px"><input type="checkbox" data-rgm ${n.main?'checked':''} style="width:auto"> Main</label><button class="del" onclick="this.closest('[data-rg]').remove()">✕</button></div>`; }
+function renderResearch(){
+  app().innerHTML = `<h2>Research Graph</h2><p class="lead">A network diagram of your research. Add as many topics as you like. Tick <b>Main</b> for the big central circles (usually 1–3); the rest become smaller nodes that orbit and auto-connect to the nearest main topic. Keep labels short so they fit.</p>`+
+    `<div id="rgNodes">`+rgNodes().map(rgRow).join('')+`</div>`+
+    `<button onclick="addRgNode()">+ Add topic</button>`+
+    `<div class="bar"><button class="primary" onclick="saveResearch()">Save Research Graph</button></div>`+
+    `<small>Tip: 2 main + a handful of related topics looks best, but it scales to any number.</small>`;
+}
+window.addRgNode=()=>{ document.getElementById('rgNodes').insertAdjacentHTML('beforeend', rgRow({})); };
 window.saveResearch=()=>{
-  const hubs=[v('rg_h0'),v('rg_h1')].filter(Boolean);
-  const leaves=[...document.querySelectorAll('.rg_leaf')].map(i=>i.value.trim()).filter(Boolean);
-  const data={hubs,leaves}; DATA.research=data; postSection('research',data,'Research Graph');
+  const nodes=[...document.querySelectorAll('#rgNodes [data-rg]')].map(r=>({label:r.querySelector('[data-rgl]').value.trim(), main:r.querySelector('[data-rgm]').checked})).filter(n=>n.label);
+  const data={nodes}; DATA.research=data; postSection('research',data,'Research Graph');
+};
+
+// ---- Custom sections (user-added, block-based) ----
+function normBlocks(s){
+  if(Array.isArray(s.blocks)) return s.blocks;
+  if(s.type==='cards') return [{type:'cards',cards:s.cards||[]}];
+  if(s.body!==undefined) return [{type:'text',text:s.body||''}];
+  return [{type:'text',text:''}];
+}
+function collectCustom(){
+  const out=[];
+  document.querySelectorAll('#customList > [data-cs]').forEach(el=>{
+    const g=(k)=>{ const n=el.querySelector('[data-f="'+k+'"]'); return n?n.value.trim():''; };
+    const blocks=[...el.querySelectorAll('[data-block]')].map(bl=>{
+      const t=bl.dataset.btype;
+      const bg=(k)=>{ const n=bl.querySelector('[data-bf="'+k+'"]'); return n?n.value.trim():''; };
+      if(t==='image') return {type:'image', image:bg('image'), caption:bg('caption')};
+      if(t==='cards') return {type:'cards', cards:[...bl.querySelectorAll('[data-card]')].map(cr=>{const cg=(k)=>{const n=cr.querySelector('[data-cf="'+k+'"]');return n?n.value.trim():'';};return {title:cg('title'),description:cg('description'),link:cg('link'),image:cg('image')};}).filter(c=>c.title||c.description||c.image)};
+      return {type:'text', text:bg('text')};
+    }).filter(b=> b.type==='text'?b.text : b.type==='image'?b.image : (b.cards&&b.cards.length));
+    out.push({ id:el.dataset.id, nav:g('nav'), badge:g('badge'), title:g('title'), subtitle:g('subtitle'), blocks });
+  });
+  return out;
+}
+function cardEditor(c){
+  c=c||{};
+  return `<div class="item" data-card style="background:#0c0d16">`+
+    `<div class="item-head"><b>Card</b><span class="acts"><button class="del" onclick="this.closest('[data-card]').remove()">Remove</button></span></div>`+
+    `<label>Title</label><input data-cf="title" value="${escA(c.title)}">`+
+    `<label>Description</label><textarea data-cf="description">${escA(c.description)}</textarea>`+
+    `<label>Link (optional)</label><input data-cf="link" value="${escA(c.link)}" placeholder="https://…">`+
+    `<div class="imgfield"><label>Image (optional)</label>`+
+    `<div class="uprow"><input data-cf="image" data-k="image" value="${escA(c.image)}" oninput="mark()"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>`+
+    (c.image?`<img class="thumb" src="${escA(c.image)}">`:'')+`</div></div>`;
+}
+function blockEditor(b){
+  b=b||{type:'text'};
+  const head=(name)=>`<div class="item-head"><b>${name}</b><span class="acts"><button class="mv" title="Move up" onclick="moveBlock(this,-1)">↑</button><button class="mv" title="Move down" onclick="moveBlock(this,1)">↓</button><button class="del" onclick="this.closest('[data-block]').remove()">Remove</button></span></div>`;
+  if(b.type==='image'){
+    return `<div class="item" data-block data-btype="image" style="background:#12131c">`+head('Image block')+
+      `<div class="imgfield"><div class="uprow"><input data-bf="image" data-k="image" value="${escA(b.image)}" placeholder="Upload an image" oninput="mark()"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>${b.image?`<img class="thumb" src="${escA(b.image)}">`:''}</div>`+
+      `<label>Caption (optional)</label><input data-bf="caption" value="${escA(b.caption)}"></div>`;
+  }
+  if(b.type==='cards'){
+    return `<div class="item" data-block data-btype="cards" style="background:#12131c">`+head('Cards block')+
+      `<div class="cardlist">`+((b.cards||[]).map(cardEditor).join(''))+`</div><button onclick="addCard(this)">+ Add card</button></div>`;
+  }
+  return `<div class="item" data-block data-btype="text" style="background:#12131c">`+head('Text block')+
+    `<textarea data-bf="text" style="min-height:120px">${escA(b.text)}</textarea></div>`;
+}
+function sectionEditor(s){
+  return `<div class="item" data-cs data-id="${escA(s.id)}">`+
+    `<div class="item-head"><b>Section</b><span class="acts"><button class="del" onclick="removeCustom('${escA(s.id)}')">Remove section</button></span></div>`+
+    `<label>Menu label (top nav)</label><input data-f="nav" value="${escA(s.nav)}">`+
+    `<label>Badge (small pill above title)</label><input data-f="badge" value="${escA(s.badge)}">`+
+    `<label>Title</label><input data-f="title" value="${escA(s.title)}">`+
+    `<label>Description (subtitle)</label><textarea data-f="subtitle">${escA(s.subtitle)}</textarea>`+
+    `<h3 style="margin:14px 0 6px;color:#7ec8e3;font-size:14px">Content blocks</h3>`+
+    `<div class="blocks">`+normBlocks(s).map(blockEditor).join('')+`</div>`+
+    `<div style="display:flex;gap:8px;margin-top:8px"><button onclick="addBlock(this,'text')">+ Text</button><button onclick="addBlock(this,'image')">+ Image</button><button onclick="addBlock(this,'cards')">+ Cards</button></div>`+
+    `</div>`;
+}
+function renderCustom(){
+  app().innerHTML = `<h2>Custom Sections</h2><p class="lead">Build your own sections (e.g. Teaching, Talks, Projects) by stacking <b>text</b>, <b>image</b> and <b>card</b> blocks in any order. They appear on the site and in <b>Page Layout</b>, where you can reorder or hide them like any built-in section.</p>`+FMT_HINT+
+    `<div style="margin-bottom:14px"><button onclick="addCustom()">+ Add section</button></div>`+
+    `<div id="customList">`+ (customSections.length ? customSections.map(sectionEditor).join('') : `<p class="lead">No custom sections yet — add one above.</p>`) +`</div>`+
+    `<div class="bar"><button class="primary" onclick="saveCustom()">Save Custom Sections</button></div>`;
+}
+window.addCard=(btn)=>{ btn.previousElementSibling.insertAdjacentHTML('beforeend', cardEditor({})); };
+window.addBlock=(btn,type)=>{ btn.closest('[data-cs]').querySelector('.blocks').insertAdjacentHTML('beforeend', blockEditor({type})); };
+window.moveBlock=(btn,dir)=>{ const bl=btn.closest('[data-block]'); if(dir<0){ const p=bl.previousElementSibling; if(p&&p.matches('[data-block]')) bl.parentNode.insertBefore(bl,p); } else { const n=bl.nextElementSibling; if(n&&n.matches('[data-block]')) bl.parentNode.insertBefore(n,bl); } };
+window.addCustom=()=>{ customSections=collectCustom(); const id='custom-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); customSections.push({id,nav:'',badge:'',title:'',subtitle:'',blocks:[{type:'text',text:''}]}); renderCustom(); };
+window.removeCustom=(id)=>{ customSections=collectCustom().filter(s=>s.id!==id); renderCustom(); };
+window.saveCustom=async()=>{
+  customSections=collectCustom();
+  customSections.forEach(s=>{ if(!layoutOrder.includes(s.id)) layoutOrder.push(s.id); });
+  const valid=new Set([...Object.keys(SECTION_LABELS), ...customSections.map(s=>s.id)]);
+  layoutOrder=layoutOrder.filter(id=>valid.has(id));
+  hiddenSet=new Set([...hiddenSet].filter(id=>valid.has(id)));
+  try{
+    const body=(section,data)=>fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}).then(r=>r.json());
+    const [a,b,c]=await Promise.all([body('customSections',customSections), body('sectionOrder',layoutOrder), body('sectionsHidden',[...hiddenSet])]);
+    DATA.customSections=customSections;
+    toast((a.ok&&b.ok&&c.ok)?'Custom sections saved ✓':('Error: '+((a.error||b.error||c.error)||'failed')));
+  }catch(e){ toast('Network error'); }
 };
 
 // ---- Metrics ----
 function renderMetrics(){
   const m = DATA.metrics || {citations:0,hIndex:0,works:0};
-  app().innerHTML = `<h2>Research Metrics</h2><p class="lead">Set these to match your Google Scholar profile. They appear in the hero and the Publications section.</p>`+
+  const auto = m.auto===true;
+  app().innerHTML = `<h2>Research Metrics</h2><p class="lead">The citation numbers shown in your hero and Publications section.</p>`+
     `<div class="item">`+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef"><input type="checkbox" id="m_auto" style="width:auto" onchange="renderMetricsMode()" ${auto?'checked':''}> Update automatically from OpenAlex (via your ORCID) on each rebuild</label>`+
+    `<small>Automatic uses OpenAlex, which usually reports <b>fewer</b> citations than Google Scholar. Leave it off to show your own Google Scholar numbers.</small>`+
+    `<div id="m_manual" style="${auto?'display:none':''};margin-top:12px">`+
     `<label>Citations</label><input id="m_citations" type="number" value="${escA(m.citations??'')}">`+
     `<label>h-index</label><input id="m_hIndex" type="number" value="${escA(m.hIndex??'')}">`+
     `<label>Works / publications count</label><input id="m_works" type="number" value="${escA(m.works??'')}">`+
-    `</div>`+
+    `</div></div>`+
     `<div class="bar"><button class="primary" onclick="saveMetrics()">Save Metrics</button></div>`+
-    `<small>Tip: open your Google Scholar profile, copy the "Cited by" total and h-index here.</small>`;
+    `<small>Manual tip: open your Google Scholar profile and copy the "Cited by" total and h-index here.</small>`;
 }
+window.renderMetricsMode=()=>{ const on=document.getElementById('m_auto').checked; document.getElementById('m_manual').style.display = on?'none':''; };
 window.saveMetrics=()=>{
   const prev = DATA.metrics||{};
-  const data = Object.assign({}, prev, {
-    citations: parseInt(document.getElementById('m_citations').value)||0,
-    hIndex: parseInt(document.getElementById('m_hIndex').value)||0,
-    works: parseInt(document.getElementById('m_works').value)||0,
-    source: 'Google Scholar',
-    profileUrl: 'https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en',
-    updated: new Date().toISOString().slice(0,10)
-  });
+  const auto = document.getElementById('m_auto').checked;
+  const data = auto
+    ? { auto:true, source:'OpenAlex' }
+    : Object.assign({}, prev, {
+        auto:false,
+        citations: parseInt(document.getElementById('m_citations').value)||0,
+        hIndex: parseInt(document.getElementById('m_hIndex').value)||0,
+        works: parseInt(document.getElementById('m_works').value)||0,
+        source: 'Google Scholar',
+        profileUrl: 'https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en',
+        updated: new Date().toISOString().slice(0,10)
+      });
   DATA.metrics = data; postSection('metrics',data,'Metrics');
 };
 
@@ -536,6 +672,7 @@ function renderHero(){
     `<label>Title line 2</label><input id="h_line2" value="${escA(h.line2)}">`+
     `<label>Title line 3</label><input id="h_line3" value="${escA(h.line3)}">`+
     `<label>Menu label for Home (top nav)</label><input id="h_navhome" value="${escA(h.navHome||'Home')}">`+
+    `<label>Profile photo</label><div class="imgfield"><div class="uprow"><input data-k="image" id="h_photo" value="${escA(h.photo||'')}" placeholder="Upload, or leave blank for the default"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>${h.photo?`<img class="thumb" src="${escA(h.photo)}">`:''}</div>`+
     `<label>Photo badge (the small tag on your photo)</label><input id="h_badge" value="${escA(h.badge)}">`+
     `<label>Short description</label><textarea id="h_desc">${escA(h.description)}</textarea>`+
     `<label>Award badge text (leave empty to hide the badge)</label><input id="h_award" value="${escA(h.awardText)}">`+
@@ -549,7 +686,7 @@ window.addRow=(id,cols)=>{const d=document.getElementById(id);const el=document.
 window.saveHero=()=>{
   const pills=[...document.querySelectorAll('#h_pills [data-r]')].map(r=>r.querySelector('input').value.trim()).filter(Boolean);
   const stats=[...document.querySelectorAll('#h_stats [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {value:ins[0].value.trim(),label:ins[1].value.trim()};}).filter(s=>s.value||s.label);
-  const data={greeting:v('h_greeting'),name:v('h_name'),line2:v('h_line2'),line3:v('h_line3'),navHome:v('h_navhome'),badge:v('h_badge'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),pills,stats};
+  const data={greeting:v('h_greeting'),name:v('h_name'),line2:v('h_line2'),line3:v('h_line3'),navHome:v('h_navhome'),photo:v('h_photo'),badge:v('h_badge'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),pills,stats};
   DATA.hero=data; postSection('hero',data,'Home');
 };
 
@@ -585,7 +722,8 @@ const DEFAULT_ABOUT = {
 };
 function renderAbout(){
   const a = DATA.about || DEFAULT_ABOUT;
-  app().innerHTML = `<h2>Biography</h2><p class="lead">The About section: paragraphs, at-a-glance list, education and experience.</p>`+FMT_HINT+
+  app().innerHTML = `<h2>Biography</h2><p class="lead">The About section: profile photo, paragraphs, at-a-glance list, education and experience.</p>`+FMT_HINT+
+    `<div class="item imgfield"><label>Profile photo</label><div class="uprow"><input data-k="image" id="a_photo" value="${escA(a.photo||'')}" placeholder="Upload, or leave blank for the default"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>${a.photo?`<img class="thumb" src="${escA(a.photo)}">`:''}</div>`+
     `<h3 style="margin:8px 0 6px;color:#7ec8e3;font-size:14px">Paragraphs</h3><div id="a_paras">`+(a.paragraphs||[]).map(p=>`<div class="row" data-r style="align-items:flex-start"><textarea style="flex:1">${escA(p)}</textarea><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addPara()">+ Add paragraph</button>`+
     `<h3 style="margin:16px 0 6px;color:#7ec8e3;font-size:14px">At a Glance</h3><div id="a_glance">`+(a.glance||[]).map(g=>`<div class="row" data-r><input placeholder="Icon" value="${escA(g.icon)}" style="width:60px"><input placeholder="Text" value="${escA(g.text)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addGlance()">+ Add item</button>`+
     `<h3 style="margin:16px 0 6px;color:#7ec8e3;font-size:14px">Education</h3><div id="a_edu">`+(a.education||[]).map(e=>`<div class="item" data-r><input placeholder="Degree" value="${escA(e.degree)}"><input placeholder="Place | Years" value="${escA(e.place)}"><input placeholder="Note (optional)" value="${escA(e.note)}"><button class="del" onclick="this.parentNode.remove()">Remove</button></div>`).join('')+`</div><button onclick="addEdu()">+ Add education</button>`+
@@ -603,7 +741,7 @@ window.saveAbout=()=>{
   const glance=[...document.querySelectorAll('#a_glance [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {icon:ins[0].value.trim(),text:ins[1].value.trim()};}).filter(g=>g.text);
   const education=[...document.querySelectorAll('#a_edu [data-r]')].map(r=>{const ins=r.querySelectorAll('input');return {degree:ins[0].value.trim(),place:ins[1].value.trim(),note:ins[2].value.trim()};}).filter(e=>e.degree);
   const experience=[...document.querySelectorAll('#a_exp [data-r]')].map(r=>{const ins=r.querySelectorAll('input');const ta=r.querySelector('textarea');return {role:ins[0].value.trim(),place:ins[1].value.trim(),description:ta?ta.value.trim():''};}).filter(x=>x.role);
-  const data={paragraphs,glance,education,expNote:v('a_expnote'),experience};
+  const data={photo:v('a_photo'),paragraphs,glance,education,expNote:v('a_expnote'),experience};
   DATA.about=data; postSection('about',data,'Biography');
 };
 
@@ -614,13 +752,18 @@ function fieldHtml(section, idx, key, type, val){
   if(type==='image'){
     const thumb = val ? `<img class="thumb" src="${escA(val)}">` : '';
     return `<div class="imgfield"><label>${key}</label>`+
-      `<div class="uprow"><input data-k="${key}" value="${escA(val)}" oninput="mark()"><button type="button" class="up" onclick="this.nextElementSibling.click()">📤 Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>`+
+      `<div class="uprow"><input data-k="${key}" value="${escA(val)}" oninput="mark()"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>`+
       `${thumb}</div>`;
   }
   if(type==='url'){
     return `<label>${key} (article link)</label>`+
-      `<div class="uprow"><input data-k="${key}" value="${escA(val)}" placeholder="https://…" oninput="mark()"><button type="button" class="up" onclick="fetchTitle(this)">🔎 Fetch title</button></div>`+
+      `<div class="uprow"><input data-k="${key}" value="${escA(val)}" placeholder="https://…" oninput="mark()"><button type="button" class="up" onclick="fetchTitle(this)">Fetch title</button></div>`+
       `<small>Paste the article link, then click Fetch title to auto-fill the Title field from the page.</small>`;
+  }
+  if(type==='pdf'){
+    return `<div class="imgfield"><label>${key} — upload a PDF, or paste a link</label>`+
+      `<div class="uprow"><input data-k="${key}" value="${escA(val)}" placeholder="Upload a PDF, or paste an arXiv / DOI link" oninput="mark()"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload PDF</button><input type="file" accept="application/pdf" hidden onchange="onPickPdf(this)"></div>`+
+      (val?`<small>Current: <a href="${escA(val)}" target="_blank" style="color:#7ec8e3">${escA(val)}</a></small>`:'')+`</div>`;
   }
   return `<label>${key}</label><input data-k="${key}" value="${escA(val)}" oninput="mark()">`;
 }
@@ -629,6 +772,7 @@ function renderSection(){
   if(current==='about'){ renderAbout(); return; }
   if(current==='headings'){ renderHeadings(); return; }
   if(current==='research'){ renderResearch(); return; }
+  if(current==='custom'){ renderCustom(); return; }
   if(current==='layout'){ renderLayout(); return; }
   if(current==='settings'){ renderSettings(); return; }
   if(current==='metrics'){ renderMetrics(); return; }

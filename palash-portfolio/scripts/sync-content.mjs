@@ -22,6 +22,8 @@ try {
   }
   for (const obj of ["metrics", "hero", "about", "settings", "headings", "research"]) {
     if (d[obj] && typeof d[obj] === "object" && !Array.isArray(d[obj])) {
+      // In "auto" metrics mode, keep the OpenAlex numbers fetched by fetch-metrics.mjs.
+      if (obj === "metrics" && d.metrics.auto === true) continue;
       writeFileSync(dir + obj + ".json", JSON.stringify(d[obj], null, 2) + "\n");
     }
   }
