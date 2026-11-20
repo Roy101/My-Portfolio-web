@@ -177,7 +177,7 @@ try {
 
 // field schemas: which keys each section's items have, and which are long text / images
 $schemas = [
-    'publications' => ['title'=>'text','authors'=>'text','venue'=>'text','year'=>'text','pages'=>'text','award'=>'text','doi'=>'text','description'=>'area','preprint'=>'pdf','bibtex'=>'area'],
+    'publications' => ['title'=>'text','authors'=>'text','venue'=>'text','year'=>'text','pages'=>'text','award'=>'text','doi'=>'text','video'=>'url','description'=>'area','preprint'=>'pdf','bibtex'=>'area'],
     'highlights'   => ['title'=>'text','organization'=>'text','description'=>'area','link'=>'text','image'=>'image'],
     'news'         => ['date'=>'text','icon'=>'text','title'=>'text','description'=>'area','url'=>'url'],
     'media'        => ['outlet'=>'text','date'=>'text','title'=>'text','url'=>'url'],
@@ -185,6 +185,7 @@ $schemas = [
     'leadership'   => ['period'=>'text','role'=>'text','organization'=>'text','place'=>'text','link'=>'text'],
     'service'      => ['period'=>'text','role'=>'text','description'=>'area','venue'=>'text','venues'=>'text'],
     'references'   => ['name'=>'text','title'=>'text','image'=>'image','text'=>'area'],
+    'blog'         => ['title'=>'text','slug'=>'text','date'=>'text','tags'=>'text','summary'=>'area','cover'=>'image','body'=>'area','draft'=>'text'],
 ];
 ?><!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
@@ -269,7 +270,7 @@ code{background:#0c0d16;border:1px solid #2d324b;border-radius:4px;padding:1px 5
 const CSRF = <?= json_encode(csrf()) ?>;
 const SCHEMAS = <?= json_encode($schemas) ?>;
 const DATA = <?= json_encode($content, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>;
-const LABELS = {publications:'Publications',highlights:'Achievements',news:'News & Milestones',media:'In the News',gallery:'Pictures',leadership:'Leadership',service:'Academic Service',references:'References'};
+const LABELS = {publications:'Publications',highlights:'Achievements',news:'News & Milestones',media:'In the News',gallery:'Pictures',leadership:'Leadership',service:'Academic Service',references:'References',blog:'Blog Posts'};
 
 // Sidebar navigation groups
 const NAV = [
@@ -286,10 +287,14 @@ const NAV = [
     {id:'leadership',label:'Leadership'},
     {id:'service',label:'Academic Service'},
     {id:'references',label:'References'},
+    {id:'consultation',label:'Collaboration'},
+    {id:'blog',label:'Blog Posts'},
   ]},
   {group:'Site', items:[
     {id:'layout',label:'Page Layout'},
     {id:'custom',label:'Custom Sections'},
+    {id:'socials',label:'Social Links'},
+    {id:'footer',label:'Footer'},
     {id:'settings',label:'Slider & Resume'},
     {id:'metrics',label:'Research Metrics'},
   ]},
@@ -303,8 +308,8 @@ NAV.forEach(g=>g.items.forEach(i=>TITLES[i.id]=i.label));
 let current = 'hero';
 
 // Page-layout (section order) editing
-const SECTION_LABELS = {about:'About / Biography',portfolio:'Publications',news:'News & Milestones',leadership:'Leadership',service:'Academic Service',highlights:'Awards',media:'In the News',pictures:'Pictures',references:'References',contact:'Contact'};
-const DEFAULT_ORDER = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','contact'];
+const SECTION_LABELS = {about:'About / Biography',portfolio:'Publications',news:'News & Milestones',leadership:'Leadership',service:'Academic Service',highlights:'Awards',media:'In the News',pictures:'Pictures',references:'References',consultation:'Collaboration',contact:'Contact'};
+const DEFAULT_ORDER = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','consultation','contact'];
 // Custom (user-added) sections
 let customSections = Array.isArray(DATA.customSections) ? DATA.customSections.filter(c=>c&&c.id) : [];
 // Label for any section id (built-in or custom)
@@ -326,7 +331,9 @@ const HSECTIONS = [
   {id:'media',label:'In the News'},
   {id:'pictures',label:'Pictures'},
   {id:'references',label:'References'},
+  {id:'consultation',label:'Collaboration'},
   {id:'contact',label:'Contact'},
+  {id:'blog',label:'Blog (index page)'},
 ];
 // Current live values — used to prefill the editor so a first save never blanks the site.
 const DEFAULT_HEADINGS = {
@@ -339,7 +346,9 @@ const DEFAULT_HEADINGS = {
   media:{nav:'Media',badge:'In the News',title:'Featured Coverage',subtitle:'Selected media coverage and university announcements.'},
   pictures:{nav:'Gallery',badge:'Gallery',title:'Beyond the Research',subtitle:'From representing 4,500+ graduate students as GSA President to exploring the world with family and friends.'},
   references:{nav:'References',badge:'References',title:'References',subtitle:'Here are some of the amazing people who I have worked with in the past that I could reach out to for a reference if needed.',note:'I really need to update this to add all my amazing computer science references! But that will be for another day.',mentors:'I have had the privilege to work with [Dr. Kevin Schneider](https://artsandscience.usask.ca/profile/KSchneider), [Dr. Chanchal Roy](https://clones.usask.ca/), [Dr. Farouq Al-Omari](https://www.tru.ca/science/departments/engineering/Faculty.html), [Dr. Banani Roy](https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php), and [Dr. Cody Phillips](https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips).'},
+  consultation:{nav:'Collaborate',badge:'Work With Me',title:"Let's Work Together",subtitle:"Collaborations, talks, and mentoring — I'd love to hear from you."},
   contact:{nav:'Contact',badge:'Contact',title:'Get in Touch',subtitle:"Have a question, an opportunity, or just want to say hi? Send me a message and I'll get back to you."},
+  blog:{nav:'Blog',badge:'Blog',title:'Writing & Notes',subtitle:"Research notes, paper walkthroughs, and things I'm building."},
 };
 
 const FMT_HINT = `<p class="lead" style="background:#12131c;border:1px solid #23263a;border-radius:8px;padding:10px 12px"><b style="color:#7ec8e3">Formatting:</b> link = <code>[text](https://link.com)</code> — put the URL in <b>(round brackets)</b>. Bold = <code>**word**</code>, italic = <code>*word*</code>. A bare address like <code>srlab.usask.ca</code> becomes a link automatically. Works in descriptions, paragraphs, hero text and section subtitles.</p>`;
@@ -376,6 +385,22 @@ async function uploadFile(file, kind, cb){
     if(j.ok){ cb(j.url); toast('Uploaded ✓'); } else toast('Error: '+(j.error||'upload failed'));
   }catch(e){ toast('Upload failed'); }
 }
+window.onPickBodyImage=(fi)=>{
+  const f=fi.files[0]; if(!f) return;
+  const box=fi.closest('.blogimg');
+  const cap=(box.querySelector('.bi_cap').value||'').trim();
+  const ta=fi.closest('.item').querySelector('textarea[data-k="body"]');
+  uploadFile(f,'image',url=>{
+    const md=`\n![${cap}](${url})\n`;
+    const start=(ta.selectionStart!=null)?ta.selectionStart:ta.value.length;
+    const end=(ta.selectionEnd!=null)?ta.selectionEnd:start;
+    ta.value = ta.value.slice(0,start) + md + ta.value.slice(end);
+    ta.focus(); ta.selectionStart=ta.selectionEnd=start+md.length;
+    box.querySelector('.bi_cap').value='';
+    mark();
+  });
+  fi.value='';
+};
 window.onPickImage=(fi)=>{
   const f=fi.files[0]; if(!f) return;
   const wrap=fi.closest('.imgfield');
@@ -458,13 +483,18 @@ function renderSettings(){
     (s.resumeUrl?`<small>Current: <a href="${escA(s.resumeUrl)}" target="_blank" style="color:#7ec8e3">${escA(s.resumeUrl)}</a></small>`:'')+
     `<small>A "Download Resume" button appears in your hero when this is set. Leave blank to hide it.</small>`+
     `</div>`+
+    `<div class="item"><div class="item-head"><b>Portfolio visuals</b></div>`+
+    `<small style="margin-bottom:6px">Show or hide the two graphics at the top of your Publications section.</small>`+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef"><input type="checkbox" id="st_yearchart" style="width:auto" ${s.showYearChart!==false?'checked':''}> Show the "Publications per year" bar chart</label>`+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef;margin-top:8px"><input type="checkbox" id="st_graph" style="width:auto" ${s.showResearchGraph!==false?'checked':''}> Show the "What I work on" research graph</label>`+
+    `</div>`+
     `<div class="bar"><button class="primary" onclick="saveSettings()">Save</button></div>`;
 }
 window.onPickResume=(fi)=>{ const f=fi.files[0]; if(!f) return; uploadFile(f,'resume',url=>{ document.getElementById('st_resume').value=url; }); fi.value=''; };
 window.saveSettings=()=>{
   const per={};
   document.querySelectorAll('.st_per').forEach(i=>{ const n=parseInt(i.value); if(n>0) per[i.dataset.sec]=n; });
-  const data={sliderSeconds:parseInt(document.getElementById('st_slider').value)||11,sliderPerSection:per,resumeUrl:v('st_resume')};
+  const data={sliderSeconds:parseInt(document.getElementById('st_slider').value)||11,sliderPerSection:per,resumeUrl:v('st_resume'),showYearChart:document.getElementById('st_yearchart').checked,showResearchGraph:document.getElementById('st_graph').checked};
   DATA.settings=data; postSection('settings',data,'Settings');
 };
 
@@ -603,6 +633,97 @@ window.saveCustom=async()=>{
     DATA.customSections=customSections;
     toast((a.ok&&b.ok&&c.ok)?'Custom sections saved ✓':('Error: '+((a.error||b.error||c.error)||'failed')));
   }catch(e){ toast('Network error'); }
+};
+
+// ---- Social links (editable, add/hide/reorder) ----
+const PLATFORMS=['linkedin','github','scholar','orcid','dblp','researchgate','instagram','facebook','twitter','youtube','email','website'];
+function socialRow(l){
+  l=l||{platform:'linkedin',label:'',url:'',hidden:false};
+  const opts=PLATFORMS.map(p=>`<option value="${p}" ${l.platform===p?'selected':''}>${p}</option>`).join('');
+  return `<div class="item" data-soc style="${l.hidden?'opacity:.55':''}">`+
+    `<div class="row" style="align-items:center;gap:8px">`+
+    `<select data-sf="platform" style="width:130px">${opts}</select>`+
+    `<input data-sf="label" value="${escA(l.label)}" placeholder="Label (e.g. LinkedIn)" style="flex:1">`+
+    `<button class="mv" title="Move up" onclick="moveSoc(this,-1)">↑</button>`+
+    `<button class="mv" title="Move down" onclick="moveSoc(this,1)">↓</button>`+
+    `<button class="mv" title="Show/Hide" onclick="toggleSoc(this)">${l.hidden?'Show':'Hide'}</button>`+
+    `<button class="del" onclick="this.closest('[data-soc]').remove()">✕</button>`+
+    `</div>`+
+    `<input data-sf="url" value="${escA(l.url)}" placeholder="https://… (or mailto: for email)" style="margin-top:8px">`+
+    `<input type="hidden" data-sf="hidden" value="${l.hidden?'1':''}">`+
+    `</div>`;
+}
+// Baked defaults — shown the first time this editor is opened (before a socials row
+// exists in the DB), so a first Save can't wipe the links the live site already ships.
+const DEFAULT_SOCIALS=[
+  {platform:'linkedin',label:'LinkedIn',url:'https://www.linkedin.com/in/palashranjanroy/',hidden:false},
+  {platform:'scholar',label:'Google Scholar',url:'https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en',hidden:false},
+  {platform:'github',label:'GitHub',url:'https://github.com/Roy101',hidden:false},
+  {platform:'orcid',label:'ORCID',url:'https://orcid.org/0000-0001-9470-4233',hidden:false},
+  {platform:'dblp',label:'dblp',url:'https://dblp.org/pid/355/4465.html',hidden:false},
+  {platform:'researchgate',label:'ResearchGate',url:'https://www.researchgate.net/profile/Palash_Roy',hidden:false},
+  {platform:'instagram',label:'Instagram',url:'https://www.instagram.com/checkoutroy/?hl=en',hidden:true},
+  {platform:'facebook',label:'Facebook',url:'https://www.facebook.com/pial.roy.3705/',hidden:true}
+];
+function socLinks(){ return (DATA.socials && Array.isArray(DATA.socials.links)) ? DATA.socials.links : DEFAULT_SOCIALS; }
+function renderSocials(){
+  app().innerHTML = `<h2>Social Links</h2><p class="lead">These icons appear in the About section and the footer. Pick a platform (sets the icon + colour), add a label and URL. Reorder with the arrows, or hide any link.</p>`+
+    `<div id="socList">`+(socLinks().length?socLinks().map(socialRow).join(''):'')+`</div>`+
+    `<button onclick="addSoc()">+ Add social link</button>`+
+    `<div class="bar"><button class="primary" onclick="saveSocials()">Save Social Links</button></div>`;
+}
+window.addSoc=()=>{ document.getElementById('socList').insertAdjacentHTML('beforeend', socialRow({platform:'linkedin',label:'',url:'',hidden:false})); };
+window.moveSoc=(btn,dir)=>{ const el=btn.closest('[data-soc]'); if(dir<0){const p=el.previousElementSibling; if(p&&p.matches('[data-soc]')) el.parentNode.insertBefore(el,p);} else {const n=el.nextElementSibling; if(n&&n.matches('[data-soc]')) el.parentNode.insertBefore(n,el);} };
+window.toggleSoc=(btn)=>{ const el=btn.closest('[data-soc]'); const h=el.querySelector('[data-sf="hidden"]'); const now=h.value!=='1'; h.value=now?'1':''; el.style.opacity=now?'.55':''; btn.textContent=now?'Show':'Hide'; };
+window.saveSocials=()=>{
+  const links=[...document.querySelectorAll('#socList [data-soc]')].map(el=>{
+    const g=(k)=>{ const n=el.querySelector('[data-sf="'+k+'"]'); return n?n.value.trim():''; };
+    return { platform:g('platform'), label:g('label'), url:g('url'), hidden: el.querySelector('[data-sf="hidden"]').value==='1' };
+  }).filter(l=>l.url);
+  const data={links}; DATA.socials=data; postSection('socials',data,'Social links');
+};
+
+// ---- Footer ----
+const DEFAULT_FOOTER={name:'Palash Ranjan Roy',tagline:'Software Engineering researcher · University of Saskatchewan',email:'palash.roy@usask.ca',showSocials:true,copyright:'© 2026 Palash Ranjan Roy · All rights reserved'};
+function renderFooter(){
+  const f = Object.assign({}, DEFAULT_FOOTER, DATA.footer||{});
+  app().innerHTML = `<h2>Footer</h2><p class="lead">The footer at the bottom of every page.</p>`+
+    `<div class="item">`+
+    `<label>Name</label><input id="ft_name" value="${escA(f.name)}">`+
+    `<label>Tagline (optional)</label><input id="ft_tagline" value="${escA(f.tagline)}">`+
+    `<label>Email (optional)</label><input id="ft_email" value="${escA(f.email)}">`+
+    `<label>Copyright line</label><input id="ft_copyright" value="${escA(f.copyright)}">`+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef;margin-top:12px"><input type="checkbox" id="ft_showsoc" style="width:auto" ${f.showSocials!==false?'checked':''}> Show social icons in the footer</label>`+
+    `</div>`+
+    `<div class="bar"><button class="primary" onclick="saveFooter()">Save Footer</button></div>`+
+    `<small>Edit the icons themselves under <b>Social Links</b>.</small>`;
+}
+window.saveFooter=()=>{
+  const data={name:v('ft_name'),tagline:v('ft_tagline'),email:v('ft_email'),copyright:v('ft_copyright'),showSocials:document.getElementById('ft_showsoc').checked};
+  DATA.footer=data; postSection('footer',data,'Footer');
+};
+
+// ---- Collaboration / consultation call-to-action ----
+const DEFAULT_CONSULTATION={description:"I'm open to research collaborations, guest talks, and mentoring. If you're working on something at the intersection of software engineering, machine learning, and program analysis — or just want to talk shop — reach out.",points:["Research collaboration & co-authorship","Guest talks, lectures & panels","Mentoring students & early-career researchers"],buttonLabel:"Get in touch",bookingUrl:"",email:"palash.roy@usask.ca"};
+function renderConsultation(){
+  const c = Object.assign({}, DEFAULT_CONSULTATION, DATA.consultation||{});
+  if(!Array.isArray(c.points) || c.points.length===0) c.points = DEFAULT_CONSULTATION.points.slice();
+  app().innerHTML = `<h2>Collaboration</h2><p class="lead">A call-to-action section inviting people to collaborate. Add a scheduling link (Calendly, Cal.com, etc.) — if you leave it blank, the button emails you instead. Reorder or hide this section under <b>Page Layout</b>.</p>`+FMT_HINT+
+    `<div class="item">`+
+    `<label>Description</label><textarea id="cn_desc">${escA(c.description)}</textarea>`+
+    `<label>Booking link (Calendly / Cal.com / etc.)</label><input id="cn_url" value="${escA(c.bookingUrl)}" placeholder="https://calendly.com/…  (leave blank to use email)">`+
+    `<label>Email for requests <span style="color:#8a8a95;font-weight:400">— used when no booking link above; the button opens the visitor's email to this address</span></label><input id="cn_email" value="${escA(c.email)}" placeholder="palash.roy@usask.ca">`+
+    `<label>Button label</label><input id="cn_btn" value="${escA(c.buttonLabel)}">`+
+    `</div>`+
+    `<h3 style="margin:14px 0 6px;color:#7ec8e3;font-size:14px">What you offer (bullet points)</h3>`+
+    `<div id="cn_points">`+(c.points||[]).map(p=>`<div class="row" data-r><input value="${escA(p)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addCnPoint()">+ Add point</button>`+
+    `<div class="bar"><button class="primary" onclick="saveConsultation()">Save Collaboration</button></div>`;
+}
+window.addCnPoint=()=>{const d=document.getElementById('cn_points');const el=document.createElement('div');el.className='row';el.setAttribute('data-r','');el.innerHTML='<input style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button>';d.appendChild(el);};
+window.saveConsultation=()=>{
+  const points=[...document.querySelectorAll('#cn_points [data-r] input')].map(i=>i.value.trim()).filter(Boolean);
+  const data={description:v('cn_desc'),points,buttonLabel:v('cn_btn'),bookingUrl:v('cn_url'),email:v('cn_email').trim()};
+  DATA.consultation=data; postSection('consultation',data,'Collaboration');
 };
 
 // ---- Metrics ----
@@ -748,7 +869,20 @@ window.saveAbout=()=>{
 // ---- Generic list sections (publications, gallery, …) ----
 function fieldHtml(section, idx, key, type, val){
   val = val == null ? '' : String(val);
-  if(type==='area') return `<label>${key}</label><textarea data-k="${key}" oninput="mark()">${escA(val)}</textarea>`;
+  if(type==='area'){
+    let extra='';
+    if(section==='blog' && key==='body'){
+      extra = `<div class="blogimg" style="margin:6px 0 2px;padding:8px 10px;border:1px dashed #33334a;border-radius:8px;background:#161622">`+
+        `<div class="uprow" style="align-items:center">`+
+        `<input type="text" class="bi_cap" placeholder="Caption (optional)" style="flex:1">`+
+        `<button type="button" class="up" onclick="this.parentNode.querySelector('.bi_file').click()">Upload &amp; insert image</button>`+
+        `<input type="file" class="bi_file" accept="image/*" hidden onchange="onPickBodyImage(this)">`+
+        `</div>`+
+        `<small>Uploads the image and drops <code>![caption](url)</code> at your cursor — the caption shows under the image. Paste a YouTube or PDF link on its own line to embed those too.</small>`+
+        `</div>`;
+    }
+    return `<label>${key}</label>${extra}<textarea data-k="${key}" oninput="mark()">${escA(val)}</textarea>`;
+  }
   if(type==='image'){
     const thumb = val ? `<img class="thumb" src="${escA(val)}">` : '';
     return `<div class="imgfield"><label>${key}</label>`+
@@ -773,6 +907,9 @@ function renderSection(){
   if(current==='headings'){ renderHeadings(); return; }
   if(current==='research'){ renderResearch(); return; }
   if(current==='custom'){ renderCustom(); return; }
+  if(current==='socials'){ renderSocials(); return; }
+  if(current==='footer'){ renderFooter(); return; }
+  if(current==='consultation'){ renderConsultation(); return; }
   if(current==='layout'){ renderLayout(); return; }
   if(current==='settings'){ renderSettings(); return; }
   if(current==='metrics'){ renderMetrics(); return; }

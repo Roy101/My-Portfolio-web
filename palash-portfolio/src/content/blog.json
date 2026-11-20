@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "title": "Welcome to my blog",
+      "slug": "welcome",
+      "date": "2026-07-27",
+      "summary": "A quick hello — what I'll write about here, and a demo of embedding videos, PDFs, and images in a post.",
+      "cover": "",
+      "tags": "meta, research",
+      "draft": "yes",
+      "body": "This is my new blog, where I'll share **notes on my research**, paper walkthroughs, and the occasional deep dive into code clones, software engineering, and machine learning.\n\n## What you'll find here\n\n- Plain-language summaries of my papers\n- Video walkthroughs of talks and presentations\n- Tutorials and tools I build along the way\n\n## Embedding a video\n\nPaste a YouTube link on its own line and it becomes a player:\n\nhttps://www.youtube.com/watch?v=jNQXAC9IVRw\n\n## Embedding a PDF\n\nDrop a PDF link on its own line to preview it inline:\n\n> Tip: you can also add a **video link to any publication** from the admin — a *Watch* button shows up right on the paper card.\n\n## Code and images\n\nInline `code`, fenced blocks:\n\n```\ndef hello():\n    print(\"hello, world\")\n```\n\nAnd images with `![caption](url)`. That's it — write in Markdown and it just works."
+    }
+  ]
+}

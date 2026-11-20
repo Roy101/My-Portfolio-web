@@ -1,21 +1,15 @@
 {
   "items": [
     {
-      "period": "2025-2026",
-      "role": "Senate Member",
-      "description": "Served as a member of the University Senate, contributing to university-wide governance and academic policy.",
-      "venue": "University of Saskatchewan"
-    },
-    {
       "period": "2026-2027",
-      "role": "Search Committee Member",
+      "role": "Provost Search Committee Member",
       "description": "Committee member for the Provost and Vice-President Academic Search Committee.",
       "venue": "University of Saskatchewan"
     },
     {
       "period": "2025-2026",
-      "role": "Governance Committee Member",
-      "description": "Served on a University Governance Committee as part of graduate student leadership.",
+      "role": "Senate Member",
+      "description": "Served as a member of the University Senate, contributing to university-wide governance and academic policy.",
       "venue": "University of Saskatchewan"
     },
     {
@@ -28,6 +22,12 @@
       "period": "2025-2026",
       "role": "CGPS Committee Member",
       "description": "Served on College of Graduate and Postdoctoral Studies (CGPS) committees, and presented graduate-student reports to University Council and college/faculty councils.",
+      "venue": "University of Saskatchewan"
+    },
+    {
+      "period": "2025-2026",
+      "role": "Governance Committee Member",
+      "description": "Served on a University Governance Committee as part of graduate student leadership.",
       "venue": "University of Saskatchewan"
     },
     {
@@ -56,31 +56,31 @@
     },
     {
       "period": "2025",
-      "role": "Invited Speaker",
+      "role": "Invited Talk",
       "description": "Large language models and Code Similarity",
       "venue": "Thompson Rivers University"
     },
     {
       "period": "2024",
-      "role": "Invited Speaker",
+      "role": "Invited Talk",
       "description": "AI for Software Engineering",
       "venue": "University of Saskatchewan"
     },
     {
       "period": "2024",
-      "role": "Invited Speaker",
+      "role": "Invited Talk",
       "description": "The Effects of Visual Embellishment on Comprehension and Memorability of Charts",
       "venue": "University of Saskatchewan"
     },
     {
       "period": "2023",
-      "role": "Invited Speaker",
+      "role": "Invited Talk",
       "description": "Software Engineering in Practice",
       "venue": "BRAC University"
     },
     {
       "period": "2022",
-      "role": "Invited Speaker",
+      "role": "Invited Talk",
       "description": "How to start building your first Robot?",
       "venue": "BRAC University"
     }

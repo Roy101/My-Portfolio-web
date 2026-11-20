@@ -3,7 +3,9 @@
   "sliderPerSection": {
     "leadership": 20,
     "service": 10,
-    "pictures": 5
+    "highlights": 16,
+    "pictures": 5,
+    "references": 9
   },
   "resumeUrl": ""
 }

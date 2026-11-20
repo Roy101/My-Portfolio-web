@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 const API = "https://palashroy.me/api/content.php";
 const dir = fileURLToPath(new URL("../src/content/", import.meta.url));
-const LIST = ["publications", "highlights", "news", "media", "gallery", "leadership", "service", "references"];
+const LIST = ["publications", "highlights", "news", "media", "gallery", "leadership", "service", "references", "blog"];
 
 try {
   const res = await fetch(API, { headers: { "Cache-Control": "no-cache" } });
@@ -20,7 +20,7 @@ try {
       n++;
     }
   }
-  for (const obj of ["metrics", "hero", "about", "settings", "headings", "research"]) {
+  for (const obj of ["metrics", "hero", "about", "settings", "headings", "research", "socials", "footer", "consultation"]) {
     if (d[obj] && typeof d[obj] === "object" && !Array.isArray(d[obj])) {
       // In "auto" metrics mode, keep the OpenAlex numbers fetched by fetch-metrics.mjs.
       if (obj === "metrics" && d.metrics.auto === true) continue;

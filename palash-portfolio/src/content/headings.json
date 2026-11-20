@@ -60,5 +60,17 @@
     "badge": "Contact",
     "title": "Get in Touch",
     "subtitle": "Have a question, an opportunity, or just want to say hi? Send me a message and I'll get back to you."
+  },
+  "consultation": {
+    "nav": "Collaborate",
+    "badge": "Work With Me",
+    "title": "Let's Work Together",
+    "subtitle": "Collaborations, talks, and mentoring — I'd love to hear from you."
+  },
+  "blog": {
+    "nav": "Blog",
+    "badge": "Blog",
+    "title": "Writing & Notes",
+    "subtitle": "Research notes, paper walkthroughs, and things I'm building."
   }
 }

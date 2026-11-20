@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 // Single-source content (editable via the /admin CMS)
@@ -10,6 +10,10 @@ import aboutData from "./content/about.json";
 import settingsData from "./content/settings.json";
 import headingsData from "./content/headings.json";
 import researchData from "./content/research.json";
+import socialsData from "./content/socials.json";
+import footerData from "./content/footer.json";
+import consultationData from "./content/consultation.json";
+import blogData from "./content/blog.json";
 import publicationsDataRaw from "./content/publications.json";
 import leadershipDataRaw from "./content/leadership.json";
 import serviceDataRaw from "./content/service.json";
@@ -28,6 +32,7 @@ type Publication = {
   doi?: string;
   preprint?: string;
   bibtex?: string;
+  video?: string;
 };
 const defaultPublications: Publication[] = publicationsDataRaw.items as Publication[];
 
@@ -202,6 +207,28 @@ const Carousel = <T extends unknown>({
     });
   };
 
+  // Touch / swipe support for mobile — horizontal drag flips slides, while vertical
+  // scrolling still works (touchAction: pan-y). A short tap won't trigger a swipe.
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartX.current = t.clientX;
+    touchStartY.current = t.clientY;
+    setIsPaused(true);
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) { setIsPaused(false); return; }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartX.current;
+    const dy = t.clientY - (touchStartY.current ?? 0);
+    touchStartX.current = null; touchStartY.current = null;
+    setIsPaused(false);
+    if (needsNavigation && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      if (dx < 0) nextSlide(); else prevSlide();
+    }
+  };
+
   const goToSlide = (index: number) => {
     if (!needsNavigation) return;
     setCurrentIndex(index);
@@ -223,7 +250,7 @@ const Carousel = <T extends unknown>({
 
   return (
     <div className="relative w-full">
-      <div className="overflow-hidden">
+      <div className="overflow-hidden" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ touchAction: "pan-y" }}>
         <div
           className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -430,6 +457,134 @@ function renderRich(text: any): React.ReactNode {
   return out;
 }
 
+// ---- Media helpers (YouTube / PDF / image detection + embeds) ----
+function ytId(url: string): string | null {
+  if (!url) return null;
+  const m = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function isPdfUrl(u: string) { return /\.pdf(\?|#|$)/i.test(u); }
+function isImageUrl(u: string) { return /\.(png|jpe?g|gif|webp|svg|avif)(\?|#|$)/i.test(u); }
+
+// Responsive 16:9 YouTube embed (privacy-enhanced domain).
+function YouTubeEmbed({ id, title }: { id: string; title?: string }) {
+  return (
+    <div className="relative w-full my-6 rounded-xl overflow-hidden border border-[var(--c-border)] bg-black" style={{ aspectRatio: "16 / 9" }}>
+      <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube-nocookie.com/embed/${id}`} title={title || "YouTube video"}
+        loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+    </div>
+  );
+}
+function PdfEmbed({ url }: { url: string }) {
+  return (
+    <div className="my-6">
+      <div className="rounded-xl overflow-hidden border border-[var(--c-border)] bg-[var(--c-surface)]" style={{ height: "80vh", maxHeight: 900 }}>
+        <iframe src={url} title="PDF document" className="w-full h-full" loading="lazy" />
+      </div>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-sm text-[var(--c-accent)] hover:underline">Open / download PDF ↗</a>
+    </div>
+  );
+}
+// Modal video player used by publication "Watch" buttons.
+function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+  const id = ytId(url);
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <div className="w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+        {id ? <YouTubeEmbed id={id} /> : <video src={url} controls autoPlay className="w-full rounded-xl border border-[var(--c-border)] bg-black" />}
+        <button onClick={onClose} className="mt-3 mx-auto block text-white/80 text-sm hover:text-white">Close ✕</button>
+      </div>
+    </div>, document.body);
+}
+
+// ---- Minimal, injection-safe Markdown renderer for blog posts (returns React nodes) ----
+// Supports #/##/### headings, **bold**, *italic*, `code`, [links](), ![images](),
+// -/1. lists, > quotes, ``` fenced code, --- rules, and auto-embeds a YouTube / PDF /
+// image URL that sits alone on its own line.
+function mdInline(s: string, keyBase = 0): React.ReactNode[] {
+  const RE = /!\[([^\]]*)\]\(([^)\s]+)\)|\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
+  const out: React.ReactNode[] = [];
+  let last = 0, m: RegExpExecArray | null, k = keyBase;
+  while ((m = RE.exec(s)) !== null) {
+    if (m.index > last) out.push(s.slice(last, m.index));
+    if (m[1] !== undefined) { const u = normUrl(m[2]); if (u) out.push(<img key={k++} src={u} alt={m[1]} className="inline-block max-w-full rounded" loading="lazy" />); }
+    else if (m[3] !== undefined) { const u = normUrl(m[4]); const ext = u && /^https?:/i.test(u); out.push(u ? <a key={k++} href={u} target={ext ? "_blank" : undefined} rel="noopener noreferrer" className="text-[var(--c-accent)] hover:underline">{m[3]}</a> : m[3]); }
+    else if (m[5] !== undefined) out.push(<strong key={k++}>{m[5]}</strong>);
+    else if (m[6] !== undefined) out.push(<em key={k++}>{m[6]}</em>);
+    else if (m[7] !== undefined) out.push(<code key={k++} className="px-1.5 py-0.5 rounded bg-[var(--c-surface2)] text-[var(--c-accent)] text-[0.9em]">{m[7]}</code>);
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) out.push(s.slice(last));
+  return out;
+}
+function renderMarkdown(md: string): React.ReactNode {
+  const lines = String(md || "").replace(/\r\n/g, "\n").split("\n");
+  const blocks: React.ReactNode[] = [];
+  let i = 0, key = 0;
+  const flushList = (items: string[], ordered: boolean) => {
+    blocks.push(React.createElement(ordered ? "ol" : "ul", { key: key++, className: `${ordered ? "list-decimal" : "list-disc"} pl-6 my-4 space-y-1 text-[var(--c-muted)]` },
+      items.map((it, j) => <li key={j}>{mdInline(it)}</li>)));
+  };
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+    if (/^```/.test(line)) {
+      const buf: string[] = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++;
+      blocks.push(<pre key={key++} className="my-4 p-4 rounded-xl overflow-x-auto bg-[var(--c-surface2)] border border-[var(--c-border)] text-sm"><code>{buf.join("\n")}</code></pre>);
+      continue;
+    }
+    const hm = line.match(/^(#{1,3})\s+(.*)$/);
+    if (hm) {
+      const lvl = hm[1].length;
+      const cls = lvl === 1 ? "text-3xl font-bold mt-8 mb-3" : lvl === 2 ? "text-2xl font-bold mt-7 mb-3" : "text-xl font-semibold mt-6 mb-2";
+      blocks.push(React.createElement(`h${lvl + 1}`, { key: key++, className: cls }, mdInline(hm[2])));
+      i++; continue;
+    }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) { blocks.push(<hr key={key++} className="my-8 border-[var(--c-border)]" />); i++; continue; }
+    if (/^>\s?/.test(line)) {
+      const buf: string[] = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, "")); i++; }
+      blocks.push(<blockquote key={key++} className="my-4 pl-4 border-l-4 border-[var(--c-accent)] text-[var(--c-muted)] italic">{mdInline(buf.join(" "))}</blockquote>);
+      continue;
+    }
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i])) { items.push(lines[i].replace(/^[-*]\s+/, "")); i++; }
+      flushList(items, false); continue;
+    }
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) { items.push(lines[i].replace(/^\d+\.\s+/, "")); i++; }
+      flushList(items, true); continue;
+    }
+    const solo = line.trim();
+    const imgOnly = solo.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    if (imgOnly) {
+      const u = normUrl(imgOnly[2]);
+      if (u) { blocks.push(<figure key={key++} className="my-6"><img src={u} alt={imgOnly[1]} className="w-full rounded-xl border border-[var(--c-border)]" loading="lazy" />{imgOnly[1] && <figcaption className="text-center text-xs text-[var(--c-muted)] mt-2">{imgOnly[1]}</figcaption>}</figure>); i++; continue; }
+    }
+    if (/^https?:\/\/\S+$/i.test(solo)) {
+      const yid = ytId(solo);
+      if (yid) { blocks.push(<YouTubeEmbed key={key++} id={yid} />); i++; continue; }
+      if (isPdfUrl(solo)) { blocks.push(<PdfEmbed key={key++} url={solo} />); i++; continue; }
+      if (isImageUrl(solo)) { blocks.push(<figure key={key++} className="my-6"><img src={solo} alt="" className="w-full rounded-xl border border-[var(--c-border)]" loading="lazy" /></figure>); i++; continue; }
+      blocks.push(<p key={key++} className="my-4 break-words"><a href={solo} target="_blank" rel="noopener noreferrer" className="text-[var(--c-accent)] hover:underline">{solo}</a></p>); i++; continue;
+    }
+    const buf: string[] = [];
+    while (i < lines.length && lines[i].trim() && !/^(#{1,3}\s|>|[-*]\s|\d+\.\s|```)/.test(lines[i])) { buf.push(lines[i]); i++; }
+    blocks.push(<p key={key++} className="my-4 leading-relaxed text-[var(--c-muted)]">{mdInline(buf.join(" "))}</p>);
+  }
+  return <div className="blog-body">{blocks}</div>;
+}
+
 // Live network of research topics — any number of nodes. "Main" nodes are the big
 // central hubs; the rest orbit around them and auto-connect to the nearest hub. The
 // graph lays itself out, gently drifts (edges follow), pauses off-screen, and honours
@@ -613,6 +768,35 @@ function SectionHead({ h }: { h: any }) {
   );
 }
 
+// Collaboration / booking call-to-action. Booking link wins; otherwise emails.
+function ConsultationSection({ data, head }: { data: any; head: any }) {
+  const href = data.bookingUrl || `mailto:${data.email || "palash.roy@usask.ca"}`;
+  const external = /^https?:\/\//i.test(href);
+  const points = Array.isArray(data.points) ? data.points.filter(Boolean) : [];
+  return (
+    <section id="consultation" className="pt-16 pb-16">
+      <div className="text-center mb-8"><SectionHead h={head} /></div>
+      <div className="max-w-2xl mx-auto bg-[var(--c-surface)] border border-[var(--c-border)] rounded-2xl p-8 sm:p-10 text-center shadow-sm">
+        {data.description && <p className="text-[var(--c-muted)] leading-relaxed mb-6">{renderRich(data.description)}</p>}
+        {points.length > 0 && (
+          <ul className="text-left inline-block mb-8 space-y-2">
+            {points.map((pt: string, i: number) => (
+              <li key={i} className="flex gap-2 text-[var(--c-muted)]"><span className="text-[var(--c-accent)] font-bold">✓</span><span>{renderRich(pt)}</span></li>
+            ))}
+          </ul>
+        )}
+        <div>
+          <a href={href} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+            {data.buttonLabel || "Get in touch"}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Build BibTeX / APA / IEEE citation strings from a publication's fields.
 function buildCitations(item: Publication) {
   const authorsList = item.authors.split(/\s*,\s*|\s+and\s+/).map((a) => a.trim()).filter(Boolean);
@@ -723,6 +907,7 @@ function PubYearChart({ items }: { items: Publication[] }) {
 function PublicationCard({ item }: { item: Publication }) {
   const [flipped, setFlipped] = useState(false);
   const [citeOpen, setCiteOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   return (
     <div className={`flip ${flipped ? "flipped" : ""}`}>
       <div className="flip-inner">
@@ -753,6 +938,17 @@ function PublicationCard({ item }: { item: Publication }) {
                 Download PDF
               </a>
             )}
+            {item.video && (
+              ytId(item.video)
+                ? <button onClick={() => setVideoOpen(true)} className="inline-flex items-center px-3 py-1 text-xs rounded bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white hover:opacity-90 transition-opacity" title="Watch the video">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/></svg>
+                    Watch
+                  </button>
+                : <a href={item.video} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 text-xs rounded bg-gradient-to-r from-[#35c7ff] to-[#ff4081] text-white hover:opacity-90 transition-opacity" title="Watch the video">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/></svg>
+                    Watch
+                  </a>
+            )}
           </div>
           {item.description && (
             <button onClick={() => setFlipped(true)} title="More details" aria-label="Show summary"
@@ -769,6 +965,7 @@ function PublicationCard({ item }: { item: Publication }) {
         </div>
       </div>
       {citeOpen && <CiteModal item={item} onClose={() => setCiteOpen(false)} />}
+      {videoOpen && item.video && <VideoModal url={item.video} onClose={() => setVideoOpen(false)} />}
     </div>
   );
 }
@@ -835,6 +1032,136 @@ function CustomSection({ data }: { data: any }) {
   );
 }
 
+// Icon + brand colour for each social platform (academic ones share a mortarboard).
+const ACADEMIC_PATHS = ["M8.211 2.047a.5.5 0 0 0-.422 0l-7.5 3.5a.5.5 0 0 0 .025.917l7.5 3a.5.5 0 0 0 .372 0L14 7.14V13a1 1 0 0 0-1 1v2h3v-2a1 1 0 0 0-1-1V6.739l.686-.275a.5.5 0 0 0 .025-.917zM8 8.46 1.758 5.965 8 3.052l6.242 2.913z", "M4.176 9.032a.5.5 0 0 0-.656.327l-.5 1.7a.5.5 0 0 0 .294.605l4.5 1.8a.5.5 0 0 0 .372 0l4.5-1.8a.5.5 0 0 0 .294-.605l-.5-1.7a.5.5 0 0 0-.656-.327L8 10.466z"];
+const SOCIAL_META: Record<string, { color: string; label: string; paths: string[] }> = {
+  linkedin: { color: "#0A66C2", label: "LinkedIn", paths: ["M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"] },
+  github: { color: "#24292f", label: "GitHub", paths: ["M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"] },
+  facebook: { color: "#1877F2", label: "Facebook", paths: ["M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"] },
+  instagram: { color: "#E4405F", label: "Instagram", paths: ["M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.78-.035 1.204-.166 1.486-.275.373-.145.64-.319.92-.599.28-.28.453-.546.598-.92.11-.281.24-.705.276-1.485.038-.843.047-1.096.047-3.232s-.009-2.39-.047-3.233c-.036-.78-.166-1.203-.276-1.485a2.478 2.478 0 0 0-.598-.92 2.48 2.48 0 0 0-.92-.598c-.282-.11-.705-.24-1.486-.276C10.445.01 10.173 0 8 0zm0 1.442c2.136 0 2.389.008 3.232.046.78.036 1.204.166 1.486.276.373.145.64.319.92.599.28.28.453.546.598.92.11.282.24.705.276 1.486.038.843.046 1.096.046 3.232s-.008 2.389-.046 3.232c-.036.78-.166 1.204-.276 1.486a2.5 2.5 0 0 1-.598.92c-.28.28-.546.453-.92.598-.282.11-.705.24-1.486.276-.843.038-1.096.046-3.232.046s-2.389-.008-3.232-.046c-.78-.036-1.204-.166-1.486-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.598-.92c-.11-.282-.24-.705-.276-1.486-.038-.843-.046-1.096-.046-3.232s.008-2.389.046-3.232c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92.28-.28.546-.453.92-.598.282-.11.705-.24 1.486-.276C5.611 1.45 5.864 1.442 8 1.442zm0 2.452a4.108 4.108 0 1 0 0 8.215 4.108 4.108 0 0 0 0-8.215zm0 6.775a2.667 2.667 0 1 1 0-5.334 2.667 2.667 0 0 1 0 5.334zm5.23-6.937a.96.96 0 1 1-1.92 0 .96.96 0 0 1 1.92 0z"] },
+  twitter: { color: "#000000", label: "X", paths: ["M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"] },
+  x: { color: "#000000", label: "X", paths: ["M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"] },
+  youtube: { color: "#FF0000", label: "YouTube", paths: ["M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.01 2.01 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.01 2.01 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31 31 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.01 2.01 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.004.171-.006A100 100 0 0 1 7.858 2h.193zM6.4 5.209v4.818l4.157-2.408z"] },
+  email: { color: "#6b7280", label: "Email", paths: ["M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"] },
+  website: { color: "#6b7280", label: "Website", paths: ["M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m7.5-6.923c-.67.204-1.335.82-1.887 1.855A8 8 0 0 0 5.145 4H7.5zM4.09 4a9.3 9.3 0 0 1 .64-1.539 7 7 0 0 1 .597-.933A7.03 7.03 0 0 0 2.255 4zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a7 7 0 0 0-.656 2.5zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5zM8.5 5v2.5h2.99a12.5 12.5 0 0 0-.337-2.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5zM5.145 12q.208.58.468 1.068c.552 1.035 1.218 1.65 1.887 1.855V12zm.182 2.472a7 7 0 0 1-.597-.933A9.3 9.3 0 0 1 4.09 12H2.255a7 7 0 0 0 3.072 2.472M3.82 11a13.7 13.7 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5zm6.853 3.472A7.03 7.03 0 0 0 13.745 12H11.91a9.3 9.3 0 0 1-.64 1.539 7 7 0 0 1-.597.933M8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855q.26-.487.468-1.068zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.7 13.7 0 0 1-.312 2.5m2.802-3.5a7 7 0 0 0-.656-2.5H12.18c.174.782.282 1.623.312 2.5zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7 7 0 0 0-3.072-2.472c.218.284.418.598.597.933M10.855 4a8 8 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4z"] },
+  scholar: { color: "#4285F4", label: "Google Scholar", paths: ACADEMIC_PATHS },
+  orcid: { color: "#A6CE39", label: "ORCID", paths: ACADEMIC_PATHS },
+  dblp: { color: "#1565C0", label: "dblp", paths: ACADEMIC_PATHS },
+  researchgate: { color: "#00CCBB", label: "ResearchGate", paths: ACADEMIC_PATHS },
+};
+function SocialIcon({ platform }: { platform: string }) {
+  const m = SOCIAL_META[platform] || SOCIAL_META.website;
+  return <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">{m.paths.map((d, i) => <path key={i} d={d} />)}</svg>;
+}
+// Renders the visible social links (editable in admin) as brand-coloured icon buttons.
+function SocialLinks({ links, className }: { links: any[]; className?: string }) {
+  const visible = (Array.isArray(links) ? links : []).filter((l) => l && l.url && !l.hidden);
+  if (!visible.length) return null;
+  return (
+    <div className={className || "flex justify-center gap-4 mt-6"}>
+      {visible.map((l, i) => {
+        const m = SOCIAL_META[l.platform] || SOCIAL_META.website;
+        const label = l.label || m.label;
+        return (
+          <a key={i} href={l.url} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:opacity-85 transition-opacity" style={{ backgroundColor: m.color }}>
+            <SocialIcon platform={l.platform} />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---- Blog ----
+type BlogPost = { title: string; slug: string; date?: string; summary?: string; cover?: string; tags?: string; body?: string; draft?: any };
+function fmtDate(d?: string) {
+  if (!d) return "";
+  const dt = new Date(d + (/^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? "T00:00:00" : ""));
+  return isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+function isDraft(p: BlogPost) { const d = String(p?.draft ?? "").toLowerCase(); return p?.draft === true || d === "yes" || d === "true" || d === "1"; }
+function slugify(s: string) { return String(s || "").toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+function eslug(p: BlogPost) { return (p.slug && p.slug.trim()) ? p.slug.trim() : slugify(p.title); }
+
+function BlogChrome({ children, theme, setTheme, footer, socialLinks }: { children: React.ReactNode; theme: "dark" | "light"; setTheme: (t: "dark" | "light") => void; footer: any; socialLinks: any[] }) {
+  return (
+    <div className="app-root min-h-screen bg-[var(--c-bg)] font-sans text-[var(--c-text)] relative overflow-hidden">
+      <div className="fixed inset-0 app-page-bg z-0 pointer-events-none"></div>
+      <nav className="fixed top-0 left-0 right-0 flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 app-nav-bg backdrop-blur-sm shadow-md z-40">
+        <a href="/" className="text-3xl font-bold tracking-wide text-[var(--c-accent)]">PALASH</a>
+        <ul className="flex gap-6 text-md">
+          <li><a href="/" className="hover:text-[var(--c-accent2)] transition-colors font-semibold">Home</a></li>
+          <li><a href="/blog" className="hover:text-[var(--c-accent2)] transition-colors font-semibold">Blog</a></li>
+        </ul>
+      </nav>
+      <div className="relative z-10 pt-24">
+        <main id="main" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[60vh]">{children}</main>
+        <div className="bg-[var(--c-footer)] mt-16">
+          <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-[var(--c-muted)]">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-5">
+              <div className="text-center md:text-left">
+                {footer.name && <div className="text-[var(--c-text)] text-lg font-semibold">{footer.name}</div>}
+                {footer.tagline && <div className="text-sm mt-0.5">{footer.tagline}</div>}
+              </div>
+              {footer.showSocials !== false && <SocialLinks links={socialLinks} className="flex gap-3 flex-wrap justify-center" />}
+            </div>
+            {footer.copyright && <div className="pt-6 mt-6 border-t border-[var(--c-border)] text-center text-sm">{footer.copyright}</div>}
+          </footer>
+        </div>
+      </div>
+      <FloatingControls theme={theme} setTheme={setTheme} />
+    </div>
+  );
+}
+function BlogIndex({ posts, head }: { posts: BlogPost[]; head?: any }) {
+  const badge = head?.badge ?? "Blog";
+  const title = head?.title ?? "Writing & Notes";
+  const subtitle = head?.subtitle ?? "Research notes, paper walkthroughs, and things I'm building.";
+  useEffect(() => { if (typeof document !== "undefined") document.title = `${title || "Blog"} — Palash Ranjan Roy`; }, [title]);
+  return (
+    <>
+      <header className="text-center mb-10">
+        {badge && <div className="inline-block px-3 py-1 bg-[var(--c-surface)] text-[var(--c-accent)] text-sm font-medium mb-2 rounded">{badge}</div>}
+        {title && <h1 className="text-4xl font-bold mb-3">{title}</h1>}
+        {subtitle && <p className="text-[var(--c-muted)] text-lg">{renderRich(subtitle)}</p>}
+      </header>
+      {posts.length === 0 ? (
+        <p className="text-center text-[var(--c-muted)]">No posts yet — check back soon.</p>
+      ) : (
+        <div className="space-y-6">
+          {posts.map((p) => (
+            <a key={eslug(p)} href={`/blog/${eslug(p)}`} className="block bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl p-6 hover:border-[var(--c-accent)] transition-colors">
+              {p.cover && <img src={p.cover} alt="" className="w-full h-48 object-cover rounded-lg mb-4" loading="lazy" />}
+              <div className="text-xs text-[var(--c-accent)] mb-1">{fmtDate(p.date)}</div>
+              <h2 className="text-xl font-bold mb-1">{p.title}</h2>
+              {p.summary && <p className="text-[var(--c-muted)] text-sm">{p.summary}</p>}
+              <span className="inline-block mt-3 text-[var(--c-accent)] text-sm">Read more →</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+function BlogPostView({ post }: { post: BlogPost }) {
+  useEffect(() => { if (typeof document !== "undefined" && post?.title) document.title = `${post.title} — Palash Ranjan Roy`; }, [post]);
+  const tags = String(post.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+  return (
+    <article>
+      <a href="/blog" className="text-[var(--c-accent)] text-sm hover:underline">← All posts</a>
+      <header className="mt-4 mb-8">
+        <div className="text-sm text-[var(--c-accent)] mb-2">{fmtDate(post.date)}</div>
+        <h1 className="text-4xl font-bold leading-tight mb-3">{post.title}</h1>
+        {post.summary && <p className="text-[var(--c-muted)] text-lg">{post.summary}</p>}
+        {tags.length > 0 && <div className="flex flex-wrap gap-2 mt-4">{tags.map((t) => <span key={t} className="text-xs px-2 py-1 rounded-full bg-[var(--c-chip)] text-[var(--c-accent)]">{t}</span>)}</div>}
+      </header>
+      {post.cover && <img src={post.cover} alt="" className="w-full rounded-xl border border-[var(--c-border)] mb-8" />}
+      {renderMarkdown(post.body || "")}
+    </article>
+  );
+}
+
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Light / dark theme — defaults to dark, remembers the visitor's choice.
@@ -882,6 +1209,12 @@ export default function App() {
   const settings = ((remote.settings && typeof remote.settings === "object") ? { ...settingsData, ...remote.settings } : settingsData) as any;
   const headings = ((remote.headings && typeof remote.headings === "object") ? { ...headingsData, ...remote.headings } : headingsData) as any;
   const research = ((remote.research && typeof remote.research === "object") ? { ...researchData, ...remote.research } : researchData) as any;
+  const socialLinks = ((remote.socials && Array.isArray((remote.socials as any).links)) ? (remote.socials as any).links : socialsData.links) as any[];
+  const footer = ((remote.footer && typeof remote.footer === "object") ? { ...footerData, ...remote.footer } : footerData) as any;
+  const consultation = ((remote.consultation && typeof remote.consultation === "object") ? { ...consultationData, ...remote.consultation } : consultationData) as any;
+  // Portfolio visuals — shown by default; hide either from admin → Slider & Resume.
+  const showYearChart = settings.showYearChart !== false;
+  const showResearchGraph = settings.showResearchGraph !== false;
   // Slider speed: per-section override, else the global default.
   const secMs = (id: string) => (Number((settings.sliderPerSection || {})[id]) || Number(settings.sliderSeconds) || 11) * 1000;
 
@@ -911,6 +1244,33 @@ export default function App() {
     };
   }, []);
 
+  // Published blog posts, newest first (drafts hidden). All hooks above have run,
+  // so it is safe to branch to the blog routes from here.
+  const blogPosts = ((remote.blog ?? blogData.items) as BlogPost[])
+    .filter((p) => p && (p.slug || p.title) && !isDraft(p))
+    .slice()
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+  const blogMatch = pathname.match(/^\/blog(?:\/([^/?#]+))?\/?$/i);
+  if (blogMatch) {
+    const chrome = (node: React.ReactNode) => (
+      <BlogChrome theme={theme} setTheme={setTheme} footer={footer} socialLinks={socialLinks}>{node}</BlogChrome>
+    );
+    const slug = blogMatch[1] ? decodeURIComponent(blogMatch[1]) : null;
+    if (!slug) return chrome(<BlogIndex posts={blogPosts} head={headings.blog} />);
+    // Direct URL finds any post (incl. drafts) so you can preview before publishing;
+    // drafts just stay out of the index, nav, and prerender/sitemap.
+    const allPosts = ((remote.blog ?? blogData.items) as BlogPost[]).filter((p) => p && (p.slug || p.title));
+    const post = allPosts.find((p) => eslug(p) === slug);
+    if (post) return chrome(<BlogPostView post={post} />);
+    return chrome(
+      <div className="text-center py-20">
+        <h1 className="text-3xl font-bold mb-3">Post not found</h1>
+        <a href="/blog" className="text-[var(--c-accent)] hover:underline">← Back to the blog</a>
+      </div>
+    );
+  }
+
   // Reorderable page sections — order is editable from /admin (sectionOrder)
   const sectionMap: Record<string, React.ReactNode> = {
     about: (<>
@@ -932,41 +1292,8 @@ export default function App() {
                   />
                 </div>
                 
-                {/* Social Media Links - with accessible labels for screen readers */}
-                <div className="flex justify-center gap-4 mt-6">
-                  <a href="https://www.facebook.com/pial.roy.3705/" target="_blank" rel="noopener noreferrer" 
-                    className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white hover:bg-opacity-80 transition-all"
-                    aria-label="Visit Palash Roy's Facebook profile">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                      <path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"/>
-                    </svg>
-                    <span className="sr-only">Facebook</span>
-                  </a>
-                  <a href="https://www.instagram.com/checkoutroy/?hl=en" target="_blank" rel="noopener noreferrer" 
-                    className="w-10 h-10 rounded-full bg-[#E4405F] flex items-center justify-center text-white hover:bg-opacity-80 transition-all"
-                    aria-label="Visit Palash Roy's Instagram profile">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                      <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.78-.035 1.204-.166 1.486-.275.373-.145.64-.319.92-.599.28-.28.453-.546.598-.92.11-.281.24-.705.275-1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.47 2.47 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.478 2.478 0 0 1-.92-.598 2.48 2.48 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233 0-2.136.008-2.388.046-3.231.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92.28-.28.546-.453.92-.598.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045v.002zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92zm-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217zm0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334z"/>
-                    </svg>
-                    <span className="sr-only">Instagram</span>
-                  </a>
-                  <a href="https://www.linkedin.com/in/palashranjanroy/" target="_blank" rel="noopener noreferrer" 
-                    className="w-10 h-10 rounded-full bg-[#0A66C2] flex items-center justify-center text-white hover:bg-opacity-80 transition-all"
-                    aria-label="Visit Palash Roy's LinkedIn profile">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                      <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/>
-                    </svg>
-                    <span className="sr-only">LinkedIn</span>
-                  </a>
-                  <a href="https://github.com/Roy101" target="_blank" rel="noopener noreferrer" 
-                    className="w-10 h-10 rounded-full bg-[#333] flex items-center justify-center text-white hover:bg-opacity-80 transition-all"
-                    aria-label="Visit Palash Roy's GitHub profile">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-                    </svg>
-                    <span className="sr-only">GitHub</span>
-                  </a>
-                </div>
+                {/* Social links — editable in admin → Social Links */}
+                <SocialLinks links={socialLinks} />
 
                 {/* At-a-glance highlights card - surfaces the most important facts */}
                 <div className="mt-8 w-full bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl p-5 text-sm">
@@ -1090,17 +1417,24 @@ export default function App() {
                 via <a href={metrics.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--c-accent)] hover:underline">{metrics.source}</a> &middot; updated {metrics.updated}
               </div>
             </div>
-            {/* Two visuals side by side: output over time + what the research is about */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-6 items-center max-w-5xl mx-auto mb-12">
-              <div>
-                <div className="text-xs uppercase tracking-wider text-[var(--c-muted)] mb-4 text-center">Publications per year</div>
-                <PubYearChart items={publicationsData} />
+            {/* Two visuals: output over time + what the research is about. Each can be
+                hidden from admin → Slider & Resume. */}
+            {(showYearChart || showResearchGraph) && (
+              <div className={`${showYearChart && showResearchGraph ? "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-6 items-center" : "flex justify-center"} max-w-5xl mx-auto mb-12`}>
+                {showYearChart && (
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-[var(--c-muted)] mb-4 text-center">Publications per year</div>
+                    <PubYearChart items={publicationsData} />
+                  </div>
+                )}
+                {showResearchGraph && (
+                  <div>
+                    <div className="text-xs uppercase tracking-wider text-[var(--c-muted)] mb-1 text-center">What I work on</div>
+                    <ResearchGraph data={research} />
+                  </div>
+                )}
               </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-[var(--c-muted)] mb-1 text-center">What I work on</div>
-                <ResearchGraph data={research} />
-              </div>
-            </div>
+            )}
             <Carousel
               rotationInterval={secMs('portfolio')}
               items={publicationsData}
@@ -1346,6 +1680,9 @@ export default function App() {
             />
           </section>
     </>),
+    consultation: (<>
+          <ConsultationSection data={consultation} head={headings.consultation} />
+    </>),
     contact: (<>
           <section id="contact" className="pt-16 pb-16">
             <div className="text-center mb-8">
@@ -1359,7 +1696,7 @@ export default function App() {
   const customSections = (Array.isArray((remote as any).customSections) ? (remote as any).customSections : []).filter((c: any) => c && c.id);
   customSections.forEach((cs: any) => { sectionMap[cs.id] = <CustomSection data={cs} />; });
 
-  const defaultSectionOrder = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','contact'];
+  const defaultSectionOrder = ['about','portfolio','news','leadership','service','highlights','media','pictures','references','consultation','contact'];
   const roRaw = Array.isArray((remote as any).sectionOrder) ? ((remote as any).sectionOrder as string[]) : defaultSectionOrder;
   const fullOrder = roRaw.filter((id) => sectionMap[id]);
   defaultSectionOrder.forEach((id) => { if (!fullOrder.includes(id)) fullOrder.push(id); });
@@ -1379,6 +1716,7 @@ export default function App() {
   const navLinks = [
     { label: (hero as any).navHome || "Home", href: "#home" },
     ...sectionOrder.map((id) => ({ label: navLabelOf(id), href: `#${id}` })),
+    ...(blogPosts.length ? [{ label: (headings.blog && headings.blog.nav) || "Blog", href: "/blog" }] : []),
   ];
 
   return (
@@ -1532,95 +1870,18 @@ export default function App() {
           ))}
         </main>
 
-        {/* Footer with centered content and academic credentials */}
+        {/* Footer — editable in admin → Footer + Social Links */}
         <div className="bg-[var(--c-footer)]">
-          <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-[var(--c-muted)] mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
-              <div>
-                <h3 className="text-[var(--c-text)] text-lg font-semibold mb-3">Contact</h3>
-                <ul className="space-y-2">
-                  <li className="flex items-center">
-                    <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <a href="mailto:palash.roy@usask.ca" className="hover:text-[var(--c-accent)]">palash.roy@usask.ca</a>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Dept. of Computer Science, University of Saskatchewan</span>
-                  </li>
-                </ul>
+          <footer className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-[var(--c-muted)] mt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-5">
+              <div className="text-center md:text-left">
+                {footer.name && <div className="text-[var(--c-text)] text-lg font-semibold">{footer.name}</div>}
+                {footer.tagline && <div className="text-sm mt-0.5">{footer.tagline}</div>}
+                {footer.email && <a href={`mailto:${footer.email}`} className="text-sm hover:text-[var(--c-accent)]">{footer.email}</a>}
               </div>
-              <div>
-                <h3 className="text-[var(--c-text)] text-lg font-semibold mb-3">Academic Profiles</h3>
-                <ul className="space-y-2">
-                  <li>
-                    <a href="https://srlab.usask.ca/members/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
-                      <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      Software Research Lab
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://ise.usask.ca/team/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
-                      <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      Interactive Software Engineering Lab
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
-                      <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      Google Scholar
-                    </a>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-[var(--c-text)] text-lg font-semibold mb-3">Recent Awards</h3>
-                <ul className="space-y-2">
-                  <li>
-                    <a href="https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
-                      <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                      </svg>
-                      GSA Research Excellence Award
-                    </a>
-                  </li>
-                  <li>
-                    <a href="#highlights" className="hover:text-[var(--c-accent)] flex items-center">
-                      <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                      </svg>
-                      Best Thesis Award (MSc)
-                    </a>
-                  </li>
-                  <li>
-                    <a href="https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)] flex items-center">
-                      <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                      </svg>
-                      CS Citizenship Award
-                    </a>
-                  </li>
-                </ul>
-              </div>
+              {footer.showSocials !== false && <SocialLinks links={socialLinks} className="flex gap-3 flex-wrap justify-center" />}
             </div>
-            <div className="pt-6 border-t border-[var(--c-border)] flex flex-col md:flex-row justify-between items-center">
-              <div>© 2026 Palash Ranjan Roy | All rights reserved</div>
-              <div className="flex gap-4 mt-2 md:mt-0">
-                <a href="https://github.com/Roy101" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)]">GitHub</a>
-                <a href="https://www.linkedin.com/in/palashranjanroy/" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)]">LinkedIn</a>
-                <a href="https://www.researchgate.net/profile/Palash_Roy" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-accent)]">ResearchGate</a>
-              </div>
-            </div>
+            {footer.copyright && <div className="pt-6 mt-6 border-t border-[var(--c-border)] text-center text-sm">{footer.copyright}</div>}
           </footer>
         </div>
       </div>

@@ -1,0 +1,52 @@
+{
+  "links": [
+    {
+      "platform": "linkedin",
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/palashranjanroy/",
+      "hidden": false
+    },
+    {
+      "platform": "scholar",
+      "label": "Google Scholar",
+      "url": "https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en",
+      "hidden": false
+    },
+    {
+      "platform": "github",
+      "label": "GitHub",
+      "url": "https://github.com/Roy101",
+      "hidden": false
+    },
+    {
+      "platform": "orcid",
+      "label": "ORCID",
+      "url": "https://orcid.org/0000-0001-9470-4233",
+      "hidden": false
+    },
+    {
+      "platform": "dblp",
+      "label": "dblp",
+      "url": "https://dblp.org/pid/355/4465.html",
+      "hidden": false
+    },
+    {
+      "platform": "researchgate",
+      "label": "ResearchGate",
+      "url": "https://www.researchgate.net/profile/Palash_Roy",
+      "hidden": false
+    },
+    {
+      "platform": "instagram",
+      "label": "Instagram",
+      "url": "https://www.instagram.com/checkoutroy/?hl=en",
+      "hidden": true
+    },
+    {
+      "platform": "facebook",
+      "label": "Facebook",
+      "url": "https://www.facebook.com/pial.roy.3705/",
+      "hidden": true
+    }
+  ]
+}

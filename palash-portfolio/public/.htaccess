@@ -2,9 +2,17 @@
 RewriteEngine On
 
 # Handle frontend routes - redirect all requests to index.html
-# Needed for SPA (Single Page Applications) like React 
+# Needed for SPA (Single Page Applications) like React
 RewriteBase /
+# Never rewrite the PHP backend or setup file — let them run directly
+RewriteRule ^api/ - [L]
+RewriteRule ^admin/ - [L]
+RewriteRule ^create-admin\.php$ - [L]
 RewriteRule ^index\.html$ - [L]
+# Serve prerendered blog pages directly (no trailing-slash redirect). New posts that
+# aren't prerendered yet fall through to the SPA below and render from the live API.
+RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
+RewriteRule ^(blog(?:/[^/]+)?)/?$ /$1/index.html [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]
