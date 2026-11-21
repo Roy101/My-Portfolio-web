@@ -1639,6 +1639,8 @@ const awardLines = awards.map((a) => `- ${a}`).join("\n");
 const teachLine = (t) => { const d = [t.description, t.details].filter(Boolean).join(" "); return `- ${t.role}${t.org ? `, ${t.org}` : ""}${t.period ? ` (${t.period})` : ""}${d ? `: ${d.replace(/[.\s]+$/, "")}.` : "."}`; };
 const talkLine = (t) => `- ${t.period ? `${t.period}: ` : ""}"${t.title}"${t.venue ? `, ${t.venue}` : ""}${talkRole(t) ? ` (${talkRole(t)})` : ""}.${t.url ? ` ${t.url}` : ""}`;
 
+// Admin-editable profiles (socials.json, non-hidden) not already covered by the scholarly IDs.
+const LLMS_PROFILES = profileLinks.filter((p) => !["scholar", "orcid", "dblp"].includes(p.k) && !IDS.some((i) => i.url === p.url));
 const blogLine = (b) => `- [${stripEmoji(b.title)}](${SITE}/blog/${encodeURIComponent(str(b.slug) || slugify(b.title))}/)${isoDay(b.date) ? ` (${isoDay(b.date)})` : ""}${str(b.summary) ? `: ${clip(stripEmoji(b.summary), 240)}` : ""}`;
 const llms = `# ${NAME}
 
@@ -1651,7 +1653,7 @@ ${software.length ? `\n## ${TOOLS_HEADING}\n\n${software.map(swLine).join("\n")}
 ## Profiles
 
 ${IDS.map((i) => `- [${i.propertyID}](${i.url}): ${i.value}`).join("\n")}
-- [GitHub](https://github.com/Roy101): Roy101
+${LLMS_PROFILES.map((p) => `- [${p.label}](${p.url})`).join("\n")}
 
 ## Optional
 
@@ -1680,6 +1682,7 @@ ${software.length ? `\n## ${TOOLS_HEADING}\n\n${software.map((s) => `- ${s.name}
 ## Profiles
 
 ${IDS.map((i) => `- ${i.propertyID}: ${i.url}`).join("\n")}
+${LLMS_PROFILES.map((p) => `- ${p.label}: ${p.url}`).join("\n")}
 `;
 write("llms-full.txt", llmsFull);
 
