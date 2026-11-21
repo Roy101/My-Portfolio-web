@@ -103,13 +103,28 @@ RewriteRule ^ - [L]
 RewriteRule ^blog(/.*)?$ /index.html [L]
 
 <IfModule mod_headers.c>
-  Header set Access-Control-Allow-Origin "*"
-  Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
-  Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept"
-  Header set X-Content-Type-Options "nosniff"
-  Header set X-XSS-Protection "1; mode=block"
-  Header set X-Frame-Options "SAMEORIGIN"
-  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  # Security headers (sent on every response, including redirects and errors).
+  # HSTS: browsers always use HTTPS for palashroy.me (they ignore it on plain http, and http is
+  # redirected to https above). No includeSubDomains or preload, so cPanel/webmail subdomains
+  # are never locked out.
+  Header always set Strict-Transport-Security "max-age=31536000"
+  # CSP kept deliberately light so nothing breaks (inline theme script, JSON-LD, video/slide
+  # embeds): any stray http:// resource is upgraded to https, no plugins, the site cannot be
+  # framed by other sites, and forms only post back to this site.
+  Header always set Content-Security-Policy "upgrade-insecure-requests; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+  # The old XSS filter is retired in modern browsers and can itself cause issues; "0" is the
+  # current recommendation.
+  Header always set X-XSS-Protection "0"
+  # Public text files (llms.txt, .md mirrors, sitemap) may be read by tools on other sites.
+  # The API sets its own CORS headers; the admin gets none.
+  <FilesMatch "\.(txt|md|xml)$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
   Header set Link "<https://palashroy.me%{MD_CANONICAL}e>; rel=\"canonical\"" env=MD_CANONICAL
   # Maintenance (1b): the 503 carries Retry-After and is never cached. On the error page the
   # variable arrives as REDIRECT_MAINT (Apache renames it on the internal redirect).
