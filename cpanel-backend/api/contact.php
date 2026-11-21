@@ -63,6 +63,6 @@ $headers = implode("\r\n", [
 // (Constant value, never user input, so it's safe to pass to sendmail.)
 if (!@mail($to, $subj, $bodyTxt, $headers, '-f contact@palashroy.me')) {
     http_response_code(500);
-    out(['error' => 'Sorry, the message could not be sent. Please email contact@palashroy.me directly.']);
+    out(['error' => 'Sorry, the message could not be sent. Please email palash.roy@usask.ca directly.']);
 }
 out(['ok' => true]);

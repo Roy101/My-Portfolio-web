@@ -1,4 +1,77 @@
 {
-  "hubs": ["Code Clones", "Large Language Models"],
-  "leaves": ["Clone Detection", "Cross-language Clones", "Green AI", "Clone Refactoring"]
+  "hubs": [
+    "Code Clones",
+    "Large Language Models"
+  ],
+  "leaves": [
+    "Clone Detection",
+    "Cross-language Clones",
+    "Clone Refactoring",
+    "Model Merging",
+    "Green AI"
+  ],
+  "themes": [
+    {
+      "id": "clone-detection",
+      "title": "Code clones in the LLM era",
+      "summary": "Do clone detectors and benchmarks hold up when code is written by AI?",
+      "keywords": [
+        "Code Clones",
+        "Program Comprehension",
+        "LLM-Generated Code"
+      ],
+      "papers": [
+        "classical-clone-detectors-ai-era",
+        "gptclonebench",
+        "llm-clone-generation-iwsc"
+      ]
+    },
+    {
+      "id": "model-merging",
+      "title": "Model merging for software engineering",
+      "summary": "One model across clone domains, without retraining, that generalizes to unseen clones.",
+      "keywords": [
+        "Model Merging",
+        "OOD Generalization",
+        "AI4SE"
+      ],
+      "key_result": "93% of multi-task performance with no training data; up to 4× better on unseen AI-generated clones.",
+      "papers": [
+        "cross-domain-clone-detection-model-merging",
+        "mergese"
+      ]
+    },
+    {
+      "id": "green-llms",
+      "title": "Efficient, sustainable code models",
+      "summary": "Compressing code transformers to cut memory and CO2 while keeping accuracy.",
+      "keywords": [
+        "Model Compression",
+        "Green & Sustainable SE",
+        "SE4AI"
+      ],
+      "key_result": "Up to 81% lower CO2 emissions while keeping about 98% of clone-detection accuracy.",
+      "papers": [
+        "carbon-taxed-transformers",
+        "carbon-taxed-transformers-poster"
+      ]
+    },
+    {
+      "id": "clone-refactoring",
+      "title": "Just-in-time clone refactoring (PhD direction)",
+      "summary": "Helping developers refactor clones as they write code.",
+      "keywords": [
+        "Software Maintenance & Evolution",
+        "Refactoring"
+      ],
+      "papers": [
+        "jit-inclusive-clone-refactoring"
+      ]
+    }
+  ],
+  "statement": "How should software engineering tools adapt when AI coding assistants generate and copy code? My work tests whether clone detectors still hold up on AI-generated code, builds benchmarks to measure this, and uses model merging and compression to make code models that generalize across clone domains and cost less to run. The results are released as open benchmarks, tools and replication packages, including GPTCloneBench and MergeSE.",
+  "also": [
+    "llms-threat-programming-platforms",
+    "paper-author-ranking"
+  ]
 }

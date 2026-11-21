@@ -7,5 +7,164 @@
     "pictures": 5,
     "references": 9
   },
-  "resumeUrl": ""
+  "resumeUrl": "",
+  "showYearChart": false,
+  "showResearchGraph": false,
+  "themePrompt": true,
+  "blogInNav": true,
+  "maintenance": {
+    "on": false,
+    "message": "",
+    "until": ""
+  },
+  "showLatest": true,
+  "latestCount": 2,
+  "heroLinks": [
+    "scholar",
+    "linkedin",
+    "github",
+    "email"
+  ],
+  "tagVocabulary": [
+    {
+      "tag": "Software Maintenance & Evolution",
+      "label": ""
+    },
+    {
+      "tag": "Program Comprehension",
+      "label": ""
+    },
+    {
+      "tag": "Code Clones",
+      "label": ""
+    },
+    {
+      "tag": "Refactoring",
+      "label": ""
+    },
+    {
+      "tag": "Empirical SE",
+      "label": "Empirical Software Engineering"
+    },
+    {
+      "tag": "AI4SE",
+      "label": "AI for Software Engineering"
+    },
+    {
+      "tag": "SE4AI",
+      "label": "Software Engineering for AI"
+    },
+    {
+      "tag": "Green & Sustainable SE",
+      "label": ""
+    },
+    {
+      "tag": "Model Merging",
+      "label": ""
+    },
+    {
+      "tag": "OOD Generalization",
+      "label": "Out-of-Distribution Generalization"
+    },
+    {
+      "tag": "Benchmark",
+      "label": ""
+    },
+    {
+      "tag": "Tool",
+      "label": ""
+    },
+    {
+      "tag": "Scientometrics",
+      "label": ""
+    }
+  ],
+  "mlTopicVocabulary": [
+    {
+      "tag": "Model Merging",
+      "label": ""
+    },
+    {
+      "tag": "Task Arithmetic (TIES, DARE)",
+      "label": ""
+    },
+    {
+      "tag": "Out-of-Distribution Generalization",
+      "label": ""
+    },
+    {
+      "tag": "Multi-Task Learning",
+      "label": ""
+    },
+    {
+      "tag": "Code Language Models",
+      "label": ""
+    },
+    {
+      "tag": "Hugging Face Tooling",
+      "label": ""
+    },
+    {
+      "tag": "Model Compression",
+      "label": ""
+    },
+    {
+      "tag": "Pruning",
+      "label": ""
+    },
+    {
+      "tag": "Quantization",
+      "label": ""
+    },
+    {
+      "tag": "Knowledge Distillation",
+      "label": ""
+    },
+    {
+      "tag": "Efficient & Green LLMs",
+      "label": ""
+    },
+    {
+      "tag": "LLM-Generated Code",
+      "label": ""
+    },
+    {
+      "tag": "Large Language Models",
+      "label": ""
+    },
+    {
+      "tag": "LLM Evaluation",
+      "label": ""
+    },
+    {
+      "tag": "Benchmarks & Datasets",
+      "label": ""
+    },
+    {
+      "tag": "Prompting",
+      "label": ""
+    },
+    {
+      "tag": "Prompting (Few-Shot)",
+      "label": ""
+    }
+  ],
+  "areaTags": [
+    "Software Maintenance & Evolution",
+    "Program Comprehension",
+    "Code Clones",
+    "Refactoring",
+    "Empirical SE",
+    "AI4SE",
+    "SE4AI",
+    "Green & Sustainable SE"
+  ],
+  "mlAreaTags": [
+    "Model Merging",
+    "Model Compression",
+    "Out-of-Distribution Generalization",
+    "Code Language Models",
+    "LLM-Generated Code",
+    "Efficient & Green LLMs"
+  ]
 }

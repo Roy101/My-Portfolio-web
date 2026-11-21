@@ -1,76 +1,128 @@
 {
   "about": {
-    "nav": "About",
+    "nav": "Research",
     "badge": "",
-    "title": "Biography",
+    "title": "Research",
     "subtitle": ""
   },
   "portfolio": {
     "nav": "Publications",
-    "badge": "Publications",
-    "title": "My Latest Publications",
-    "subtitle": "See my Google Scholar for the latest details on the following work."
+    "badge": "",
+    "title": "Publications",
+    "subtitle": "",
+    "selectedTitle": "Selected publications",
+    "otherTitle": "Other publications"
   },
   "news": {
     "nav": "News",
-    "badge": "News & Milestones",
-    "title": "What's Happening",
-    "subtitle": "Recent milestones, awards, and research highlights."
+    "badge": "",
+    "title": "News",
+    "subtitle": ""
   },
   "leadership": {
     "nav": "Leadership",
-    "badge": "Leadership",
-    "title": "Titles I Didn't Ask For but Took Anyway",
-    "subtitle": "A curated list of leadership roles where I herded humans, orchestrated controlled chaos, and occasionally made important decisions while pretending to know what I was doing."
+    "badge": "",
+    "title": "Leadership & Service",
+    "subtitle": ""
   },
   "service": {
     "nav": "Service",
-    "badge": "Service",
-    "title": "Academic Service",
+    "badge": "",
+    "title": "Reviewing & Service",
     "subtitle": ""
   },
   "highlights": {
     "nav": "Awards",
-    "badge": "Highlights",
-    "title": "Featured Highlights",
-    "subtitle": "Here are some awards, articles, documents, certificates, and whatever else I am proud of."
+    "badge": "",
+    "title": "Awards & Honors",
+    "subtitle": ""
   },
   "media": {
     "nav": "Media",
-    "badge": "In the News",
-    "title": "Featured Coverage",
-    "subtitle": "Selected media coverage and university announcements."
+    "badge": "",
+    "title": "Media Coverage",
+    "subtitle": ""
   },
   "pictures": {
     "nav": "Gallery",
-    "badge": "Gallery",
-    "title": "Beyond the Research",
-    "subtitle": "From representing 4,500+ graduate students as GSA President to exploring the world with family and friends."
+    "badge": "",
+    "title": "Gallery",
+    "subtitle": ""
   },
   "references": {
     "nav": "References",
-    "badge": "References",
+    "badge": "",
     "title": "References",
-    "subtitle": "Here are some of the amazing people who I have worked with in the past that I could reach out to for a reference if needed.",
-    "note": "I have had the privilege to work with [Dr. Kevin Schneider](https://artsandscience.usask.ca/profile/KSchneider), [Dr. Chanchal Roy](https://clones.usask.ca/), [Dr. Farouq Al-Omari](https://www.tru.ca/science/departments/engineering/Faculty.html), [Dr. Banani Roy](https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php), and [Dr. Cody Phillips](https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips).",
-    "mentors": "I really need to update this to add all my amazing computer science references! But that will be for another day."
+    "subtitle": "References are available on request.",
+    "note": "Colleagues and mentors include [Dr. Kevin Schneider](https://artsandscience.usask.ca/profile/KSchneider), [Dr. Chanchal Roy](https://clones.usask.ca/), [Dr. Farouq Al-Omari](https://www.tru.ca/science/departments/engineering/Faculty.html), [Dr. Banani Roy](https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php) and [Dr. Cody Phillips](https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips).",
+    "mentors": ""
   },
   "contact": {
     "nav": "Contact",
-    "badge": "Contact",
-    "title": "Get in Touch",
-    "subtitle": "Have a question, an opportunity, or just want to say hi? Send me a message and I'll get back to you."
+    "badge": "",
+    "title": "Contact",
+    "subtitle": ""
   },
   "consultation": {
     "nav": "Collaborate",
-    "badge": "Work With Me",
-    "title": "Let's Work Together",
-    "subtitle": "Collaborations, talks, and mentoring — I'd love to hear from you."
+    "badge": "",
+    "title": "Collaboration",
+    "subtitle": ""
   },
   "blog": {
     "nav": "Blog",
-    "badge": "Blog",
-    "title": "Writing & Notes",
-    "subtitle": "Research notes, paper walkthroughs, and things I'm building."
+    "badge": "",
+    "title": "Blog",
+    "subtitle": "Research notes and paper walkthroughs.",
+    "teaserTitle": "From the blog"
+  },
+  "experience": {
+    "nav": "Experience",
+    "badge": "",
+    "title": "Experience",
+    "subtitle": ""
+  },
+  "software": {
+    "nav": "Tools & Benchmarks",
+    "badge": "",
+    "title": "Tools & Benchmarks",
+    "subtitle": ""
+  },
+  "skills": {
+    "nav": "Skills & Methods",
+    "badge": "",
+    "title": "Skills & Methods",
+    "subtitle": ""
+  },
+  "documents": {
+    "nav": "Documents",
+    "badge": "",
+    "title": "Documents",
+    "subtitle": ""
+  },
+  "photos": {
+    "nav": "Photos",
+    "badge": "",
+    "title": "Photos",
+    "subtitle": ""
+  },
+  "faq": {
+    "nav": "Research FAQ",
+    "badge": "",
+    "title": "Research FAQ",
+    "subtitle": ""
+  },
+  "aboutPage": {
+    "nav": "About",
+    "badge": "",
+    "title": "About",
+    "subtitle": ""
+  },
+  "latest": {
+    "nav": "Latest",
+    "badge": "",
+    "title": "Latest",
+    "subtitle": "",
+    "allLabel": "All news"
   }
 }

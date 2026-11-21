@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "label": "CV",
+      "url": "",
+      "kind": "cv"
+    },
+    {
+      "label": "Research Statement",
+      "url": "",
+      "kind": "research_statement"
+    },
+    {
+      "label": "Teaching Statement",
+      "url": "",
+      "kind": "teaching_statement"
+    }
+  ]
+}

@@ -1,11 +1,19 @@
 {
   "items": [
     {
-      "period": "2025-2026",
+      "period": "May 2025 – Apr 2026",
       "role": "President",
       "organization": "Graduate Students Association (GSA)",
       "place": "University of Saskatchewan",
-      "link": "https://gsa.usask.ca"
+      "link": "https://gsa.usask.ca",
+      "id": "gsa",
+      "description": "Elected; represented more than 4,500 graduate students.",
+      "highlights": [
+        "Restored the Association's non-profit status and put its reserves on a sustainable footing",
+        "Advocated successfully for raising the PhD funding floor from $20,000 to $25,000 and expanded need-based bursaries",
+        "Brought the GSA into a SSHRC-funded research partnership (over $200,000)",
+        "Organized the GSA's first Anti-Racism Symposium and supported the recognition of new graduate student communities"
+      ]
     },
     {
       "period": "2024-2025",
@@ -31,8 +39,9 @@
     {
       "period": "2018-2021",
       "role": "Assistant General Secretary",
-      "organization": "Robotics Club Of Brac University [ROBU]",
-      "place": "BRAC University"
+      "organization": "Robotics Club of BRAC University (ROBU)",
+      "place": "BRAC University",
+      "aboutOnly": true
     }
   ]
 }

@@ -12,6 +12,8 @@ try {
     $rows = db()->query("SELECT section, data FROM content")->fetchAll();
     $out = [];
     foreach ($rows as $r) {
+        // Only public content sections; private rows (e.g. the maintenance bypass token) are never returned.
+        if (!in_array($r['section'], ALLOWED_SECTIONS, true)) continue;
         $out[$r['section']] = json_decode($r['data']);
     }
     echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

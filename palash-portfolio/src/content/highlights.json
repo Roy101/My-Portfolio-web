@@ -1,83 +1,95 @@
 {
   "items": [
     {
-      "title": "🏆 ACM SIGSOFT Distinguished Paper Award (2026)",
-      "organization": "ACM International Conference on the Foundations of Software Engineering (FSE)",
-      "description": "Awarded to \"Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models\" (FSE 2026), one of the highest honors for a paper at a flagship software engineering conference."
+      "title": "ACM SIGSOFT Distinguished Paper Award (2026)",
+      "organization": "ACM International Conference on the Foundations of Software Engineering (FSE 2026)",
+      "description": "Awarded to \"Carbon-Taxed Transformers: A Green Compression Pipeline for Overgrown Language Models\" (Proceedings of the ACM on Software Engineering, FSE 2026).",
+      "year": "2026",
+      "kind": "award"
+    },
+    {
+      "title": "Best Doctoral Proposal Award (ICSME 2025 Doctoral Symposium)",
+      "organization": "IEEE International Conference on Software Maintenance and Evolution (ICSME 2025), Auckland, New Zealand",
+      "description": "Awarded to \"Towards Just-In-Time, Inclusive Clone Refactoring\" at the ICSME 2025 Doctoral Symposium.",
+      "year": "2025",
+      "date": "2025-09",
+      "kind": "award",
+      "paper_slug": "jit-inclusive-clone-refactoring"
     },
     {
       "title": "Research Excellence in Science, Technology, Engineering, or Math (2025)",
-      "organization": "Graduate Students Association, University of Saskatchewan",
-      "description": "Recognized for outstanding contributions to research in STEM fields at the university level.",
-      "link": "https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php"
+      "organization": "Graduate Students' Association, University of Saskatchewan",
+      "description": "Graduate Students' Association award for research in science, technology, engineering or math.",
+      "link": "https://www.cs.usask.ca/news/2025/celebrating-excellence-computer-science-professor-and-graduate-students-receive-gsa-awards.php",
+      "year": "2025",
+      "kind": "award"
     },
     {
-      "title": "Best Thesis Award (MSc) (2025)",
+      "title": "Best Thesis Award (M.Sc.) (2025)",
       "organization": "Department of Computer Science, University of Saskatchewan",
-      "description": "Awarded for exceptional research work during Master's studies in Computer Science."
+      "description": "Awarded for research during Master's studies in Computer Science.",
+      "year": "2025",
+      "kind": "award"
     },
     {
       "title": "SOAR Distinguished Research Award (2024)",
-      "organization": "NSERC Collaborative Research and Training (CREATE), Canada",
-      "description": "Recognized for distinguished research contributions within the NSERC collaborative framework."
+      "organization": "NSERC CREATE SOAR program, Canada",
+      "description": "Research award from the NSERC Collaborative Research and Training Experience (CREATE) SOAR program.",
+      "year": "2024",
+      "kind": "award"
     },
     {
-      "title": "75th Anniversary Scholarship (2024)",
-      "organization": "College of Graduate & Postdoctoral Studies (CGPS), University of Saskatchewan",
-      "description": "Received scholarship commemorating the 75th anniversary of the College of Graduate Studies."
+      "title": "CGPS 75th Anniversary Award (2024-2026)",
+      "organization": "College of Graduate and Postdoctoral Studies (CGPS), University of Saskatchewan",
+      "description": "Scholarship marking the 75th anniversary of the College of Graduate and Postdoctoral Studies.",
+      "year": "2024-2026",
+      "kind": "scholarship"
     },
     {
       "title": "CS Citizenship Award (M.Sc.) (2024)",
       "organization": "Department of Computer Science, University of Saskatchewan",
-      "description": "Recognized for exemplary citizenship and community contributions within the Computer Science department.",
-      "link": "https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php"
+      "description": "Recognized for citizenship and community contributions in the Department of Computer Science.",
+      "link": "https://www.cs.usask.ca/news/2024/graduate-student-award-recipients.php",
+      "year": "2024",
+      "kind": "award"
     },
     {
-      "title": "Research Award (2024)",
+      "title": "ICSAC Research Award (2024)",
       "organization": "8th Symposium on Innovations in Computer Science and Applied Computing (ICSAC), University of Saskatchewan",
-      "description": "Awarded for innovative research presented at the ICSAC symposium."
+      "description": "Awarded for research presented at the ICSAC symposium.",
+      "year": "2024",
+      "kind": "award"
     },
     {
-      "title": "People's Choice Best Paper Award (2023)",
-      "organization": "IWSC-2023 at Bogota, Colombia",
-      "description": "Paper on large language models and code clones voted as the best paper by attendees.",
-      "link": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
+      "title": "People's Choice Best Paper Award (IWSC 2023)",
+      "organization": "17th International Workshop on Software Clones (IWSC 2023), Bogotá, Colombia",
+      "description": "Awarded by attendee vote to the IWSC 2023 paper on generating semantic and cross-language clones with large language models.",
+      "link": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php",
+      "year": "2023",
+      "kind": "award",
+      "paper_slug": "llm-clone-generation-iwsc"
     },
     {
-      "title": "Student Encouragement Award (2023)",
-      "organization": "IWSC-2023 at Bogota, Colombia",
-      "description": "Received encouragement award at the International Workshop on Software Clones in Bogota.",
-      "link": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php"
+      "title": "Student Encouragement Award (IWSC 2023)",
+      "organization": "17th International Workshop on Software Clones (IWSC 2023), Bogotá, Colombia",
+      "description": "Awarded to Palash Ranjan Roy at IWSC 2023.",
+      "link": "https://news.usask.ca/articles/colleges/2023/usask-clones-researcher-wins-international-award.php",
+      "year": "2023",
+      "kind": "award"
     },
     {
       "title": "People's Choice Best Presentation Award (2023)",
       "organization": "SOAR Symposium at Saskatoon, Saskatchewan",
-      "description": "Presentation voted as the best by symposium attendees at the SOAR event in Saskatoon."
+      "description": "Presentation voted best by attendees at the SOAR Symposium in Saskatoon.",
+      "year": "2023",
+      "kind": "award"
     },
     {
-      "title": "Nominated for University of Saskatchewan Best Thesis Award (2025)",
-      "organization": "College of Graduate and Postdoctoral Studies, University of Saskatchewan",
-      "description": "Thesis nominated for the prestigious university-wide best thesis recognition."
-    },
-    {
-      "title": "Nominated for WAGS Distinguished MSc Thesis STEM (2025)",
-      "organization": "Western Association of Graduate School",
-      "description": "Thesis nominated for distinguished recognition among STEM disciplines across Western institutions."
-    },
-    {
-      "title": "Nominee, CS Geddes Awards (M.Sc.) (2024)",
-      "organization": "Department of Computer Science, University of Saskatchewan",
-      "description": "Nominated for the prestigious Geddes Award for excellence in Computer Science."
-    },
-    {
-      "title": "Nominee, Carl McCrosky Innovation Scholarship (2024)",
-      "organization": "University of Saskatchewan",
-      "description": "Nominated for scholarship recognizing innovative approaches in Computer Science research."
-    },
-    {
-      "title": "Nominee, Mark Kroeker Exceptional Student Leadership Award (2024)",
-      "organization": "University of Saskatchewan",
-      "description": "Nominated for exceptional leadership within the student community."
+      "title": "Award nominations (2024-2025)",
+      "organization": "University of Saskatchewan and Western Association of Graduate Schools",
+      "description": "Nominated for the University of Saskatchewan Best Thesis Award (2025), the WAGS Distinguished MSc Thesis Award in STEM (2025), the CS Geddes Award (M.Sc., 2024), the Carl McCrosky Innovation Scholarship (2024) and the Mark Kroeker Exceptional Student Leadership Award (2024).",
+      "year": "2024-2025",
+      "kind": "nomination"
     }
   ]
 }

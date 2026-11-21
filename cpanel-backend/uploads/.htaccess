@@ -1,0 +1,33 @@
+# pr-uploads-htaccess v3
+# Written by admin/upload.php. Uploaded files are served as plain downloads; nothing here may run as code.
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php5.c>
+  php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .pht .cgi .pl .py .sh
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .phar .pht
+Options -Indexes -ExecCGI
+<FilesMatch "(?i)\.(php[0-9]?|phtml|phar|pht|phps|cgi|pl|py|sh|shtml|html?|svg|js|htaccess)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+AddType application/pdf .pdf
+AddType application/vnd.openxmlformats-officedocument.presentationml.presentation .pptx
+AddType video/mp4 .mp4
+AddType video/webm .webm
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  <FilesMatch "(?i)\.pptx$">
+    Header set Content-Disposition "attachment"
+  </FilesMatch>
+</IfModule>

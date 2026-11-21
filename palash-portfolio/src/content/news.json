@@ -1,40 +1,55 @@
 {
   "items": [
     {
-      "date": "2026",
-      "icon": "🏆",
-      "title": "Won the ACM SIGSOFT Distinguished Paper Award at FSE 2026",
-      "description": "\"Carbon-Taxed Transformers\" was recognized as a Distinguished Paper, one of the highest honors at a flagship software engineering conference."
+      "date": "2026-06-18",
+      "icon": "",
+      "title": "Two papers accepted at ASE 2026 (research track and tool track)",
+      "description": "\"A Unified Model for Cross-Domain Clone Detection via Model Merging\" (research track) and \"MergeSE: Post-Hoc Model Merging for Software Engineering Tasks without Retraining\" (Tool Track), IEEE/ACM International Conference on Automated Software Engineering.",
+      "tag": "Paper",
+      "pinned": true,
+      "links": [
+        {
+          "text": "research track",
+          "url": "/publications/cross-domain-clone-detection-model-merging/",
+          "label": "ASE 2026 research track paper: A Unified Model for Cross-Domain Clone Detection via Model Merging"
+        },
+        {
+          "text": "tool track",
+          "url": "/publications/mergese/",
+          "label": "ASE 2026 Tool Track paper: MergeSE"
+        }
+      ]
     },
     {
-      "date": "2026",
-      "icon": "📄",
-      "title": "Published at FSE 2026 (paper and poster)",
-      "description": "Carbon-Taxed Transformers appeared as a full research paper and a poster at the ACM International Conference on the Foundations of Software Engineering."
+      "date": "2026-06-18",
+      "icon": "",
+      "title": "Carbon-Taxed Transformers accepted at FSE 2026 (PACMSE)",
+      "description": "Accepted to Proceedings of the ACM on Software Engineering (FSE 2026).",
+      "tag": "Paper",
+      "paper_slug": "carbon-taxed-transformers"
     },
     {
-      "date": "2025-2026",
-      "icon": "🎓",
-      "title": "Serving as President of the USask Graduate Students' Association",
-      "description": "Elected to represent more than 4,500 graduate students, and appointed to the University Senate and Provost Search Committee."
+      "date": "2026-02-11",
+      "icon": "",
+      "title": "Invited guest speaker, CARA Let's Talk AI Club — Practical AI for Research Administration",
+      "description": "A non-technical session for research administrators across Canada on where AI helps, its limits, and why human oversight must stay central.",
+      "tag": "Talk"
     },
     {
-      "date": "2025",
-      "icon": "🏅",
-      "title": "Received the GSA Research Excellence Award (STEM)",
-      "description": "Recognized for outstanding research contributions in science, technology, engineering, and math at the University of Saskatchewan."
+      "date": "2025-07-11",
+      "icon": "",
+      "title": "Doctoral Symposium paper accepted at ICSME 2025",
+      "description": "\"Towards Just-In-Time, Inclusive Clone Refactoring\", ICSME 2025 Doctoral Symposium.",
+      "tag": "Paper",
+      "paper_slug": "jit-inclusive-clone-refactoring"
     },
     {
-      "date": "2025",
-      "icon": "🎓",
-      "title": "Awarded Best Thesis (MSc) in Computer Science",
-      "description": "Honored for exceptional research during Master's studies at the University of Saskatchewan."
-    },
-    {
-      "date": "2023",
-      "icon": "🥇",
-      "title": "Won the People's Choice Best Paper Award at IWSC 2023",
-      "description": "Paper on large language models and code clones voted best by attendees at the International Workshop on Software Clones in Bogota, Colombia."
+      "date": "2025-06-05",
+      "icon": "",
+      "title": "Research paper accepted at ICSME 2025",
+      "description": "\"Are Classical Clone Detectors Good Enough for the AI Era?\", ICSME 2025 research track.",
+      "tag": "Paper",
+      "paper_slug": "classical-clone-detectors-ai-era"
     }
   ]
 }

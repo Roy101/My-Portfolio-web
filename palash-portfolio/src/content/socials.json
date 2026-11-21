@@ -1,15 +1,15 @@
 {
   "links": [
     {
-      "platform": "linkedin",
-      "label": "LinkedIn",
-      "url": "https://www.linkedin.com/in/palashranjanroy/",
-      "hidden": false
-    },
-    {
       "platform": "scholar",
       "label": "Google Scholar",
       "url": "https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en",
+      "hidden": false
+    },
+    {
+      "platform": "linkedin",
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/palashranjanroy/",
       "hidden": false
     },
     {
@@ -34,6 +34,12 @@
       "platform": "researchgate",
       "label": "ResearchGate",
       "url": "https://www.researchgate.net/profile/Palash_Roy",
+      "hidden": false
+    },
+    {
+      "platform": "x",
+      "label": "X",
+      "url": "https://x.com/Palash16355210",
       "hidden": false
     },
     {

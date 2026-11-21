@@ -1,57 +1,149 @@
-# Enable rewriting
-RewriteEngine On
+# palashroy.me (Apache / cPanel). Copied into dist/ by vite; upload with the build.
 
-# Handle frontend routes - redirect all requests to index.html
-# Needed for SPA (Single Page Applications) like React
+Options -Indexes
+AddDefaultCharset UTF-8
+# index.php keeps /admin/ working (this line applies to every folder below the web root).
+DirectoryIndex index.html index.php
+ErrorDocument 404 /404.html
+# Maintenance mode answers 503 (see 1b below); this is the page shown with it.
+ErrorDocument 503 /maintenance.html
+
+<IfModule mod_mime.c>
+  AddType "text/markdown; charset=utf-8" .md
+  AddType "text/plain; charset=utf-8" .txt .bib
+  AddType image/svg+xml .svg
+  AddType image/x-icon .ico
+  AddType font/woff2 .woff2
+  # Presentation slides and videos uploaded per paper from the admin (Publications editor).
+  AddType application/vnd.openxmlformats-officedocument.presentationml.presentation .pptx
+  AddType video/mp4 .mp4
+  AddType video/webm .webm
+  AddCharset UTF-8 .html .css .js .json .xml
+</IfModule>
+
+# The maintenance flag file and the bypass-token marker files are never served.
+<FilesMatch "^\.(maintenance|maint-ok-.*)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+RewriteEngine On
 RewriteBase /
-# Never rewrite the PHP backend or setup file — let them run directly
+
+# 1) One canonical origin: https://palashroy.me (no www). The X-Forwarded-Proto check
+#    avoids a redirect loop if a proxy/CDN terminates TLS in front of the server.
+RewriteCond %{HTTP_HOST} ^www\.palashroy\.me$ [NC]
+RewriteRule ^ https://palashroy.me%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# 1b) Maintenance mode. The admin (Site -> Maintenance) creates /.maintenance in the web root
+#     to turn it on and deletes it to turn it off. While the file exists every page answers
+#     503 Service Unavailable with /maintenance.html (ErrorDocument above) and Retry-After
+#     (headers below): 503 tells search engines the outage is temporary, so rankings are kept.
+#     Not affected: the admin and API, the maintenance page itself, fonts, images, icons,
+#     robots.txt, and the signed-in owner. The owner's browser carries a preview cookie
+#     (pr_maint_bypass=<48 hex token>, set by the admin on login and when maintenance is
+#     switched on); while maintenance is on, the admin also writes an empty marker file
+#     /.maint-ok-<token>. Apache lets a request through only when the cookie's token has a
+#     matching marker file, so a made-up cookie gets the 503 like everyone else.
+RewriteRule ^\.(maintenance|maint-ok-) - [F,L]
+RewriteCond %{DOCUMENT_ROOT}/.maintenance -f
+RewriteCond %{HTTP_COOKIE} (?:^|;)\s*pr_maint_bypass=([a-f0-9]{48})(?:;|$)
+RewriteCond %{DOCUMENT_ROOT}/.maint-ok-%1 -f
+RewriteRule ^ - [S=1]
+RewriteCond %{DOCUMENT_ROOT}/.maintenance -f
+RewriteCond %{REQUEST_URI} !^/(admin|api|fonts|images)(/|$)
+RewriteCond %{REQUEST_URI} !^/(maintenance\.html|robots\.txt|favicon\.(ico|svg)|apple-touch-icon\.png|create-admin\.php)$
+RewriteRule ^ - [R=503,L,E=MAINT:1]
+
+# 2) Never rewrite the PHP backend or setup file; let them run directly.
 RewriteRule ^api/ - [L]
 RewriteRule ^admin/ - [L]
 RewriteRule ^create-admin\.php$ - [L]
-RewriteRule ^index\.html$ - [L]
-# Serve prerendered blog pages directly (no trailing-slash redirect). New posts that
-# aren't prerendered yet fall through to the SPA below and render from the live API.
-RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
-RewriteRule ^(blog(?:/[^/]+)?)/?$ /$1/index.html [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
 
-# CORS headers
+# 3) Moved URLs.
+RewriteRule ^about\.html$ /about/ [R=301,L]
+RewriteRule ^sitemap-index\.xml$ /sitemap.xml [R=301,L]
+# Publisher PDFs that were taken down: send visitors to the paper page instead. If an
+# accepted manuscript is uploaded under the same name later, the file is served again.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^papers/Towards_Just-In-Time_Inclusive_Clone_Refactoring\.pdf$ /publications/jit-inclusive-clone-refactoring/ [R=301,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^papers/A_Study_on_Paper_and_Author_Ranking\.pdf$ /publications/paper-author-ranking/ [R=301,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^papers/Are_large_language\.pdf$ /publications/llms-threat-programming-platforms/ [R=301,L]
+RewriteRule ^papers/07710-AAAI24\.DuY\.pdf$ - [G,L]
+
+# 4) Generated static pages: /publications/, /publications/<slug>/, /faq/, /about/, /photos/
+#    and the prerendered blog. Add the trailing slash (the canonical form), then serve index.html.
+RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
+RewriteRule ^(publications(?:/[a-z0-9-]+)?|faq|about|photos|blog(?:/[^/]+)?)$ /$1/ [R=301,L]
+RewriteCond %{DOCUMENT_ROOT}/$1/index.html -f
+RewriteRule ^(publications(?:/[a-z0-9-]+)?|faq|about|photos|blog(?:/[^/]+)?)/$ /$1/index.html [L]
+
+# 5) Markdown mirrors point search engines at their HTML page (rel=canonical header).
+RewriteRule ^publications/([a-z0-9-]+)\.md$ - [E=MD_CANONICAL:/publications/$1/]
+RewriteRule ^publications\.md$ - [E=MD_CANONICAL:/publications/]
+RewriteRule ^faq\.md$ - [E=MD_CANONICAL:/faq/]
+
+# 6) Real files and directories are served as they are.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 7) The React app handles "/" (via DirectoryIndex) and blog posts added in the CMS
+#    that have not been prerendered yet. Everything else is a real 404 (/404.html).
+RewriteRule ^blog(/.*)?$ /index.html [L]
+
 <IfModule mod_headers.c>
   Header set Access-Control-Allow-Origin "*"
   Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
   Header set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept"
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Link "<https://palashroy.me%{MD_CANONICAL}e>; rel=\"canonical\"" env=MD_CANONICAL
+  # Maintenance (1b): the 503 carries Retry-After and is never cached. On the error page the
+  # variable arrives as REDIRECT_MAINT (Apache renames it on the internal redirect).
+  Header always set Retry-After "3600" env=MAINT
+  Header always set Retry-After "3600" env=REDIRECT_MAINT
+  Header always set Cache-Control "no-store" env=REDIRECT_MAINT
+  <Files "maintenance.html">
+    Header set X-Robots-Tag "noindex"
+  </Files>
 </IfModule>
 
-# Enable compression for better performance
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json
+  AddOutputFilterByType DEFLATE text/html text/plain text/markdown text/xml text/css text/javascript application/javascript application/x-javascript application/json application/xml image/svg+xml
 </IfModule>
 
-# Set browser caching
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType image/jpg "access plus 1 year"
   ExpiresByType image/jpeg "access plus 1 year"
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 1 month"
+  ExpiresByType image/x-icon "access plus 1 month"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType video/mp4 "access plus 1 month"
+  ExpiresByType video/webm "access plus 1 month"
   ExpiresByType text/css "access plus 1 month"
   ExpiresByType text/javascript "access plus 1 month"
   ExpiresByType application/javascript "access plus 1 month"
   ExpiresByType application/x-javascript "access plus 1 month"
   ExpiresByType application/json "access plus 0 seconds"
   ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/plain "access plus 1 hour"
+  ExpiresByType text/markdown "access plus 1 hour"
+  ExpiresByType application/xml "access plus 1 hour"
 </IfModule>
-
-# Set security headers
-<IfModule mod_headers.c>
-  Header set X-Content-Type-Options "nosniff"
-  Header set X-XSS-Protection "1; mode=block"
-  Header set X-Frame-Options "SAMEORIGIN"
-  Header set Referrer-Policy "strict-origin-when-cross-origin"
-</IfModule>
-
-# Prevent directory listing
-Options -Indexes

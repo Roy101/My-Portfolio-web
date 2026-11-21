@@ -1,5 +1,5 @@
 // Refresh live research-impact metrics from OpenAlex (build-time, no runtime calls).
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 
 const ORCID = "0000-0001-9470-4233";
@@ -17,6 +17,11 @@ try {
     profileUrl: d.id || "https://openalex.org/",
     updated: new Date().toISOString().slice(0, 10),
   };
+  // Keep the previous "updated" date when the numbers did not change, so the date (shown
+  // on the site and used as the homepage's sitemap lastmod) only moves on a real change.
+  let prev = {};
+  try { prev = JSON.parse(readFileSync(out, "utf8")); } catch { /* first run */ }
+  if (prev.updated && ["citations", "hIndex", "works"].every((k) => String(prev[k]) === String(m[k]))) m.updated = prev.updated;
   writeFileSync(out, JSON.stringify(m, null, 2) + "\n");
   console.log(`  metrics: ${m.citations} citations, h-index ${m.hIndex}, works ${m.works}`);
 } catch (e) {

@@ -2,87 +2,114 @@
   "items": [
     {
       "period": "2026-2027",
-      "role": "Provost Search Committee Member",
-      "description": "Committee member for the Provost and Vice-President Academic Search Committee.",
-      "venue": "University of Saskatchewan"
+      "role": "Provost and Vice-President Academic Search Committee",
+      "description": "",
+      "venue": "University of Saskatchewan",
+      "category": "governance",
+      "under": "gsa"
     },
     {
       "period": "2025-2026",
-      "role": "Senate Member",
-      "description": "Served as a member of the University Senate, contributing to university-wide governance and academic policy.",
-      "venue": "University of Saskatchewan"
+      "role": "University Senate member",
+      "description": "",
+      "venue": "University of Saskatchewan",
+      "category": "governance",
+      "under": "gsa"
     },
     {
       "period": "2025-2026",
       "role": "Award Committee Member",
       "description": "Served on multiple University of Saskatchewan award selection committees, including the Distinguished Researcher Award.",
-      "venue": "University of Saskatchewan"
+      "venue": "University of Saskatchewan",
+      "category": "governance",
+      "under": "gsa"
     },
     {
       "period": "2025-2026",
       "role": "CGPS Committee Member",
       "description": "Served on College of Graduate and Postdoctoral Studies (CGPS) committees, and presented graduate-student reports to University Council and college/faculty councils.",
-      "venue": "University of Saskatchewan"
+      "venue": "University of Saskatchewan",
+      "category": "governance",
+      "under": "gsa"
     },
     {
       "period": "2025-2026",
       "role": "Governance Committee Member",
       "description": "Served on a University Governance Committee as part of graduate student leadership.",
-      "venue": "University of Saskatchewan"
+      "venue": "University of Saskatchewan",
+      "category": "governance",
+      "under": "gsa"
     },
     {
-      "period": "2026-Present",
-      "role": "Graduate Peer Mentor",
-      "description": "Helping new graduate students navigate grad life through the Peer Assisted Learning (PAL) program, delivering small-group workshops and one-to-one sessions on academic skills and the transition into graduate studies.",
-      "venue": "University of Saskatchewan"
+      "period": "",
+      "role": "Organizing committee, SOAR Symposium",
+      "description": "Three years.",
+      "venue": "University of Saskatchewan",
+      "category": "organizing"
+    },
+    {
+      "period": "",
+      "role": "Organizer, campus equity, diversity and inclusion (EDI) workshop",
+      "venue": "University of Saskatchewan",
+      "category": "organizing"
     },
     {
       "period": "2022-Present",
-      "role": "Peer Reviewer",
-      "description": "Reviewed multiple Software Engineering conferences and Journal submissions",
-      "venues": "ICSME, ASE, SCAM, SANER, MSR, JSS, TSE, and TOSEM"
+      "role": "Reviewer",
+      "venues": "IEEE TSE · ACM TOSEM · JSS · ICSME · ASE · SANER · MSR · SCAM",
+      "category": "reviewing"
     },
     {
-      "period": "Spring-Summer 2024",
-      "role": "Research Supervision",
-      "description": "Supervised one undergraduate research student who won two undergraduate research excellence awards at ICSAC-24 and SOAR Symposium 2024",
-      "venue": "Software Research lab & Interactive Software Engineering Lab, University of Saskatchewan"
+      "period": "2023 – 2026",
+      "role": "Research Supervisor, NSERC USRA students",
+      "description": "Supervised 7 NSERC USRA students across the summers of 2023–2026.",
+      "details": "USRA is the NSERC Undergraduate Student Research Award. Four of the students worked on the GPTCloneBench project; one student's project won two undergraduate research awards (ICSAC 2024 and the SOAR Symposium 2024).",
+      "venue": "Software Research Lab (SRLab) and iSE Lab, University of Saskatchewan",
+      "category": "supervision",
+      "order": 3
     },
     {
-      "period": "Spring-Summer 2023",
-      "role": "Research Supervision",
-      "description": "Supervised six undergraduate research students",
-      "venue": "Software Research lab & Interactive Software Engineering Lab, University of Saskatchewan"
+      "period": "Feb 2026",
+      "date": "2026-02-11",
+      "role": "Invited Talk (Guest Speaker)",
+      "description": "Practical AI for Research Administration: Using AI Effectively, Responsibly, and with Human Oversight",
+      "venue": "Canadian Association of Research Administrators (CARA) — Let's Talk AI Club (online)",
+      "category": "talk"
     },
     {
       "period": "2025",
       "role": "Invited Talk",
-      "description": "Large language models and Code Similarity",
-      "venue": "Thompson Rivers University"
+      "description": "Large Language Models and Code Similarity",
+      "venue": "Thompson Rivers University",
+      "category": "talk"
     },
     {
       "period": "2024",
       "role": "Invited Talk",
       "description": "AI for Software Engineering",
-      "venue": "University of Saskatchewan"
+      "venue": "University of Saskatchewan",
+      "category": "talk"
     },
     {
       "period": "2024",
       "role": "Invited Talk",
       "description": "The Effects of Visual Embellishment on Comprehension and Memorability of Charts",
-      "venue": "University of Saskatchewan"
+      "venue": "University of Saskatchewan",
+      "category": "talk"
     },
     {
       "period": "2023",
       "role": "Invited Talk",
       "description": "Software Engineering in Practice",
-      "venue": "BRAC University"
+      "venue": "BRAC University",
+      "category": "talk"
     },
     {
       "period": "2022",
       "role": "Invited Talk",
       "description": "How to start building your first Robot?",
-      "venue": "BRAC University"
+      "venue": "BRAC University",
+      "category": "talk"
     }
   ]
 }

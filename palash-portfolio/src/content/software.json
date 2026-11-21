@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "name": "MergeSE",
+      "description": "Open-source CLI and web tool for training-free merging of Hugging Face encoder checkpoints, with inspect, merge, evaluate and export steps for software engineering classification tasks.",
+      "url": "https://mergese.usask.ca",
+      "code_url": "https://github.com/srlabUsask/MergeSE",
+      "artifact_url": "https://doi.org/10.5281/zenodo.21797312",
+      "paper_slug": "mergese",
+      "publication_kind": "tool",
+      "kind": "tool"
+    },
+    {
+      "name": "GPTCloneBench",
+      "description": "Benchmark of 37,149 true semantic clone pairs, 19,288 false semantic pairs and 20,770 cross-language clone pairs in Java, C, C# and Python, built from SemanticCloneBench and GPT-3.",
+      "url": "",
+      "code_url": "https://github.com/srlabUsask/GPTCloneBench",
+      "dataset_url": "https://doi.org/10.5281/zenodo.8259987",
+      "paper_slug": "gptclonebench",
+      "publication_kind": "benchmark",
+      "kind": "benchmark"
+    }
+  ]
+}

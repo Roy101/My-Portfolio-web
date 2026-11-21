@@ -23,9 +23,12 @@
 [build.processing.images]
   compress = true
 
-# Redirects
+# Redirects. The site is hosted on cPanel (see public/.htaccess); this file only matters for a
+# Netlify preview. Existing files (the static /publications/, /faq/, /about/, /photos/ and
+# prerendered /blog/ pages) are served first; unknown URLs get dist/404.html with a real 404.
+# Only blog posts added in the CMS after a build fall back to the React app.
 [[redirects]]
-  from = "/*"
+  from = "/blog/*"
   to = "/index.html"
   status = 200
 

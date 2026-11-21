@@ -1,30 +1,40 @@
 {
-  "greeting": "👋 Hello, I'm",
-  "name": "Palash Roy,",
-  "line2": "Computer Science",
-  "line3": "PhD Researcher",
+  "greeting": "",
+  "name": "Palash Ranjan Roy",
+  "line2": "PhD Researcher in Computer Science · University of Saskatchewan",
+  "line3": "",
   "navHome": "Home",
-  "badge": "Software Engineering Researcher",
-  "description": "I am a Software Engineering researcher at the [Software Research Lab (SRLab)](https://srlab.usask.ca/) and [Interactive Software Engineering and Analytics (iSE) Lab](https://ise.usask.ca/), working on code clones, clone detection, refactoring, and large language models under Dr. Kevin Schneider. My goal is to turn research into tools that make software better.",
+  "badge": "",
+  "description": "I study code clones (how they are detected, refactored and generated), model merging, and efficient large language models for software engineering. I am a PhD researcher in the [Software Research Lab (SRLab)](https://srlab.usask.ca/) and the [Interactive Software Engineering and Analytics (iSE) Lab](https://ise.usask.ca/) at the University of Saskatchewan, supervised by Dr. Kevin Schneider.",
   "awardText": "ACM SIGSOFT Distinguished Paper Award",
-  "awardMeta": "FSE 2026",
-  "pills": [
-    "🔬 Software Engineering Researcher",
-    "🤖 LLMs for Software Engineering",
-    "🏛️ GSA President"
-  ],
+  "awardMeta": "FSE 2026 · Carbon-Taxed Transformers",
+  "pills": [],
   "stats": [
     {
-      "value": "8+",
+      "value": "10",
       "label": "Publications"
     },
     {
-      "value": "97+",
+      "value": "97",
       "label": "Citations"
+    }
+  ],
+  "highlights": [
+    {
+      "text": "ACM SIGSOFT Distinguished Paper (FSE 2026)",
+      "url": "/publications/carbon-taxed-transformers/"
     },
     {
-      "value": "4.5K+",
-      "label": "Students Led"
+      "text": "Best Doctoral Proposal Award (ICSME 2025)",
+      "url": "/publications/jit-inclusive-clone-refactoring/"
+    },
+    {
+      "text": "2 papers at ASE 2026",
+      "url": ""
+    },
+    {
+      "text": "Reviewer for IEEE TSE and ACM TOSEM",
+      "url": ""
     }
   ]
 }

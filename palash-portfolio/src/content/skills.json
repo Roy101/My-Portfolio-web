@@ -1,0 +1,36 @@
+{
+  "groups": [
+    {
+      "group": "Research methods",
+      "items": [
+        "Code clone detection and clone benchmark construction",
+        "Model merging (Task Arithmetic, TIES, DARE-TIES, WUDI, PCB)",
+        "Model compression (neural architecture search, structured pruning, quantization, knowledge distillation)",
+        "Empirical software engineering studies",
+        "Prompt engineering for code generation"
+      ]
+    },
+    {
+      "group": "Machine learning",
+      "items": [
+        "Python",
+        "PyTorch",
+        "Hugging Face Transformers and Datasets",
+        "Pre-trained code models (CodeBERT, UniXcoder)",
+        "ONNX export",
+        "Optuna",
+        "CodeCarbon"
+      ]
+    },
+    {
+      "group": "Tools and infrastructure",
+      "items": [
+        "Research systems & web deployment (hosting research tools as web services)",
+        "Flask",
+        "Docker",
+        "JavaScript",
+        "Clone detectors: NiCad, PMD/CPD, Simian, Deckard, CloneWorks, StoneDetector"
+      ]
+    }
+  ]
+}
