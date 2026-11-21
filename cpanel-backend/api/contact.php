@@ -63,6 +63,15 @@ $headers = implode("\r\n", [
 // (Constant value, never user input, so it's safe to pass to sendmail.)
 if (!@mail($to, $subj, $bodyTxt, $headers, '-f contact@palashroy.me')) {
     http_response_code(500);
-    out(['error' => 'Sorry, the message could not be sent. Please email palash.roy@usask.ca directly.']);
+    // The public address from the admin's Identity panel (the recipient stays in config.php).
+    $pub = 'palash.roy@usask.ca';
+    try {
+        require_once __DIR__ . '/db.php';
+        $st = db()->prepare("SELECT data FROM content WHERE section = 'identity' LIMIT 1");
+        $st->execute();
+        $idr = ($r = $st->fetch()) ? json_decode((string)$r['data'], true) : null;
+        if (is_array($idr) && is_string($idr['email'] ?? null) && filter_var($idr['email'], FILTER_VALIDATE_EMAIL)) $pub = $idr['email'];
+    } catch (Throwable $e) {}
+    out(['error' => 'Sorry, the message could not be sent. Please email ' . $pub . ' directly.']);
 }
 out(['ok' => true]);

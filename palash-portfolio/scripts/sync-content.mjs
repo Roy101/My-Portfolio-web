@@ -29,7 +29,7 @@ try {
       n++;
     }
   }
-  for (const obj of ["metrics", "hero", "about", "settings", "headings", "research", "socials", "footer", "consultation"]) {
+  for (const obj of ["metrics", "hero", "about", "settings", "headings", "research", "socials", "footer", "consultation", "identity"]) {
     if (d[obj] && typeof d[obj] === "object" && !Array.isArray(d[obj])) {
       // In "auto" metrics mode, keep the OpenAlex numbers fetched by fetch-metrics.mjs.
       if (obj === "metrics" && d.metrics.auto === true) continue;

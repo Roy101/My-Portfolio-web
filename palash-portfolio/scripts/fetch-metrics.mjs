@@ -2,7 +2,11 @@
 import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 
-const ORCID = "0000-0001-9470-4233";
+// identity.json (admin: Identity) when the content sync brought one, else the built-in iD.
+const ORCID = (() => {
+  try { const o = JSON.parse(readFileSync(fileURLToPath(new URL("../src/content/identity.json", import.meta.url)), "utf8")).orcid; if (/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(o)) return o; } catch {}
+  return "0000-0001-9470-4233";
+})();
 const out = fileURLToPath(new URL("../src/content/metrics.json", import.meta.url));
 
 try {

@@ -34,6 +34,24 @@ function require_csrf(string $token): void
 function is_logged_in(): bool { return !empty($_SESSION['admin']); }
 function json_out($data): void { header('Content-Type: application/json'); echo json_encode($data); exit; }
 
+// ================= Live public pages (api/seo/) =================
+// Every public page, sitemap.xml, llms.txt, llms-full.txt and the Markdown copies are rendered from
+// the database by api/seo/ (see api/seo/lib/live.php). After each content write the admin refreshes
+// that cache at once (seo_hook). Loaded lazily; a missing or broken api/seo/ never blocks a save.
+function seo_lib(): bool
+{
+    static $ok = null;
+    if ($ok !== null) return $ok;
+    $f = __DIR__ . '/../api/seo/lib/live.php';
+    try { if (is_file($f)) { require_once $f; return $ok = function_exists('seo_after_write'); } } catch (Throwable $e) {}
+    return $ok = false;
+}
+function seo_hook(?string $section, ?string $old = null, ?string $new = null): ?array
+{
+    if (!seo_lib()) return null;
+    try { return seo_after_write($section, $old, $new); } catch (Throwable $e) { return ['ok' => false, 'error' => $e->getMessage()]; }
+}
+
 // ================= Maintenance mode =================
 // Apache (.htaccess) does the work on every request without PHP: while the flag file
 // <web root>/.maintenance exists, visitors get /maintenance.html with HTTP 503 + Retry-After.
@@ -142,19 +160,27 @@ function maint_write_page(string $message, string $until): bool
         $html = $done;
     } else {
         $email = 'palash.roy@usask.ca';
+        $owner = 'Palash Ranjan Roy';
+        try {
+            $st = db()->prepare("SELECT data FROM content WHERE section = 'identity' LIMIT 1");
+            $st->execute();
+            $idr = ($r = $st->fetch()) ? json_decode((string)$r['data'], true) : null;
+            if (is_array($idr) && is_string($idr['name'] ?? null) && trim($idr['name']) !== '') $owner = trim($idr['name']);
+            if (is_array($idr) && is_string($idr['email'] ?? null) && filter_var($idr['email'], FILTER_VALIDATE_EMAIL)) $email = $idr['email'];
+        } catch (Throwable $e) {}
         try {
             $st = db()->prepare("SELECT data FROM content WHERE section = 'footer' LIMIT 1");
             $st->execute();
             $f = ($r = $st->fetch()) ? json_decode((string)$r['data'], true) : null;
-            if (is_array($f) && !empty($f['email']) && filter_var($f['email'], FILTER_VALIDATE_EMAIL)) $email = $f['email'];
+            if ($email === 'palash.roy@usask.ca' && is_array($f) && !empty($f['email']) && filter_var($f['email'], FILTER_VALIDATE_EMAIL)) $email = $f['email'];
         } catch (Throwable $e) {}
         $e = maint_esc($email);
         $html = "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-            . "<meta name=\"robots\" content=\"noindex\"><title>Maintenance | Palash Ranjan Roy</title>"
+            . "<meta name=\"robots\" content=\"noindex\"><title>Maintenance | " . maint_esc($owner) . "</title>"
             . "<style>:root{color-scheme:light dark}body{margin:0;font:17px/1.6 system-ui,sans-serif;background:#FAFAF7;color:#1A1A1A;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:16px}"
             . "main{max-width:34rem}h1{font:600 30px/1.2 Georgia,serif;margin:0 0 12px}a{color:#1F4E79}"
             . "@media(prefers-color-scheme:dark){body{background:#121417;color:#E8E6E1}a{color:#8DB4DC}}</style></head>"
-            . "<body><main><h1>Palash Ranjan Roy</h1><p><!--MAINT-MESSAGE-->" . $msg . "<!--/MAINT-MESSAGE--></p>"
+            . "<body><main><h1>" . maint_esc($owner) . "</h1><p><!--MAINT-MESSAGE-->" . $msg . "<!--/MAINT-MESSAGE--></p>"
             . "<p><!--MAINT-UNTIL-->" . $unt . "<!--/MAINT-UNTIL--></p>"
             . "<p>Email: <a href=\"mailto:$e\">$e</a></p></main></body></html>\n";
     }
@@ -235,13 +261,78 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!property_exists($body, 'data')) { http_response_code(400); json_out(['error' => 'Invalid data']); }
     $json = json_encode($body->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) { http_response_code(400); json_out(['error' => 'Invalid data']); }
+    // The public pages are rendered from what is saved here, so data that the website build would
+    // refuse (e.g. a paper without a DOI/arXiv id, a duplicate slug) is not saved; warnings are.
+    $warnings = [];
+    if ($section === 'publications') {
+        // Do-not-publish list (config.php seo_block_title_sha256): checked here directly, so it holds
+        // even when api/seo/ or the website build is missing, and a failed check refuses the save.
+        try {
+            $cfg = config();
+            $blocked = [];
+            foreach ((is_array($body->data) ? $body->data : (is_object($body->data) && isset($body->data->items) && is_array($body->data->items) ? $body->data->items : [])) as $i => $p) {
+                if (is_object($p) && title_on_block_list($p->title ?? '', is_array($cfg) ? $cfg : [])) $blocked[] = 'publication #' . ($i + 1) . ' is on the do-not-publish list (config.php seo_block_title_sha256)';
+            }
+        } catch (Throwable $e) { $blocked = ['the do-not-publish list could not be checked (' . $e->getMessage() . ')']; }
+        if ($blocked) { http_response_code(422); json_out(['error' => 'Not saved: ' . implode('; ', $blocked), 'errors' => $blocked]); }
+    }
+    if ($section === 'blog' && seo_lib()) {
+        try { $warnings = seo_blog_warnings(json_decode(json_encode($body->data), true)); } catch (Throwable $e) {}
+    }
+    if ($section === 'publications' && seo_lib()) {
+        try {
+            $chk = seo_validate_save(db(), $section, $body->data);
+            if ($chk['errors']) { http_response_code(422); json_out(['error' => 'Not saved: ' . implode('; ', $chk['errors']), 'errors' => $chk['errors']]); }
+            $warnings = $chk['warnings'];
+        } catch (Throwable $e) { /* the build checks are unavailable (the do-not-publish list was checked above) */ }
+    }
     try {
+        $st = db()->prepare("SELECT data FROM content WHERE section = ? LIMIT 1");
+        $st->execute([$section]);
+        $old = ($r = $st->fetch()) ? (string)$r['data'] : null;
         db()->prepare("INSERT INTO content (section,data) VALUES (?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")
             ->execute([$section, $json]);
-        json_out(['ok' => true]);
     } catch (Throwable $e) {
         http_response_code(500); json_out(['error' => 'Database error']);
     }
+    $seo = seo_hook($section, $old, $json);
+    json_out(['ok' => true, 'warnings' => array_slice($warnings, 0, 20), 'live' => $seo === null ? null : !empty($seo['ok'])]);
+}
+
+// ---- live public pages: status, rebuild the cache, emergency static switch (AJAX, logged-in only) ----
+if (in_array($action, ['seo_status', 'seo_rebuild', 'seo_static'], true) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!is_logged_in()) { http_response_code(401); json_out(['error' => 'Not logged in']); }
+    $body = json_decode((string)file_get_contents('php://input'), true);
+    require_csrf(is_array($body) && is_string($body['csrf'] ?? null) ? $body['csrf'] : '');
+    header('Cache-Control: no-store');
+    if (!seo_lib()) json_out(['ok' => false, 'error' => 'api/seo/ is not on the server; the build\'s static pages are served.']);
+    if ($action === 'seo_static') {
+        $flag = maint_root() . '/.seo-static';
+        $on = ($body['on'] ?? false) === true;
+        $ok = $on ? (is_file($flag) || @file_put_contents($flag, "static pages since " . gmdate('c') . "\n") !== false) : (!is_file($flag) || @unlink($flag));
+        if (!$ok) { http_response_code(500); json_out(['error' => 'Could not change /.seo-static (web root not writable?)']); }
+    }
+    $r = $action === 'seo_rebuild' ? seo_hook(null) : null;
+    json_out(['ok' => true, 'result' => $r, 'status' => seo_status()]);
+}
+
+// ---- homepage body for readers without JavaScript (AJAX, logged-in only) ----
+// POST index.php?action=seo_home_snapshot with JSON {"csrf", "key", "html"}: the #root of "/" as React
+// rendered it in the admin's browser after a save (see seo_home_store in api/seo/lib/live.php).
+if ($action === 'seo_home_snapshot' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!is_logged_in()) { http_response_code(401); json_out(['error' => 'Not logged in']); }
+    $raw = (string)file_get_contents('php://input');
+    if (strlen($raw) > 3 * 1048576) { http_response_code(413); json_out(['error' => 'Too large']); }
+    $body = json_decode($raw, true);
+    require_csrf(is_array($body) && is_string($body['csrf'] ?? null) ? $body['csrf'] : '');
+    header('Cache-Control: no-store');
+    if (!seo_lib()) json_out(['ok' => false, 'error' => 'api/seo/ is not on the server']);
+    $key = is_string($body['key'] ?? null) ? $body['key'] : '';
+    $html = is_string($body['html'] ?? null) ? $body['html'] : '';
+    try { $err = seo_home_store(db(), $key, $html); } catch (Throwable $e) { $err = 'server error: ' . $e->getMessage(); }
+    if ($err !== null) json_out(['ok' => false, 'error' => $err]);
+    $r = seo_hook(null);
+    json_out(['ok' => true, 'live' => !empty($r['ok']), 'home' => seo_home_status(seo_build(seo_docroot()), seo_state_read())]);
 }
 
 // ---- full content backup (logged-in only) ----
@@ -346,11 +437,13 @@ if ($action === 'maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $on      = ($body['on'] ?? false) === true;
     $message = is_string($body['message'] ?? null) ? trim($body['message']) : '';
     $until   = is_string($body['until'] ?? null) ? trim($body['until']) : '';
+    $mtitle  = is_string($body['title'] ?? null) ? trim((string)preg_replace('/\s+/u', ' ', $body['title'])) : '';
     $message = preg_replace('/\s+/u', ' ', $message) ?? '';
     $until   = preg_replace('/\s+/u', ' ', $until) ?? '';
     $len = fn(string $x): int => function_exists('mb_strlen') ? mb_strlen($x, 'UTF-8') : strlen($x);
     if ($len($message) > 500) { http_response_code(400); json_out(['error' => 'Message is too long (max 500 characters)']); }
     if ($len($until) > 80)    { http_response_code(400); json_out(['error' => 'Expected-back text is too long (max 80 characters)']); }
+    if ($len($mtitle) > 80)   { http_response_code(400); json_out(['error' => 'The page title is too long (max 80 characters)']); }
 
     $root = maint_root();
     if (!is_writable($root)) { http_response_code(500); json_out(['error' => 'The web root is not writable, so the switch cannot be changed. Check folder permissions.']); }
@@ -369,6 +462,7 @@ if ($action === 'maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $state = ['on' => $on, 'message' => $message, 'until' => $until, 'changed' => gmdate('c')];
+    if ($mtitle !== '') $state['title'] = $mtitle;
     try {
         // Merge into the stored settings so no other setting is touched.
         $st = db()->prepare("SELECT data FROM content WHERE section = 'settings' LIMIT 1");
@@ -386,6 +480,7 @@ if ($action === 'maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         json_out(['error' => 'The switch was changed (' . ($on ? 'ON' : 'OFF') . '), but saving its state in the database failed.', 'flag' => is_file($flag)]);
     }
     maint_set_cookie();
+    seo_hook('settings');
     json_out(['ok' => true, 'state' => $state, 'flag' => is_file($flag)]);
 }
 
@@ -587,7 +682,7 @@ code{background:#0c0d16;border:1px solid #2d324b;border-radius:4px;padding:1px 5
     <div class="topbar">
       <button class="menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
       <h1 id="pageTitle">Home</h1>
-      <span class="hint">Changes go live within ~1 minute of saving</span>
+      <span class="hint">Changes go live as soon as you save</span>
     </div>
     <div class="wrap" id="app"></div>
   </main>
@@ -605,6 +700,7 @@ const UPLOAD_LIMITS = <?= json_encode($uploadLimits) ?>; // PHP limits on this s
 // Sidebar navigation groups
 const NAV = [
   {group:'Content', items:[
+    {id:'identity',label:'Identity (name, ORCID, email)'},
     {id:'hero',label:'Home / Hero'},
     {id:'about',label:'Biography'},
     {id:'headings',label:'Sections & Headings'},
@@ -630,6 +726,7 @@ const NAV = [
     {id:'socials',label:'Social Links'},
     {id:'footer',label:'Footer'},
     {id:'settings',label:'Site Settings'},
+    {id:'seo',label:'Public pages & SEO'},
     {id:'metrics',label:'Research Metrics'},
     {id:'visitors',label:'Visitors'},
     {id:'maintenance',label:'Maintenance Mode & Backup'},
@@ -698,6 +795,7 @@ const HSECTIONS = [
   {id:'photos',label:'Photos page (/photos/)'},
   {id:'faq',label:'Research FAQ page (/faq/)'},
   {id:'aboutPage',label:'About page (/about/)'},
+  {id:'notFound',label:'Page not found (the 404 page; its menu label and badge are not used)'},
   {id:'media',label:'In the News (older design)'},
   {id:'pictures',label:'Gallery (older design)'},
   {id:'references',label:'References (/about/ shows the title and the note below; the individual references are not shown in the 2026-11 design)'},
@@ -710,23 +808,26 @@ const SUBTITLE_USE = {
   contact:'Description (shown in Contact only when Collaboration → Description is empty)',
   photos:'Description (intro line on /photos/; empty = the default line)',
   faq:'Description (intro line on /faq/; empty = the default line)',
+  notFound:'Description (not used; see the fields below)',
 };
 // Extra heading fields some sections have.
 const HEXTRA = {
   about:[['themesTitle','Heading above the theme cards (empty = "Research themes")'],['alsoLabel','Label before the other papers under the cards (empty = "Also")']],
-  portfolio:[['selectedTitle','Heading above the featured papers'],['otherTitle','Heading above the other papers'],['allLinkText','Link to /publications/ (empty = "All publications with abstracts and BibTeX")']],
+  portfolio:[['selectedTitle','Heading above the featured papers'],['otherTitle','Heading above the other papers'],['allTitle','Heading when no paper is featured (empty = "All publications")'],['allLinkText','Link to /publications/ (empty = "All publications with abstracts and BibTeX")'],
+    ['pageIntro','Intro paragraph of /publications/ (empty = the built-in sentence; you can use {name}, {publishedAs} and {orcid}, and [links](/faq/))']],
   experience:[['educationTitle','Education heading (empty = "Education")'],['teachingTitle','Teaching heading (empty = "Teaching & Mentoring")'],['positionsTitle','Positions heading (empty = "Research & Professional Positions")'],['talksTitle','Talks heading (empty = "Invited Talks")']],
   highlights:[['scholarshipsTitle','Scholarships heading (empty = "Scholarships")']],
   news:[['olderTitle','Label of the collapsed older items (empty = "Older news")']],
-  blog:[['teaserTitle','Heading of the homepage blog teaser'],['allPostsText','Link under the teaser (empty = "All posts")']],
-  contact:[['profilesTitle','Profiles heading (empty = "Profiles")'],['formTitle','Form heading (empty = "Send a message")']],
-  latest:[['allLabel','Link text after the list (goes to News)']],
+  blog:[['teaserTitle','Heading of the homepage blog teaser'],['allPostsText','Link under the teaser (empty = "All posts")'],['emptyTitle','/blog/ heading while there are no posts (empty = "Posts coming soon")'],['emptyText','/blog/ text while there are no posts (empty = the built-in sentence; [links](/faq/) work)']],
+  contact:[['profilesTitle','Profiles heading (empty = "Profiles")'],['formTitle','Form heading (empty = "Send a message")'],['successText','Message after the form is sent (empty = "Thank you. Your message has been sent.")']],
+  latest:[['allLabel','Link text after the list (goes to News)'],['allAwardsLabel','Link text after the list when there is no news (goes to Awards; empty = "All awards")']],
+  notFound:[['description','Search description of the 404 page (empty = "This page does not exist.")'],['text','Text under the heading (empty = "There is no page at this address. It may have moved."; [links](/) work)']],
 };
 // Current live values — used to prefill the editor so a first save never blanks the site.
-const DEFAULT_HEADINGS = {"about": {"nav": "Research", "badge": "", "title": "Research", "subtitle": ""}, "portfolio": {"nav": "Publications", "badge": "", "title": "Publications", "subtitle": "", "selectedTitle": "Featured publications", "otherTitle": "Other publications"}, "news": {"nav": "News", "badge": "", "title": "News", "subtitle": ""}, "leadership": {"nav": "Leadership", "badge": "", "title": "University Governance & Leadership", "subtitle": ""}, "service": {"nav": "Service", "badge": "", "title": "Reviewing & Service", "subtitle": ""}, "highlights": {"nav": "Awards", "badge": "", "title": "Awards & Honors", "subtitle": ""}, "media": {"nav": "Media", "badge": "", "title": "Media Coverage", "subtitle": ""}, "pictures": {"nav": "Gallery", "badge": "", "title": "Gallery", "subtitle": ""}, "references": {"nav": "References", "badge": "", "title": "References", "subtitle": "References are available on request.", "note": "Colleagues and mentors include [Dr. Kevin Schneider](https://artsandscience.usask.ca/profile/KSchneider), [Dr. Chanchal Roy](https://clones.usask.ca/), [Dr. Farouq Al-Omari](https://www.tru.ca/science/departments/engineering/Faculty.html), [Dr. Banani Roy](https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php) and [Dr. Cody Phillips](https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips).", "mentors": ""}, "contact": {"nav": "Contact", "badge": "", "title": "Contact", "subtitle": ""}, "consultation": {"nav": "Collaborate", "badge": "", "title": "Collaboration", "subtitle": ""}, "blog": {"nav": "Blog", "badge": "", "title": "Blog", "subtitle": "Research notes and paper walkthroughs.", "teaserTitle": "From the blog"}, "experience": {"nav": "Experience", "badge": "", "title": "Experience", "subtitle": ""}, "software": {"nav": "Tools & Benchmarks", "badge": "", "title": "Tools & Benchmarks", "subtitle": ""}, "skills": {"nav": "Skills & Methods", "badge": "", "title": "Skills & Methods", "subtitle": ""}, "documents": {"nav": "Documents", "badge": "", "title": "Documents", "subtitle": ""}, "photos": {"nav": "Photos", "badge": "", "title": "Photos", "subtitle": ""}, "faq": {"nav": "Research FAQ", "badge": "", "title": "Research FAQ", "subtitle": ""}, "aboutPage": {"nav": "About", "badge": "", "title": "About", "subtitle": ""}, "latest": {"nav": "Latest", "badge": "", "title": "Latest", "subtitle": "", "allLabel": "All news"}};
+const DEFAULT_HEADINGS = {"about": {"nav": "Research", "badge": "", "title": "Research", "subtitle": ""}, "portfolio": {"nav": "Publications", "badge": "", "title": "Publications", "subtitle": "", "selectedTitle": "Featured publications", "otherTitle": "Other publications"}, "news": {"nav": "News", "badge": "", "title": "News", "subtitle": ""}, "leadership": {"nav": "Leadership", "badge": "", "title": "University Governance & Leadership", "subtitle": ""}, "service": {"nav": "Service", "badge": "", "title": "Reviewing & Service", "subtitle": ""}, "highlights": {"nav": "Awards", "badge": "", "title": "Awards & Honors", "subtitle": ""}, "media": {"nav": "Media", "badge": "", "title": "Media Coverage", "subtitle": ""}, "pictures": {"nav": "Gallery", "badge": "", "title": "Gallery", "subtitle": ""}, "references": {"nav": "References", "badge": "", "title": "References", "subtitle": "References are available on request.", "note": "Colleagues and mentors include [Dr. Kevin Schneider](https://artsandscience.usask.ca/profile/KSchneider), [Dr. Chanchal Roy](https://clones.usask.ca/), [Dr. Farouq Al-Omari](https://www.tru.ca/science/departments/engineering/Faculty.html), [Dr. Banani Roy](https://www.cs.usask.ca/people/faculty%20profiles/banani-roy.php) and [Dr. Cody Phillips](https://www.qut.edu.au/about/our-people/academic-profiles/cody.phillips).", "mentors": ""}, "contact": {"nav": "Contact", "badge": "", "title": "Contact", "subtitle": ""}, "consultation": {"nav": "Collaborate", "badge": "", "title": "Collaboration", "subtitle": ""}, "blog": {"nav": "Blog", "badge": "", "title": "Blog", "subtitle": "Research notes and paper walkthroughs.", "teaserTitle": "From the blog"}, "experience": {"nav": "Experience", "badge": "", "title": "Experience", "subtitle": ""}, "software": {"nav": "Tools & Benchmarks", "badge": "", "title": "Tools & Benchmarks", "subtitle": ""}, "skills": {"nav": "Skills & Methods", "badge": "", "title": "Skills & Methods", "subtitle": ""}, "documents": {"nav": "Documents", "badge": "", "title": "Documents", "subtitle": ""}, "photos": {"nav": "Photos", "badge": "", "title": "Photos", "subtitle": ""}, "faq": {"nav": "Research FAQ", "badge": "", "title": "Research FAQ", "subtitle": ""}, "aboutPage": {"nav": "About", "badge": "", "title": "About", "subtitle": ""}, "latest": {"nav": "Latest", "badge": "", "title": "Latest", "subtitle": "", "allLabel": "All news"}, "notFound": {"nav": "", "badge": "", "title": "Page not found", "subtitle": ""}};
 
 const FMT_HINT = `<p class="lead" style="background:#12131c;border:1px solid #23263a;border-radius:8px;padding:10px 12px"><b style="color:#7ec8e3">Formatting:</b> link = <code>[text](https://link.com)</code> — put the URL in <b>(round brackets)</b>. Bold = <code>**word**</code>, italic = <code>*word*</code>. A bare address like <code>srlab.usask.ca</code> becomes a link automatically. Works in descriptions, paragraphs, hero text and section subtitles.</p>`;
-const GEN_NOTE = `<p class="lead" style="background:#12131c;border:1px solid #23263a;border-radius:8px;padding:10px 12px"><b style="color:#7ec8e3">When changes show:</b> the homepage and blog read the database, so they update within about a minute of saving. The generated pages (<code>/publications/</code>, paper pages, <code>/faq/</code>, <code>/photos/</code>, <code>/about/</code>, static blog pages, <code>llms.txt</code>, <code>sitemap.xml</code>) refresh the next time the site is rebuilt and uploaded.</p>`;
+const GEN_NOTE = `<p class="lead" style="background:#12131c;border:1px solid #23263a;border-radius:8px;padding:10px 12px"><b style="color:#7ec8e3">When changes show:</b> right after you save. Every public page (the homepage, <code>/publications/</code> and each paper page, <code>/faq/</code>, <code>/photos/</code>, <code>/about/</code>, the blog) and <code>sitemap.xml</code>, <code>llms.txt</code>, <code>llms-full.txt</code>, the Markdown copies and the search data are rebuilt from the database automatically. No upload or rebuild is needed; only design or code changes need a new website build. Status and preview links: <b>Site → Public pages &amp; SEO</b>.</p>`;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
 const escA = v => (v==null?'':String(v)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function v(id){ const el=document.getElementById(id); return el?el.value.trim():''; }
@@ -747,8 +848,70 @@ window.switchTo = s => {
 };
 
 async function postSection(section,data,label){
-  try{ const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}); const j=await r.json(); toast(j.ok?(label+' saved ✓'):('Error: '+(j.error||'failed'))); return j.ok; }catch(e){ toast('Network error'); return false; }
+  try{
+    const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}); const j=await r.json();
+    if(!j.ok && Array.isArray(j.errors) && j.errors.length){
+      // Refused: the public pages would be built from invalid data (same check as the website build).
+      alert('Not saved. Please fix:\n\n- '+j.errors.join('\n- ')); toast('Not saved'); return false;
+    }
+    const w=Array.isArray(j.warnings)?j.warnings.length:0;
+    // Blog notes (e.g. a short summary) are about this save only, so they are shown here.
+    const notes=section==='blog'&&w?' · Note: '+j.warnings.slice(0,2).join(' '):(w?' · '+w+' note'+(w>1?'s':'')+' under Public pages & SEO':'');
+    toast(j.ok?(label+' saved ✓'+(j.live===false?' (public pages: see Public pages & SEO)':'')+notes):('Error: '+(j.error||'failed')));
+    if(j.ok && j.live) homeSnapshot();
+    return j.ok;
+  }catch(e){ toast('Network error'); return false; }
 }
+// ---- Homepage text for readers without JavaScript ----
+// The homepage is drawn by React; the server cannot draw it. After a save this page loads "/" in a
+// hidden frame named "seo-home-snapshot" (the site renders there as the build's prerender does), waits
+// for its "ready" message and sends the rendered page to the server, which serves it to crawlers and
+// visitors without JavaScript until the next change. Runs in the background; a failure only means the
+// homepage keeps the build's text for them (Public pages & SEO shows it).
+let SNAP_RUN=null, SNAP_AGAIN=false;
+// The key names the content the frame renders: read just before the frame loads; if the content changes
+// before the frame is done, the server refuses it and the next run (queued here) makes a new one.
+function homeSnapshot(force){
+  if(SNAP_RUN){ SNAP_AGAIN=true; return SNAP_RUN; }
+  SNAP_RUN=(async()=>{
+    let st=null; try{ st=await seoCall('seo_status'); }catch(e){}
+    const hm=st&&st.ok&&st.status&&st.status.home;
+    if(!hm||!hm.key) return {ok:false,error:'live pages are off (see the status above)'};
+    if(hm.state==='current'&&!force) return {ok:true,home:hm,unchanged:true};
+    const key=hm.key;
+    return await new Promise(resolve=>{
+      const f=document.createElement('iframe');
+      f.name='seo-home-snapshot'; f.setAttribute('aria-hidden','true'); f.tabIndex=-1; f.title='Homepage snapshot (background)';
+      f.style.cssText='position:fixed;left:-20000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none';
+      let done=false;
+      const finish=(res)=>{ if(done) return; done=true; window.removeEventListener('message',onMsg); clearTimeout(timer); setTimeout(()=>f.remove(),0); resolve(res); };
+      const onMsg=async(e)=>{
+        if(e.origin!==location.origin || e.source!==f.contentWindow || !e.data || e.data.type!=='seo-home-snapshot') return;
+        try{
+          const c=f.contentDocument.getElementById('root').cloneNode(true);
+          c.querySelectorAll('[aria-current="location"]').forEach(el=>el.removeAttribute('aria-current'));
+          const r=await fetch('index.php?action=seo_home_snapshot',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({csrf:CSRF,key,html:c.innerHTML})});
+          finish(await r.json());
+        }catch(err){ finish({ok:false,error:String(err)}); }
+      };
+      window.addEventListener('message',onMsg);
+      const timer=setTimeout(()=>finish({ok:false,error:'the homepage did not finish loading in 25 s'}),25000);
+      f.src='/?seo-home-snapshot='+Date.now();
+      document.body.appendChild(f);
+    });
+  })().then(res=>{
+    SNAP_RUN=null; window.SNAP_LAST=res;
+    if(SEOP.data&&SEOP.data.status&&res&&res.home) SEOP.data.status.home=res.home;
+    if(current==='seo') renderSeo();
+    if(SNAP_AGAIN){ SNAP_AGAIN=false; return homeSnapshot(); }
+    return res;
+  });
+  return SNAP_RUN;
+}
+window.homeSnapshot=homeSnapshot;
+window.seoHomeNow=async()=>{ toast('Updating the homepage text…'); const r=await homeSnapshot(true); toast(r&&r.ok?'Homepage text updated ✓':'Homepage text not updated: '+((r&&r.error)||'unknown')); };
+// Same slug rule as the website build (scripts/generate-seo.mjs slugify), for "View page" links.
+const slugOf=t=>String(t==null?'':t).trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 
 // ---- file uploads (images + resume) ----
 async function uploadFile(file, kind, cb, name){
@@ -758,6 +921,17 @@ async function uploadFile(file, kind, cb, name){
     const r=await fetch('upload.php',{method:'POST',body:fd});
     const j=await r.json();
     if(j.ok){ cb(j.url); toast('Uploaded ✓'); } else toast('Error: '+(j.error||'upload failed'));
+  }catch(e){ toast('Upload failed'); }
+}
+// Same as uploadFile, but hands the whole JSON answer to cb (the profile-photo upload returns photoSet).
+async function uploadFileFull(file, kind, extra, cb){
+  const fd=new FormData(); fd.append('csrf',CSRF); fd.append('kind',kind); fd.append('file',file);
+  Object.keys(extra||{}).forEach(k=>fd.append(k,extra[k]));
+  toast('Uploading…');
+  try{
+    const r=await fetch('upload.php',{method:'POST',body:fd});
+    const j=await r.json();
+    if(j.ok){ cb(j); toast('Uploaded ✓'); } else toast('Error: '+(j.error||'upload failed'));
   }catch(e){ toast('Upload failed'); }
 }
 window.onPickBodyImage=(fi)=>{
@@ -800,7 +974,10 @@ window.onPickPdf=(fi)=>{
   const f=fi.files[0]; if(!f) return;
   const wrap=fi.closest('.imgfield');
   const txt=wrap.querySelector('input[data-k]');
-  uploadFile(f,'pdf',url=>{ txt.value=url; });
+  // Named after the paper (owner-name-<slug>-….pdf), like the other documents.
+  const it=fi.closest('.item'); const sl=it&&it.querySelector('input[data-k="slug"]'); const ti=it&&it.querySelector('[data-k="title"]');
+  const nm=(sl&&sl.value.trim())||(ti?autoSlug(ti.value):'');
+  uploadFile(f,'pdf',url=>{ txt.value=url; },nm||undefined);
   fi.value='';
 };
 
@@ -865,6 +1042,7 @@ window.saveLayout=async()=>{
     const [a,b]=await Promise.all([body('sectionOrder',ord), body('sectionsHidden',[...hiddenSet])]);
     if(a.ok) DATA.sectionOrder=ord; if(b.ok) DATA.sectionsHidden=[...hiddenSet];
     toast((a.ok&&b.ok)?'Layout & visibility saved ✓':('Error: '+((a.error||b.error)||'failed')));
+    if(a.live||b.live) homeSnapshot();
   }catch(e){ toast('Network error'); }
 };
 
@@ -900,8 +1078,9 @@ function renderSettings(){
     `<div class="item"><div class="item-head"><b>Topic order for search data and llms.txt</b></div>`+
     `<label for="st_areatags">Research areas, in order (comma-separated tags from the research-area list)</label><input id="st_areatags" value="${escA((Array.isArray(s.areaTags)&&s.areaTags.length?s.areaTags:DEFAULT_AREA_TAGS).join(', '))}">`+
     `<label for="st_mlareatags">AI/ML topics, in order (comma-separated topics from the AI/ML list)</label><input id="st_mlareatags" value="${escA((Array.isArray(s.mlAreaTags)&&s.mlAreaTags.length?s.mlAreaTags:DEFAULT_ML_AREA_TAGS).join(', '))}">`+
-    `<small>Not shown as rows on the homepage (the 2026-11 design has none). These lists set the order of the research areas and AI/ML topics used for the llms.txt groupings and your profile's "knowsAbout" search data; they refresh on the next rebuild. Narrow tags (e.g. Benchmark, Tool) can stay off these lists and still work as tags and filters.</small>`+
+    `<small>Not shown as rows on the homepage (the 2026-11 design has none). These lists set the order of the research areas and AI/ML topics used for the llms.txt groupings and your profile's "knowsAbout" search data; they update as soon as you save. Narrow tags (e.g. Benchmark, Tool) can stay off these lists and still work as tags and filters.</small>`+
     `</div>`+
+    seoFieldsHtml(s.seo)+seoPagesHtml(s.seo)+
     `<div class="item imgfield">`+
     `<label>Resume / CV (PDF), older setting</label>`+
     `<div class="uprow"><input data-k="resume" id="st_resume" value="${escA(s.resumeUrl)}" placeholder="/uploads/resume.pdf"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload PDF</button><input type="file" accept="application/pdf" hidden onchange="onPickResume(this)"></div>`+
@@ -940,9 +1119,81 @@ window.saveSettings=()=>{
     tagVocabulary:readVocabRows('#st_tags'), mlTopicVocabulary:readVocabRows('#st_mltags'),
     // A comma inside a tag (e.g. "Task Arithmetic (TIES, DARE)") is not split: entries are matched against the lists.
     areaTags:splitKnown(v('st_areatags'), readVocabRows('#st_tags').map(t=>t.tag)),
-    mlAreaTags:splitKnown(v('st_mlareatags'), readVocabRows('#st_mltags').map(t=>t.tag))});
+    mlAreaTags:splitKnown(v('st_mlareatags'), readVocabRows('#st_mltags').map(t=>t.tag)), seo:readSeoFields()});
+  if(!Object.keys(data.seo).length) delete data.seo;
   DATA.settings=data; postSection('settings',data,'Settings');
 };
+
+// ---- Search & sharing (homepage <title>, description, social preview) ----
+const SEO_FIELDS=[['title','Homepage title (browser tab and search results; about 60 characters or fewer)',60],['description','Homepage description (search results; about 160 characters or fewer)',160],
+  ['ogTitle','Title when shared on social media (Open Graph)',90],['ogDescription','Description when shared on social media',200],['twitterTitle','Title on X / Twitter cards',70],['twitterDescription','Description on X / Twitter cards',200],
+  ['imageAlt','Description of the sharing image (alt text)',200]];
+function seoFieldsHtml(seo){
+  seo=(seo&&typeof seo==='object')?seo:{};
+  return `<div class="item" id="st_seo"><div class="item-head"><b>Search &amp; sharing (homepage)</b></div>`+
+    `<p class="lead" style="margin:4px 0">Leave a field empty to keep the built-in text. Changes show as soon as you save. Each paper page writes its own title from the paper.</p>`+
+    SEO_FIELDS.map(([k,l,n])=>`<label for="seo_${k}">${l}</label><input id="seo_${k}" data-seo="${k}" maxlength="400" value="${escA(seo[k]||'')}" oninput="this.nextElementSibling.textContent=this.value.length+' / ${n}'"><small>${String(seo[k]||'').length} / ${n}</small>`).join('')+
+    `<div class="imgfield"><label for="seo_image">Sharing image (shown when any page is shared; empty = your profile photo from Home / Hero)</label><div class="uprow"><input id="seo_image" data-seo="image" value="${escA(seo.image||'')}" placeholder="/uploads/img-….jpg"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload image</button><input type="file" accept="image/*" hidden onchange="onPickSeoImage(this)"></div></div>`+
+    `</div>`;
+}
+const SEO_PAGES=[['publications','Publications page (/publications/)','Publications | your name','Publications by your name on … with BibTeX.'],['faq','Research FAQ page (/faq/)','Research FAQ: Code Clones and LLMs | your name','Answers on clone benchmarks, …'],
+  ['about','About page (/about/)','About your name: Biography, Education, Awards','Biography of your name …'],['photos','Photos page (/photos/)','Photos | your name','Photos of your name …'],['blog','Blog (/blog/)','Blog | your name','Research notes … Posts by your name …']];
+function seoPagesHtml(seo){
+  seo=(seo&&typeof seo==='object')?seo:{}; const P=(seo.pages&&typeof seo.pages==='object')?seo.pages:{};
+  const ka=Array.isArray(seo.knowsAbout)?seo.knowsAbout.join('\n'):String(seo.knowsAbout||'');
+  return `<div class="item" id="st_seop"><div class="item-head"><b>Search &amp; sharing (other pages and search data)</b></div>`+
+    `<p class="lead" style="margin:4px 0">Titles and descriptions of the generated pages in search results and sharing previews. Empty = the built-in text (shown as the grey example).</p>`+
+    SEO_PAGES.map(([k,l,pt,pd])=>{ const x=(P[k]&&typeof P[k]==='object')?P[k]:{}; return `<fieldset style="border:1px solid #2d324b;border-radius:8px;margin:10px 0;padding:8px 12px"><legend style="color:#7ec8e3;font-size:13px">${l}</legend>`+
+      `<label for="seop_${k}_title">Title (about 60 characters)</label><input id="seop_${k}_title" data-seop="${k}.title" maxlength="200" value="${escA(x.title||'')}" placeholder="${escA(pt)}">`+
+      (k!=='blog'?`<label for="seop_${k}_ogTitle">Title when shared (optional; empty = the title)</label><input id="seop_${k}_ogTitle" data-seop="${k}.ogTitle" maxlength="200" value="${escA(x.ogTitle||'')}">`:'')+
+      `<label for="seop_${k}_description">Description (about 160 characters)</label><input id="seop_${k}_description" data-seop="${k}.description" maxlength="400" value="${escA(x.description||'')}" placeholder="${escA(pd)}"></fieldset>`; }).join('')+
+    `<label for="seo_websiteDescription">Website description (search data "WebSite"; empty = "Research website of your name: publications, software and contact.")</label><input id="seo_websiteDescription" data-seo="websiteDescription" maxlength="300" value="${escA(seo.websiteDescription||'')}">`+
+    `<label for="seo_knows">Topics you work on, one per line (search data "knowsAbout"; the research areas of your papers are added automatically; empty = the built-in list)</label><textarea id="seo_knows" style="min-height:120px" placeholder="Code clones&#10;Code clone detection&#10;…">${escA(ka)}</textarea>`+
+    `</div>`;
+}
+window.onPickSeoImage=(fi)=>{ const f=fi.files[0]; if(!f) return; uploadFile(f,'image',url=>{ document.getElementById('seo_image').value=url; }); fi.value=''; };
+function readSeoFields(){
+  const o={}; document.querySelectorAll('#st_seo [data-seo], #st_seop [data-seo]').forEach(i=>{ const t=i.value.trim(); if(t) o[i.dataset.seo]=t; });
+  const pages={}; document.querySelectorAll('#st_seop [data-seop]').forEach(i=>{ const t=i.value.trim(); if(!t) return; const [pg,f]=i.dataset.seop.split('.'); (pages[pg]=pages[pg]||{})[f]=t; });
+  if(Object.keys(pages).length) o.pages=pages;
+  const ka=(document.getElementById('seo_knows')?document.getElementById('seo_knows').value:'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(ka.length) o.knowsAbout=ka;
+  return o;
+}
+
+// ---- Public pages & SEO: status of the live pages, preview links, cache rebuild, static switch ----
+const SEOP={data:null,err:'',busy:false};
+async function seoCall(action,extra){
+  const r=await fetch('index.php?action='+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({csrf:CSRF},extra||{}))});
+  return r.json();
+}
+function renderSeo(){
+  const d=SEOP.data&&SEOP.data.status;
+  const when=t=>t?new Date(t*1000).toLocaleString():'—';
+  const links=['/sitemap.xml','/llms.txt','/llms-full.txt','/publications/','/publications.md','/faq/','/faq.md','/about/','/photos/','/blog/','/'];
+  let h=`<h2>Public pages &amp; SEO</h2><p class="lead">The public pages, <code>sitemap.xml</code>, <code>llms.txt</code>, <code>llms-full.txt</code>, the Markdown copies and the search data (JSON-LD) are made from the database on the server and kept ready in a cache, which is refreshed every time you save. A paper, post or photo you add gets its page and sitemap entry at once.</p>`;
+  if(SEOP.err) h+=`<p class="lead" style="color:#ff6b6b">${escA(SEOP.err)}</p>`;
+  if(!d){ h+=`<p class="lead">Loading…</p>`; app().innerHTML=h; if(!SEOP.busy && !SEOP.err){ SEOP.busy=true; seoCall('seo_status').then(j=>{ SEOP.busy=false; if(j.ok) SEOP.data=j; else SEOP.err=j.error||'Could not read the status'; if(current==='seo') renderSeo(); }).catch(()=>{ SEOP.busy=false; SEOP.err='Network error'; if(current==='seo') renderSeo(); }); } return; }
+  const ok=d.serveOn && d.build.ok;
+  h+=`<div class="item"><div class="item-head"><b>Status</b></div>`+
+    `<p class="lead" style="margin:4px 0;color:${ok?'#7ee3a1':'#e0b867'}">${d.staticSwitch?'Serving the build\'s static copies (emergency switch is on).':!d.build.ok?'Serving the build\'s static copies: '+escA(d.build.error||''):'Live: pages are made from the database.'}</p>`+
+    `<small>PHP ${escA(d.php||'?')}${d.phpOk===false?' <span style="color:#e0b867">(8.1 or newer recommended; 7.4 and 8.0 work)</span>':''}${d.cacheOk===false?' · <span style="color:#ff6b6b">no writable cache folder (api/cache/seo): static copies are served</span>':''} · Website build: ${escA(d.build.builtAt||'—')} · content version ${escA(d.fp||'—')} · cache built ${when(d.cacheBuiltAt)}${d.renderMs!=null?' in '+d.renderMs+' ms':''} · ${d.files} files${d.dbError?' · <span style="color:#ff6b6b">database unreachable at the last check (the last good version is served)</span>':''}${d.writable?'':' · <span style="color:#e0b867">web root not writable: 404.html and maintenance.html keep the build version</span>'}</small></div>`;
+  const hm=d.home||{};
+  const hmText={current:'up to date (React’s rendering of the current content)',stale:'from an earlier save: updating it now…',build:'from the website build (no save since the upload)',unknown:'unknown'}[hm.state]||'unknown';
+  h+=`<div class="item"><div class="item-head"><b>Homepage text for search engines and readers without JavaScript</b></div><p class="lead" style="margin:4px 0;color:${hm.state==='current'||hm.state==='build'?'#7ee3a1':'#e0b867'}">${escA(hmText)}${hm.at?' · '+escA(new Date(hm.at).toLocaleString()):''}</p>`+
+    `<small>After every save this page renders the homepage in the background and sends it to the server (keep the admin open a few seconds after saving). Visitors with JavaScript always see the newest content.</small>`+
+    `<div style="margin-top:6px"><button onclick="seoHomeNow()">Update homepage text now</button></div></div>`;
+  h+=`<div class="item"><div class="item-head"><b>Open the generated files</b></div><p style="display:flex;flex-wrap:wrap;gap:8px 16px;margin:6px 0">`+links.map(u=>`<a href="${u}" target="_blank" rel="noopener" style="color:#7ec8e3">${u}</a>`).join('')+`</p><small>Each paper and post also has a "View page ↗" link in its editor.</small></div>`;
+  const w=d.warnings||[];
+  h+=`<div class="item"><div class="item-head"><b>Notes on the content (${w.length})</b></div>`+(w.length?`<ul style="margin:6px 0 0 18px;padding:0;font-size:13px;color:#c7cad8">`+w.slice(0,40).map(x=>`<li>${escA(x)}</li>`).join('')+`</ul>`:`<small>None.</small>`)+`<small>These do not block anything (for example a paper without an abstract). Papers that the website build would refuse (no title, year or venue, a duplicate slug, …) cannot be saved.</small></div>`;
+  if((d.errors||[]).length) h+=`<div class="item"><div class="item-head"><b>Recent server messages</b></div><pre style="white-space:pre-wrap;font-size:12px;color:#a2a5b9;margin:0">${escA(d.errors.join('\n'))}</pre></div>`;
+  h+=`<div class="bar"><button class="primary" onclick="seoRebuild()" ${SEOP.busy?'disabled':''}>Rebuild cache now</button>`+
+    `<button onclick="seoStatic(${!d.staticSwitch})" ${SEOP.busy?'disabled':''}>${d.staticSwitch?'Serve live pages again':'Serve build copies only (emergency)'}</button></div>`+
+    `<small>The emergency switch creates the empty file <code>/.seo-static</code>: the site then serves the pages from the last uploaded build, as before this feature, until you switch back.</small>`;
+  app().innerHTML=h;
+}
+window.seoRebuild=async()=>{ SEOP.busy=true; renderSeo(); try{ const j=await seoCall('seo_rebuild'); SEOP.busy=false; if(j.ok){ SEOP.data=j; toast(j.result&&j.result.ok?'Cache rebuilt ✓':'Rebuild failed: '+((j.result&&j.result.error)||'')); } else toast('Error: '+(j.error||'failed')); }catch(e){ SEOP.busy=false; toast('Network error'); } renderSeo(); };
+window.seoStatic=async(on)=>{ if(on && !confirm('Serve the pages from the last uploaded build (your saves will not show on them until you switch back)?')) return; SEOP.busy=true; renderSeo(); try{ const j=await seoCall('seo_static',{on}); SEOP.busy=false; if(j.ok){ SEOP.data=j; toast(on?'Static copies on':'Live pages on'); } else toast('Error: '+(j.error||'failed')); }catch(e){ SEOP.busy=false; toast('Network error'); } renderSeo(); };
 
 // ---- Sections & Headings ----
 function renderHeadings(){
@@ -1000,7 +1251,7 @@ function renderResearch(){
   const also=Array.isArray(R.also)?R.also.join(', '):'';
   app().innerHTML = `<h2>Research statement</h2><p class="lead">Two or three sentences at the top of the homepage Research section: the questions you work on, your approach and why it matters. Don't repeat the hero introduction (labs and supervisor are named there).</p>`+FMT_HINT+
     `<div class="item"><textarea id="rs_statement" style="min-height:110px">${escA(R.statement)}</textarea></div>`+
-    `<h2 style="margin-top:28px">Research themes</h2><p class="lead">Shown as theme cards in the Research section of the homepage (2 per row on wide screens) and on /about/, and in /publications/ ("By theme"). List each theme's papers by their slug (the "slug" field in Publications, e.g. <code>gptclonebench</code>). The /about/ and /publications/ pages refresh on the next rebuild.</p>`+
+    `<h2 style="margin-top:28px">Research themes</h2><p class="lead">Shown as theme cards in the Research section of the homepage (2 per row on wide screens) and on /about/, and in /publications/ ("By theme"). List each theme's papers by their slug (the "slug" field in Publications, e.g. <code>gptclonebench</code>). The /about/ and /publications/ pages update as soon as you save.</p>`+
     `<div id="rtRows">`+(Array.isArray(R.themes)?R.themes:[]).map(rtRow).join('')+`</div>`+
     `<button onclick="addRtRow()">+ Add theme</button>`+
     `<label style="margin-top:16px">"Also" line: other papers (slugs, comma-separated)</label><input id="rs_also" value="${escA(also)}" placeholder="e.g. llms-threat-programming-platforms, paper-author-ranking">`+
@@ -1032,23 +1283,25 @@ window.saveResearch=()=>{
 };
 
 // ---- Documents (CV, statements): {items:[{label,url,kind}]} ----
-const DOC_KINDS=[['cv','CV'],['resume','Resume'],['research_statement','Research statement'],['teaching_statement','Teaching statement'],['diversity_statement','Diversity statement'],['other','Other']];
+const DOC_KINDS=[['cv','CV'],['resume','Resume'],['research_statement','Research statement'],['teaching_statement','Teaching statement'],['edi_statement','EDI statement (equity, diversity and inclusion)'],['diversity_statement','Diversity statement'],['teaching_portfolio','Teaching portfolio'],['publication_list','Publication list'],['cover_letter','Cover letter'],['other','Other (any label)']];
 const DEFAULT_DOCUMENTS={items:[{label:'CV',url:'',kind:'cv'},{label:'Research Statement',url:'',kind:'research_statement'},{label:'Teaching Statement',url:'',kind:'teaching_statement'}]};
 function listOf(sec,key,def){ const d=DATA[sec]; if(d && Array.isArray(d[key])) return d[key]; if(Array.isArray(d)) return d; return def[key]; }
 function docRow(d){
   d=d||{label:'',url:'',kind:'other'};
-  const opts=DOC_KINDS.map(([k,l])=>`<option value="${k}" ${d.kind===k?'selected':''}>${l}</option>`).join('');
-  return `<div class="item imgfield" data-doc>`+
+  const opts=DOC_KINDS.map(([k,l])=>`<option value="${k}" ${d.kind===k?'selected':''}>${l}</option>`).join('')+(d.kind && !DOC_KINDS.some(([k])=>k===d.kind)?`<option value="${escA(d.kind)}" selected>${escA(d.kind)}</option>`:'');
+  const hid=d.hidden===true||/^(true|yes|1)$/i.test(String(d.hidden||''));
+  return `<div class="item imgfield" data-doc data-extra="${escA(JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k])=>!['label','url','kind','hidden'].includes(k)))))}" style="${hid?'opacity:.6':''}">`+
     `<div class="item-head"><b>${escA(d.label||'Document')}</b><span class="acts"><button class="mv" title="Move up" onclick="moveEl(this,'[data-doc]',-1)">↑</button><button class="mv" title="Move down" onclick="moveEl(this,'[data-doc]',1)">↓</button><button class="del" onclick="if(confirm('Remove this document from the list?')) this.closest('[data-doc]').remove()">Remove</button></span></div>`+
     `<label>Button label</label><input data-df="label" value="${escA(d.label)}" placeholder="e.g. CV">`+
     `<label>Kind</label><select data-df="kind">${opts}</select>`+
     `<label>File link (leave empty to hide the button)</label>`+
     `<div class="uprow"><input data-df="url" data-k="url" value="${escA(d.url)}" placeholder="/uploads/… (upload a PDF) or https://…"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload PDF</button><input type="file" accept="application/pdf" hidden onchange="onPickDoc(this)"></div>`+
-    (d.url?`<small>Current: <a href="${escA(d.url)}" target="_blank" rel="noopener" style="color:#7ec8e3">${escA(d.url)}</a></small>`:'<small>No file yet: this button is hidden on the website.</small>')+
+    (d.url?`<small>Current: <a href="${escA(d.url)}" target="_blank" rel="noopener" style="color:#7ec8e3">${escA(d.url)}</a> · To replace it, click <b>Upload PDF</b> again (the new file gets a new address, so nobody sees the old copy) and save.</small>`:'<small>No file yet: this button is hidden on the website.</small>')+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef;margin-top:8px"><input type="checkbox" data-df="hidden" style="width:auto" ${hid?'checked':''} onchange="this.closest('[data-doc]').style.opacity=this.checked?'.6':''"> Hide this document from the website (keeps it in the list for later; anyone who already has the file's link can still open it, so delete the file from your host to remove it fully)</label>`+
     `</div>`;
 }
 function renderDocuments(){
-  app().innerHTML=`<h2>Documents</h2><p class="lead">Buttons for your CV and statements. They appear in the hero and Contact section; the CV also appears in the top menu and footer. A button shows only when its file link is filled in. Upload a PDF (max 20 MB) or paste a link.</p>`+
+  app().innerHTML=`<h2>Documents</h2><p class="lead">Buttons for your CV and statements, in the order of this list (the first one is the solid button). They appear in the hero and Contact section and in llms.txt; the CV (or, without one, the Résumé) also appears in the top menu, the footer and every generated page. A button shows only when its file link is filled in and it is not hidden. Upload a PDF (max 20 MB${UPLOAD_LIMITS && UPLOAD_LIMITS.upload_max_filesize ? '; this server accepts uploads up to '+escA(UPLOAD_LIMITS.upload_max_filesize)+' per file and '+escA(UPLOAD_LIMITS.post_max_size)+' per request' : ''}) or paste a link. Use <b>Kind: Other</b> for anything else (e.g. "Portfolio"); the button label is free text.</p>`+
     (DATA.documents?'':`<p class="lead" style="color:#e0b867">Documents are not in the database yet; the rows below are the defaults. Saving stores them.</p>`)+
     `<div id="docList">`+listOf('documents','items',DEFAULT_DOCUMENTS).map(docRow).join('')+`</div>`+
     `<button onclick="document.getElementById('docList').insertAdjacentHTML('beforeend',docRow())">+ Add document</button>`+
@@ -1066,7 +1319,10 @@ window.moveEl=(btn,sel,dir)=>{ const el=btn.closest(sel); if(dir<0){ const p=el.
 window.saveDocuments=()=>{
   const items=[...document.querySelectorAll('#docList [data-doc]')].map(el=>{
     const g=k=>{ const n=el.querySelector('[data-df="'+k+'"]'); return n?n.value.trim():''; };
-    return {label:g('label'),url:g('url'),kind:g('kind')||'other'};
+    let extra={}; try{ extra=JSON.parse(el.dataset.extra||'{}')||{}; }catch(e){ extra={}; }
+    const o=Object.assign(extra,{label:g('label'),url:g('url'),kind:g('kind')||'other'});
+    if(el.querySelector('[data-df="hidden"]').checked) o.hidden=true;
+    return o;
   }).filter(d=>d.label||d.url);
   const bad=items.find(d=>d.url && !/^(\/|https:\/\/)/i.test(d.url));
   if(bad){ toast('Links must start with / or https://'); return; }
@@ -1228,11 +1484,13 @@ window.saveCustom=async()=>{
     const [a,b,c]=await Promise.all([body('customSections',customSections), body('sectionOrder',layoutForSave()), body('sectionsHidden',[...hiddenSet])]);
     DATA.customSections=customSections; DATA.sectionOrder=layoutForSave();
     toast((a.ok&&b.ok&&c.ok)?'Custom sections saved ✓':('Error: '+((a.error||b.error||c.error)||'failed')));
+    if(a.live||b.live||c.live) homeSnapshot();
   }catch(e){ toast('Network error'); }
 };
 
 // ---- Social links (editable, add/hide/reorder) ----
-const PLATFORMS=['linkedin','github','scholar','orcid','dblp','researchgate','instagram','facebook','x','twitter','youtube','email','website'];
+// Platforms without their own logo (e.g. bluesky, mastodon) get the globe icon; "website" fits anything else.
+const PLATFORMS=['linkedin','github','scholar','orcid','dblp','researchgate','semanticscholar','openalex','instagram','facebook','x','twitter','youtube','bluesky','mastodon','email','website'];
 function socialRow(l){
   l=l||{platform:'linkedin',label:'',url:'',hidden:false};
   const opts=PLATFORMS.map(p=>`<option value="${p}" ${l.platform===p?'selected':''}>${p}</option>`).join('');
@@ -1270,23 +1528,125 @@ window.saveSocials=()=>{
   const data={links}; DATA.socials=data; postSection('socials',data,'Social links');
 };
 
+// ---- Identity: name, name variants, ORCID, email, organisations, scholarly IDs ----
+// Used by every page: the header and hero, /about/, paper pages, the search data (JSON-LD),
+// llms.txt and the sharing previews. These are the built-in values (what the site shows while the
+// section is not saved); the form starts from them, so saving without edits changes nothing.
+const ID_DEFAULTS = {name:'Palash Ranjan Roy', givenName:'Palash', additionalName:'Ranjan', familyName:'Roy',
+  alternateNames:['Palash Roy','Palash R. Roy','Palash R Roy','P. R. Roy','পলাশ রঞ্জন রায়'], publishedAs:'Palash Roy / Palash R. Roy', showPublishedAs:true,
+  orcid:'0000-0001-9470-4233', email:'palash.roy@usask.ca', jobTitle:'PhD Researcher in Computer Science', pronoun:'he',
+  summary:'PhD researcher in Computer Science at the University of Saskatchewan working on code clones (detection, benchmarks and refactoring), large language models for software engineering, compression of code language models, and model merging.',
+  labsLine:'He works in the Software Research Lab (SRLab) and the Interactive Software Engineering and Analytics (iSE) Lab at the University of Saskatchewan, Canada, supervised by Dr. Kevin Schneider.',
+  disambiguation:'Disambiguation: he is identified by ORCID 0000-0001-9470-4233, dblp 355/4465, OpenAlex A5058812722 and Semantic Scholar 2051272535. Other researchers named Palash Roy are different people.',
+  fileSlug:'palash-ranjan-roy',
+  identifiers:[{propertyID:'ORCID',value:'0000-0001-9470-4233',url:'https://orcid.org/0000-0001-9470-4233'},{propertyID:'dblp',value:'355/4465',url:'https://dblp.org/pid/355/4465.html'},{propertyID:'OpenAlex',value:'A5058812722',url:'https://openalex.org/A5058812722'},{propertyID:'Semantic Scholar',value:'2051272535',url:'https://www.semanticscholar.org/author/2051272535'},{propertyID:'Wikidata',value:'Q130853775',url:'https://www.wikidata.org/wiki/Q130853775'},{propertyID:'Google Scholar',value:'Vy_sw5UAAAAJ',url:'https://scholar.google.com/citations?user=Vy_sw5UAAAAJ'}],
+  affiliation:[{id:'usask',type:'CollegeOrUniversity',name:'University of Saskatchewan',url:'https://www.usask.ca/',sameAs:'https://www.wikidata.org/wiki/Q1514848'}],
+  memberOf:[{name:'Software Research Lab (SRLab)',url:'https://srlab.usask.ca/'},{name:'Interactive Software Engineering and Analytics (iSE) Lab',url:'https://ise.usask.ca/'}],
+  alumniOf:[{id:'brac',name:'BRAC University',url:'https://www.bracu.ac.bd/',sameAs:'https://www.wikidata.org/wiki/Q4836325'},{name:'University of Saskatchewan'}]};
+const ID_ORG_FIELDS={identifiers:[['propertyID','Name (e.g. ORCID, dblp, Wikidata)'],['value','ID'],['url','Profile link (https://…)']],
+  affiliation:[['name','Organisation'],['url','Website'],['sameAs','Wikidata link (optional)']],
+  memberOf:[['name','Lab or group'],['url','Website']],
+  alumniOf:[['name','School (same name as an affiliation = the same organisation)'],['url','Website'],['sameAs','Wikidata link (optional)']]};
+function idRow(kind,o){
+  o=o||{}; const keep={}; Object.keys(o).forEach(k=>{ if(!ID_ORG_FIELDS[kind].some(([f])=>f===k)) keep[k]=o[k]; });
+  return `<div class="row" data-idr="${kind}" data-keep="${escA(JSON.stringify(keep))}" style="flex-wrap:wrap">`+ID_ORG_FIELDS[kind].map(([f,ph])=>`<input data-f="${f}" value="${escA(o[f])}" placeholder="${escA(ph)}" aria-label="${escA(ph)}" style="flex:1;min-width:150px">`).join('')+
+    `<button class="mv" title="Move up" onclick="moveEl(this,'[data-idr]',-1)">↑</button><button class="mv" title="Move down" onclick="moveEl(this,'[data-idr]',1)">↓</button><button class="del" onclick="this.closest('[data-idr]').remove()">✕</button></div>`;
+}
+function renderIdentity(){
+  const d=Object.assign({}, ID_DEFAULTS, (DATA.identity && typeof DATA.identity==='object' && !Array.isArray(DATA.identity)) ? DATA.identity : {});
+  const t=(id,lab,val,extra)=>`<label for="${id}">${lab}</label><input id="${id}" value="${escA(val)}" ${extra||''}>`;
+  const list=(kind,title,help)=>`<div class="item"><div class="item-head"><b>${title}</b></div><p class="lead" style="margin:4px 0">${help}</p><div id="idl_${kind}">${(Array.isArray(d[kind])?d[kind]:[]).map(o=>idRow(kind,o)).join('')}</div><button onclick="document.getElementById('idl_${kind}').insertAdjacentHTML('beforeend',idRow('${kind}'))">+ Add</button></div>`;
+  app().innerHTML=`<h2>Identity</h2><p class="lead">Your name and the facts search engines and AI assistants use to recognise you. They appear in the header, the hero, <code>/about/</code>, every paper page, the footer, the sharing previews, the search data (JSON-LD) and <code>llms.txt</code>.</p>`+GEN_NOTE+
+    (DATA.identity?'':`<p class="lead" style="color:#e0b867">Identity is not in the database yet; the fields show the built-in values. Saving stores them (nothing on the site changes unless you edit a field).</p>`)+
+    `<div class="item"><div class="item-head"><b>Name</b></div>`+
+    t('id_name','Full name (header, hero heading, page titles, search data)',d.name)+
+    `<div class="row" style="flex-wrap:wrap"><div style="flex:1;min-width:140px">${t('id_given','Given name',d.givenName)}</div><div style="flex:1;min-width:140px">${t('id_additional','Middle name',d.additionalName)}</div><div style="flex:1;min-width:140px">${t('id_family','Family name',d.familyName)}</div></div>`+
+    `<label for="id_alt">Other spellings of your name, one per line (search data "alternateName"; also used to bold your name in author lists)</label><textarea id="id_alt" style="min-height:110px">${escA((Array.isArray(d.alternateNames)?d.alternateNames:[]).join('\n'))}</textarea>`+
+    t('id_pub','"Published as" line (hero, /about/, paper pages, /publications/)',d.publishedAs)+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef;margin-top:8px"><input type="checkbox" id="id_showpub" style="width:auto" ${d.showPublishedAs!==false?'checked':''}> Show the "Published as" line</label>`+
+    `<label for="id_pronoun">Pronoun used in generated sentences (llms.txt, /publications/, /photos/)</label><select id="id_pronoun">${[['he','he / his'],['she','she / her'],['they','they / their']].map(([k,l])=>`<option value="${k}" ${d.pronoun===k?'selected':''}>${l}</option>`).join('')}</select>`+
+    `</div>`+
+    `<div class="item"><div class="item-head"><b>Contact and role</b></div>`+
+    t('id_email','Public email (footer, contact section, every page, llms.txt, search data)',d.email,'type="email"')+
+    t('id_orcid','ORCID iD (format 0000-0000-0000-0000)',d.orcid,'pattern="\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]"')+
+    t('id_job','Job title (search data "jobTitle", sharing title)',d.jobTitle)+
+    `<label for="id_summary">Summary: completes the sentence "${escA(d.name)} is a …" (search data description, llms.txt)</label><textarea id="id_summary">${escA(d.summary)}</textarea>`+
+    `<label for="id_labs">Labs and supervisor sentence (llms.txt)</label><textarea id="id_labs">${escA(d.labsLine)}</textarea>`+
+    `<label for="id_dis">Disambiguation sentence (llms.txt: tells AI assistants which person you are)</label><textarea id="id_dis">${escA(d.disambiguation)}</textarea>`+
+    t('id_fileslug','File-name prefix for uploaded documents (e.g. palash-ranjan-roy → palash-ranjan-roy-cv-….pdf)',d.fileSlug)+
+    `</div>`+
+    list('identifiers','Scholarly profiles and IDs','Shown on <code>/about/</code> under "Profiles and contact", in llms.txt and in the search data (identifier and sameAs). Your social links are added to sameAs automatically (Site → Social Links).')+
+    list('affiliation','Affiliation (where you work now)','The first one is used for the sharing title and as the parent of your labs.')+
+    list('memberOf','Labs and research groups','')+
+    list('alumniOf','Schools you studied at','')+
+    `<div class="bar"><button class="primary" onclick="saveIdentity()">Save Identity</button></div>`;
+}
+window.saveIdentity=()=>{
+  const rows=kind=>[...document.querySelectorAll('#idl_'+kind+' [data-idr]')].map(el=>{
+    let o={}; try{ o=JSON.parse(el.dataset.keep||'{}')||{}; }catch(e){ o={}; }
+    el.querySelectorAll('[data-f]').forEach(i=>{ const x=i.value.trim(); if(x) o[i.dataset.f]=x; else delete o[i.dataset.f]; });
+    return o;
+  }).filter(o=>kind==='identifiers' ? (o.propertyID && o.value) : o.name);
+  const bad=['identifiers','affiliation','memberOf','alumniOf'].some(k=>rows(k).some(o=>['url','sameAs'].some(f=>o[f] && !/^https?:\/\/\S+$/i.test(o[f]))));
+  if(bad){ toast('Links must start with https://'); return; }
+  const email=v('id_email'), orcid=v('id_orcid');
+  if(email && !/^[^\s@<>"'&]+@[^\s@<>"'&]+\.[^\s@<>"'&]+$/.test(email)){ toast('Please enter a valid email address'); return; }
+  if(orcid && !/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(orcid)){ toast('ORCID must look like 0000-0001-2345-678X'); return; }
+  const prev=(DATA.identity && typeof DATA.identity==='object' && !Array.isArray(DATA.identity)) ? DATA.identity : {};
+  const data=Object.assign({}, prev, {name:v('id_name'), givenName:v('id_given'), additionalName:v('id_additional'), familyName:v('id_family'),
+    alternateNames:document.getElementById('id_alt').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean), publishedAs:v('id_pub'), showPublishedAs:document.getElementById('id_showpub').checked,
+    pronoun:document.getElementById('id_pronoun').value, email, orcid, jobTitle:v('id_job'), summary:v('id_summary'), labsLine:v('id_labs'), disambiguation:v('id_dis'), fileSlug:v('id_fileslug'),
+    identifiers:rows('identifiers'), affiliation:rows('affiliation'), memberOf:rows('memberOf'), alumniOf:rows('alumniOf')});
+  if(!data.name){ toast('The name cannot be empty'); return; }
+  DATA.identity=data; postSection('identity',data,'Identity');
+};
+
+// ---- Profile photo upload (Home / Hero and Biography): resized copies made on the server ----
+window.onPickHeadshot=(fi,target)=>{
+  const f=fi.files[0]; if(!f) return; fi.value='';
+  if(f.size>15*1024*1024){ toast('Photo too large (max 15 MB)'); return; }
+  const crop=document.getElementById(target+'_crop'); 
+  uploadFileFull(f,'headshot',{crop:(crop&&!crop.checked)?'none':'square'},j=>{
+    document.getElementById(target+'_photo').value=j.url;
+    const st=document.getElementById(target+'_photoset'); if(st) st.value=j.photoSet?JSON.stringify(j.photoSet):'';
+    const msg=document.getElementById(target+'_photomsg');
+    if(msg) msg.innerHTML=(j.resized?`<span style="color:#8fe3a0">Resized: ${j.photoSet.srcset.length} WebP sizes + a ${j.photoSet.w} px JPEG for sharing previews.</span>`:'')+(j.warning?` <span style="color:#e0b867">${escA(j.warning)}</span>`:'')+' Click <b>Save</b> below to publish it.';
+    const wrap=document.getElementById(target+'_photo').closest('.imgfield'); let th=wrap.querySelector('img.thumb');
+    if(!th){ th=document.createElement('img'); th.className='thumb'; wrap.appendChild(th); } th.src=j.url;
+  });
+};
+function headshotField(target,photo,set,alt){
+  return `<div class="item imgfield"><div class="item-head"><b>Profile photo</b></div>`+
+    `<p class="lead" style="margin:4px 0">Upload a JPG, PNG or WebP photo (up to 15 MB). The server checks that it really is an image, crops it to a centred square and makes the small copies the homepage loads (200–640 px WebP) and a 1200 px JPEG for sharing previews (og:image). Each upload gets new file names, so visitors never see the old photo from their browser cache. Leave the link empty to use the built-in headshot.</p>`+
+    `<div class="uprow"><input data-k="image" id="${target}_photo" value="${escA(photo||'')}" placeholder="/uploads/headshot-….jpg (empty = built-in photo)" aria-label="Profile photo link"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload new profile photo</button><input type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="onPickHeadshot(this,'${target}')"></div>`+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef;margin-top:8px"><input type="checkbox" id="${target}_crop" style="width:auto" checked> Crop to a square (centred) when uploading</label>`+
+    `<input type="hidden" id="${target}_photoset" value="${escA(set?JSON.stringify(set):'')}">`+
+    (target==='h'?`<label for="h_photoalt">Photo description for screen readers (alt text; empty = your name)</label><input id="h_photoalt" value="${escA(alt||'')}">`:'')+
+    `<small id="${target}_photomsg">${set&&set.jpg===photo?'Resized copies are in use.':(photo?'Single size (uploaded before resizing was available, or pasted by hand). Upload again to get the resized copies.':'')}</small>`+
+    `<div><button type="button" onclick="document.getElementById('${target}_photo').value='';document.getElementById('${target}_photoset').value='';toast('Photo cleared: click Save to use the built-in photo')">Use the built-in photo</button></div>`+
+    (photo?`<img class="thumb" src="${escA(photo)}" alt="">`:'')+`</div>`;
+}
+
 // ---- Footer ----
-const DEFAULT_FOOTER = {"name": "Palash Ranjan Roy", "tagline": "PhD Researcher in Computer Science · University of Saskatchewan", "email": "palash.roy@usask.ca", "showSocials": true, "copyright": "© 2026 Palash Ranjan Roy · All rights reserved"};
+const DEFAULT_FOOTER = {"name": "Palash Ranjan Roy", "tagline": "PhD Researcher in Computer Science · University of Saskatchewan", "email": "palash.roy@usask.ca", "showSocials": true, "copyright": "© {year} Palash Ranjan Roy · All rights reserved"};
 function renderFooter(){
   const f = Object.assign({}, DEFAULT_FOOTER, DATA.footer||{});
   app().innerHTML = `<h2>Footer</h2><p class="lead">The footer at the bottom of every page.</p>`+
     `<div class="item">`+
-    `<label>Name</label><input id="ft_name" value="${escA(f.name)}">`+
+    `<label>Name (empty = your name from Identity)</label><input id="ft_name" value="${escA(f.name)}">`+
     `<label>Tagline (not shown in the 2026-11 design)</label><input id="ft_tagline" value="${escA(f.tagline)}">`+
-    `<label>Email (optional)</label><input id="ft_email" value="${escA(f.email)}">`+
-    `<label>Copyright line</label><input id="ft_copyright" value="${escA(f.copyright)}">`+
+    `<label>Email (used only when Identity has no email)</label><input id="ft_email" value="${escA(f.email)}">`+
+    `<label>Copyright line ({year} = the current year, so it never goes out of date; {name} = your name)</label><input id="ft_copyright" value="${escA(f.copyright)}" placeholder="© {year} {name} · All rights reserved">`+
+    `<label>CV link label in the footer and the phone menu (empty = "CV (PDF)" for a PDF, else "CV")</label><input id="ft_cvlabel" value="${escA(f.cvLabel||'')}">`+
+    `<label>CV button label in the top menu (empty = "CV")</label><input id="ft_cvnav" value="${escA(f.cvNavLabel||'')}">`+
     `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef;margin-top:12px"><input type="checkbox" id="ft_showsoc" style="width:auto" ${f.showSocials!==false?'checked':''}> Show social icons in the footer</label>`+
     `</div>`+
     `<div class="bar"><button class="primary" onclick="saveFooter()">Save Footer</button></div>`+
     `<small>Edit the icons themselves under <b>Social Links</b>.</small>`;
 }
 window.saveFooter=()=>{
-  const data={name:v('ft_name'),tagline:v('ft_tagline'),email:v('ft_email'),copyright:v('ft_copyright'),showSocials:document.getElementById('ft_showsoc').checked};
+  const prev=(DATA.footer && typeof DATA.footer==='object' && !Array.isArray(DATA.footer)) ? DATA.footer : {};
+  const data=Object.assign({}, prev, {name:v('ft_name'),tagline:v('ft_tagline'),email:v('ft_email'),copyright:v('ft_copyright'),cvLabel:v('ft_cvlabel'),cvNavLabel:v('ft_cvnav'),showSocials:document.getElementById('ft_showsoc').checked});
   DATA.footer=data; postSection('footer',data,'Footer');
 };
 
@@ -1464,14 +1824,14 @@ function renderHero(){
   const h = DATA.hero || DEFAULT_HERO;
   app().innerHTML = `<h2>Home / Hero</h2><p class="lead">The top banner of your website.</p>`+FMT_HINT+
     `<div class="item">`+
-    `<small>In the 2026-11 design the greeting, name, title line 3, Home menu label, photo badge, role pills and stats are not shown (the name is fixed as "Palash Ranjan Roy" so search engines see one consistent name); leave them as they are.</small>`+
+    `<small>In the 2026-11 design the greeting, title line 3, Home menu label, photo badge, role pills and stats are not shown; leave them as they are. Your name is edited under <b>Identity</b> (one name for every page and the search data).</small>`+
     `<label>Greeting (not shown in the 2026-11 design)</label><input id="h_greeting" value="${escA(h.greeting)}">`+
-    `<label>Name (not shown: the page always uses "Palash Ranjan Roy")</label><input id="h_name" value="${escA(h.name)}">`+
-    `<label>Title line (shown under your name)</label><input id="h_line2" value="${escA(h.title||h.titleLine||h.line2)}">`+
+    `<input type="hidden" id="h_name" value="${escA(h.name)}">`+
+    `<label>Title line (shown under your name on the homepage, /about/ and the maintenance page; any text)</label><input id="h_line2" value="${escA(h.title||h.titleLine||h.line2)}">`+
     `<label>Expected PhD completion (optional, e.g. 2027-08; shown as "expected Aug 2027"). The Education PhD row's "expected" field wins when both are set.</label><input id="h_expected" value="${escA(h.expected)}">`+
     `<label>Title line 3 (not shown in the 2026-11 design)</label><input id="h_line3" value="${escA(h.line3)}">`+
     `<label>Menu label for Home (not shown in the 2026-11 design)</label><input id="h_navhome" value="${escA(h.navHome||'Home')}">`+
-    `<label>Profile photo</label><div class="imgfield"><div class="uprow"><input data-k="image" id="h_photo" value="${escA(h.photo||'')}" placeholder="Upload, or leave blank for the default"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>${h.photo?`<img class="thumb" src="${escA(h.photo)}">`:''}</div>`+
+    `</div>`+headshotField('h',h.photo,h.photoSet,h.photoAlt)+`<div class="item">`+
     `<label>Photo badge (the small tag on your photo)</label><input id="h_badge" value="${escA(h.badge)}">`+
     `<label>Short description</label><textarea id="h_desc">${escA(h.description)}</textarea>`+
     `<label>Highlights line under the introduction: one fact per line, written as text | link (the link is optional). Shown as one quiet line, e.g. "ACM SIGSOFT Distinguished Paper (FSE 2026) | /publications/carbon-taxed-transformers/". When this is empty, the award line below is shown instead.</label><textarea id="h_highlights" style="min-height:90px">${escA((Array.isArray(h.highlights)?h.highlights:[]).map(x=>typeof x==='string'?x:[x&&x.text||'',x&&x.url||''].filter(Boolean).join(' | ')).join('\n'))}</textarea>`+
@@ -1491,7 +1851,9 @@ window.saveHero=()=>{
   const prev=(DATA.hero && typeof DATA.hero==='object' && !Array.isArray(DATA.hero)) ? DATA.hero : {};
   const line=v('h_line2');
   const highlights=(document.getElementById('h_highlights')?document.getElementById('h_highlights').value:'').split(/\r?\n/).map(l=>l.split('|').map(x=>x.trim())).filter(a=>a[0]).map(([text,url])=>({text,url:url||''}));
-  const data=Object.assign({}, prev, {highlights,greeting:v('h_greeting'),name:v('h_name'),line2:line,line3:v('h_line3'),navHome:v('h_navhome'),photo:v('h_photo'),badge:v('h_badge'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),expected:v('h_expected'),pills,stats});
+  let photoSet=null; try{ photoSet=JSON.parse(document.getElementById('h_photoset').value||'null'); }catch(e){ photoSet=null; }
+  const data=Object.assign({}, prev, {highlights,greeting:v('h_greeting'),name:v('h_name'),line2:line,line3:v('h_line3'),navHome:v('h_navhome'),photo:v('h_photo'),photoAlt:v('h_photoalt'),badge:v('h_badge'),description:v('h_desc'),awardText:v('h_award'),awardMeta:v('h_awardmeta'),expected:v('h_expected'),pills,stats});
+  if(photoSet && photoSet.jpg===data.photo) data.photoSet=photoSet; else delete data.photoSet;
   if('title' in prev) data.title=line; if('titleLine' in prev) data.titleLine=line;
   DATA.hero=data; postSection('hero',data,'Home');
 };
@@ -1501,7 +1863,7 @@ const DEFAULT_ABOUT = {"paragraphs": ["Palash Ranjan Roy (published as Palash Ro
 function renderAbout(){
   const a = DATA.about || DEFAULT_ABOUT;
   app().innerHTML = `<h2>Biography</h2><p class="lead">Profile photo, biography paragraphs (shown on the <code>/about/</code> page, not the homepage), education and experience (homepage Experience section). The "At a Glance" list and the intro note are used only by the older design; leave the note empty so roles are not listed twice.</p>`+FMT_HINT+GEN_NOTE+
-    `<div class="item imgfield"><label>Profile photo</label><div class="uprow"><input data-k="image" id="a_photo" value="${escA(a.photo||'')}" placeholder="Upload, or leave blank for the default"><button type="button" class="up" onclick="this.nextElementSibling.click()">Upload</button><input type="file" accept="image/*" hidden onchange="onPickImage(this)"></div>${a.photo?`<img class="thumb" src="${escA(a.photo)}">`:''}</div>`+
+    `<p class="lead" style="margin:4px 0">The homepage uses <b>Home / Hero → Profile photo</b> first; this photo is used only when that one is empty.</p>`+headshotField('a',a.photo,null)+
     `<h3 style="margin:8px 0 6px;color:#7ec8e3;font-size:14px">Paragraphs</h3><div id="a_paras">`+(a.paragraphs||[]).map(p=>`<div class="row" data-r style="align-items:flex-start"><textarea style="flex:1">${escA(p)}</textarea><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addPara()">+ Add paragraph</button>`+
     `<h3 style="margin:16px 0 6px;color:#7ec8e3;font-size:14px">At a Glance</h3><div id="a_glance">`+(a.glance||[]).map(g=>`<div class="row" data-r><input placeholder="Icon" value="${escA(g.icon)}" style="width:60px"><input placeholder="Text" value="${escA(g.text)}" style="flex:1"><button class="del" onclick="this.parentNode.remove()">✕</button></div>`).join('')+`</div><button onclick="addGlance()">+ Add item</button>`+
     `<h3 style="margin:16px 0 6px;color:#7ec8e3;font-size:14px">Education</h3><small style="margin-bottom:6px">"Expected completion" (e.g. <i>Aug 2028</i>) is shown after your title in the hero and on the PhD row ("2024 – Aug 2028 (expected)"). Leave it empty to hide it.</small><div id="a_edu">`+(a.education||[]).map(e=>eduRow(e)).join('')+`</div><button onclick="addEdu()">+ Add education</button>`+
@@ -1509,7 +1871,7 @@ function renderAbout(){
     `<label>Intro note</label><textarea id="a_expnote">${escA(a.expNote)}</textarea>`+
     `<small>Each role should appear once on the site: list a role here <b>or</b> under Leadership / Academic Service, not both. "Group" decides where it appears in Experience.</small>`+
     `<div id="a_exp" style="margin-top:8px">`+(a.experience||[]).map(x=>expRow(x)).join('')+`</div><button onclick="addExp()">+ Add experience</button>`+
-    `<h3 style="margin:16px 0 6px;color:#7ec8e3;font-size:14px">In the news</h3><small>Pages by others about you, listed on <code>/about/</code> under "In the news". <b>News article</b> items (with a date) are also given to search engines as news coverage of you; <b>Lab profile page</b> items (e.g. the SRLab members page) are links only. Use the article's own headline and date. Changes appear on <code>/about/</code> after the next rebuild.</small>`+
+    `<h3 style="margin:16px 0 6px;color:#7ec8e3;font-size:14px">In the news</h3><small>Pages by others about you, listed on <code>/about/</code> under "In the news". <b>News article</b> items (with a date) are also given to search engines as news coverage of you; <b>Lab profile page</b> items (e.g. the SRLab members page) are links only. Use the article's own headline and date. Changes appear on <code>/about/</code> as soon as you save.</small>`+
     `<div id="a_news" style="margin-top:8px">`+(Array.isArray(a.inTheNews)?a.inTheNews:[]).map(n=>newsRow(n)).join('')+`</div><button onclick="addNewsRow()">+ Add page</button>`+
     `<div class="bar"><button class="primary" onclick="saveAbout()">Save Biography</button></div>`;
 }
@@ -1705,7 +2067,37 @@ function fieldHtml(section, idx, key, type, val){
   }
   return `<label>${key}</label><input data-k="${key}" value="${escA(val)}" oninput="mark()">`;
 }
+// "How to update" line at the top of each panel (added after the panel's heading).
+const HOWTO = {
+  identity:'Change a field and click <b>Save Identity</b>. The header, hero, every generated page, the search data and llms.txt use the new value at once.',
+  hero:'New photo: <b>Upload new profile photo</b>, pick a file, then <b>Save Home</b>. The server makes the small copies and the sharing image; the old photo is kept on the server but no longer used.',
+  about:'Edit a paragraph or row and click <b>Save</b> at the bottom. Biography paragraphs show on <code>/about/</code>; education and experience on the homepage and <code>/about/</code>.',
+  headings:'Change a title or menu label and click <b>Save Sections &amp; Headings</b>. Empty fields use the built-in text.',
+  publications:'New paper: <b>+ Add publication</b>, fill in title, authors, venue and year (add the DOI or arXiv id once there is one), then <b>Save</b>. The slug (the page address) is filled in from the title on the first save; keep it afterwards so links stay valid. Tick <b>selected</b> to feature it; add PDF, slides, video, code and artifact links; list co-first authors in <b>equal_contribution</b>. Its page <code>/publications/&lt;slug&gt;/</code> and sitemap entry appear at once. A paper that would break the pages is refused with the reason.',
+  research:'Add or edit a theme card and click <b>Save</b>. Paper slugs connect a theme to its papers.',
+  documents:'Add: <b>+ Add document</b>, pick the kind, <b>Upload PDF</b>, then <b>Save Documents</b>. Replace: <b>Upload PDF</b> again on that row and save. Rename: change the label. Reorder: ↑ ↓. Hide: tick <b>Hide</b>. Remove: <b>Remove</b>, then save.',
+  software:'Only tools with their own paper are shown. Pick the paper, add links, then <b>Save</b>.',
+  highlights:'New award: <b>+ Add Award</b>, fill in title (ending in the year, e.g. "… (2026)"), organization and year, then <b>Save</b>. Kind "nomination" lists it under Nominations instead. Tick <b>pinned</b> to show it in Latest.',
+  news:'New item: <b>+ Add</b>, set the date (YYYY-MM-DD) and title, then <b>Save</b>. The newest dates come first.',
+  service:'<b>+ Add Service item</b>, pick the category, then <b>Save</b>. Invited talk: the talk title goes in description, the event in venue. A mentee or student you supervise: <b>Supervision</b> (shown under Teaching &amp; Mentoring). A committee or organizing role: <b>Organizing / service</b>. Reviewing: <b>Reviewing</b> with the venues.',
+  leadership:'New role: <b>+ Add</b>, fill in role, organization and period, then <b>Save</b>.',
+  gallery:'New photo: <b>+ Add</b>, upload the image, write the alt text (what the photo shows, for screen readers) and a caption, then <b>Save</b>. It appears on <code>/photos/</code> and in the image sitemap.',
+  blog:'New post: <b>+ Add</b>, give it a title (the slug, its address, is filled in from the title on the first save), upload a cover image, write the body, untick <b>draft</b> to publish, then <b>Save</b>. <code>/blog/&lt;slug&gt;/</code> works at once.',
+  faq:'New question: <b>+ Add</b>, fill in question and answer, then <b>Save</b>. It appears on <code>/faq/</code> and in the search data.',
+  socials:'New platform: <b>+ Add social link</b>, pick the platform (or Website), paste the URL, then <b>Save Social Links</b>. It is added to the footer, the contact section and the search data (sameAs).',
+  layout:'Drag order with ↑ ↓ or hide a section, then save. Contact always comes last.',
+  custom:'Add a section, give it a title and content, then save. It appears on the homepage before Contact; reorder it under <b>Page Layout</b>.',
+  footer:'Change a field and click <b>Save Footer</b>. Use {year} in the copyright line so it never goes out of date.',
+  settings:'Search titles and descriptions for each page are under <b>Search &amp; sharing</b> below; empty fields use the built-in text.',
+  maintenance:'Turn maintenance on before a big change and off when done. Download a backup first if you are unsure.',
+};
 function renderSection(){
+  renderSectionInner();
+  const h2=app().querySelector('h2');
+  if(HOWTO[current] && h2 && !app().querySelector('.howto')) h2.insertAdjacentHTML('afterend', `<p class="lead howto" style="border-left:3px solid #7ec8e3;padding-left:10px"><b style="color:#7ec8e3">How to update:</b> ${HOWTO[current]}</p>`);
+}
+function renderSectionInner(){
+  if(current==='identity'){ renderIdentity(); return; }
   if(current==='hero'){ renderHero(); return; }
   if(current==='about'){ renderAbout(); return; }
   if(current==='headings'){ renderHeadings(); return; }
@@ -1716,6 +2108,7 @@ function renderSection(){
   if(current==='consultation'){ renderConsultation(); return; }
   if(current==='layout'){ renderLayout(); return; }
   if(current==='settings'){ renderSettings(); return; }
+  if(current==='seo'){ SEOP.data=null; SEOP.err=''; renderSeo(); return; }
   if(current==='metrics'){ renderMetrics(); return; }
   if(current==='password'){ renderPassword(); return; }
   if(current==='maintenance'){ renderMaintenance(); return; }
@@ -1748,7 +2141,7 @@ function renderSection(){
     note = `<p class="lead">Short updates (papers, talks, releases). The homepage shows the newest 5; older items sit in a collapsed "Older news" list under them. It skips anything already listed under Awards &amp; Honors or Experience, so don't add awards or roles here. Tick <b>pinned</b> (Pin to top) to show an item in the <b>Latest</b> list near the top of the homepage (Awards, Leadership and Academic Service items can be pinned too). Only pinned items appear at the top; leave all unpinned to hide the strip. Pinned news is not repeated in the News section.</p>`;
   }
   if(current==='blog'){
-    note = `<p class="lead">Posts appear at <code>/blog/</code> and in the homepage teaser (latest 2). New posts show immediately; their static pages and sitemap entries are added on the next rebuild.</p>`+FMT_HINT;
+    note = `<p class="lead">Posts appear at <code>/blog/</code> and in the homepage teaser (latest 2). New posts get their own page, search data and sitemap entry as soon as you publish them (untick <b>draft</b>). A draft has a preview page at its address that search engines are told not to index.</p>`+FMT_HINT;
   }
   app().innerHTML = `<h2>${LABELS[current]}</h2><p class="lead">Add, edit, reorder or remove items. Use ↑ ↓ to change the order.</p>` + note +
     `<div id="items">` + items.map((it,i)=>itemHtml(current,i,it)).join('') + `</div>` +
@@ -1759,8 +2152,12 @@ function itemHtml(section,i,it){
   const schema = SCHEMAS[section];
   const fields = Object.entries(schema).map(([k,t])=>fieldHtml(section,i,k,t,it[k])).join('');
   const title = it.title||it.name||it.role||it.q||it.date||('Item '+(i+1));
+  // Saved papers and posts have a public page; the link opens it (the address follows the slug).
+  const saved = Array.isArray(DATA[section]) && DATA[section][i]===it;
+  const slug = section==='publications' ? (String(it.slug||'').trim()||slugOf(it.title)) : section==='blog' ? (String(it.slug||'').trim()||slugOf(it.title)) : '';
+  const view = saved && slug ? `<a href="/${section==='blog'?'blog':'publications'}/${encodeURIComponent(slug)}/" target="_blank" rel="noopener" style="color:#7ec8e3;font-size:12px;margin-right:6px">View page ↗</a>` : '';
   return `<div class="item" data-i="${i}"><div class="item-head"><b>${((i+1)+'. '+title).replace(/</g,'&lt;')}</b>`+
-    `<span class="acts">`+
+    `<span class="acts">`+view+
     `<button class="mv" title="Move up" onclick="moveItem(${i},-1)">↑</button>`+
     `<button class="mv" title="Move down" onclick="moveItem(${i},1)">↓</button>`+
     `<button class="del" onclick="delItem(${i})">Remove</button></span></div>${fields}</div>`;
@@ -1810,8 +2207,17 @@ window.save = ()=>{
     const dup={}; const d=items.find(p=>p.slug && (dup[p.slug]=(dup[p.slug]||0)+1)>1);
     if(d){ toast('Two papers use the slug "'+d.slug+'"; each slug must be unique'); return; }
   }
+  // A paper's or post's address comes from its slug. One left empty is filled in from the title now,
+  // so fixing a typo in the title later never moves a published page (the slug field shows it).
+  let filled=false;
+  if(current==='publications'||current==='blog') items.forEach(p=>{
+    if(p && !String(p.slug||'').trim() && String(p.title||'').trim()){ p.slug=autoSlug(p.title); filled=true; }
+  });
   DATA[current]=items; postSection(current,DATA[current],LABELS[current]);
+  if(filled) renderSection();
 };
+// slugOf(title), cut at a word boundary to at most 80 characters (paper URLs allow 120).
+function autoSlug(t){ let s=slugOf(t); if(s.length>80){ s=s.slice(0,80); const i=s.lastIndexOf('-'); if(i>40) s=s.slice(0,i); s=s.replace(/-+$/,''); } return s; }
 
 // ================= Maintenance: backup, restore, content migrations =================
 // A migration (admin/migrations/*.json) is a list of operations:
@@ -1889,7 +2295,7 @@ async function mFetchSnapshot(){
 async function mSave(section,data){
   try{
     const r=await fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})});
-    const j=await r.json(); return j.ok ? {ok:true} : {ok:false,error:j.error||('HTTP '+r.status)};
+    const j=await r.json(); if(j.ok&&j.live) homeSnapshot(); return j.ok ? {ok:true} : {ok:false,error:j.error||('HTTP '+r.status)};
   }catch(e){ return {ok:false,error:'Network error'}; }
 }
 
@@ -2194,6 +2600,7 @@ function mmHtml(){
   if(!MAINT.page) html+=`<p class="lead" style="color:#e0b867">maintenance.html is not on the server yet (it comes with the next website upload). Until then a plain page is created when you switch on.</p>`;
   html+=`<label for="mm_msg">Message (optional; plain text, max 500 characters)</label><textarea id="mm_msg" maxlength="500" placeholder="The site is undergoing maintenance — back soon.">${escA(st.message)}</textarea>`+
     `<label for="mm_until">Expected back (optional)</label><input id="mm_until" maxlength="80" value="${escA(st.until)}" placeholder="e.g. 22 Nov 2026, 6 pm CST">`+
+    `<label for="mm_title">Browser-tab title of the maintenance page (optional; empty = "Back soon")</label><input id="mm_title" maxlength="80" value="${escA(st.title)}" placeholder="Back soon">`+
     `<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">`+
     (on ? `<button class="primary" onclick="mmSend(false)">Turn maintenance mode OFF</button><button onclick="mmSend(true,true)">Update message</button>`
         : `<button class="del" onclick="mmSend(true)">Turn maintenance mode ON</button>`)+
@@ -2204,14 +2611,14 @@ function mmHtml(){
   return html;
 }
 window.mmSend=async(on,update)=>{
-  const message=v('mm_msg'), until=v('mm_until');
+  const message=v('mm_msg'), until=v('mm_until'), title=v('mm_title');
   if(!update){
     const q = on ? 'Turn maintenance mode ON?\n\nVisitors and search engines will see the maintenance page (HTTP 503) until you turn it off. You will still see the real site in this browser.'
                  : 'Turn maintenance mode OFF and make the site live again?';
     if(!window.confirm(q)) return;
   }
   try{
-    const r=await fetch('index.php?action=maintenance',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({csrf:CSRF,on:!!on,message,until})});
+    const r=await fetch('index.php?action=maintenance',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({csrf:CSRF,on:!!on,message,until,title})});
     const j=await r.json();
     if(typeof j.flag==='boolean') MAINT.flag=j.flag;
     if(!j.ok){ toast('Error: '+(j.error||'failed')); renderMaintenance(); return; }
@@ -2284,7 +2691,7 @@ async function mWriteSections(state,sections,label){
     if(r.ok) DATA[s]=mClone(state[s]);
   }
   const bad=log.filter(l=>!l.ok).length;
-  log.unshift({ok:!bad,text:label+': '+(sections.length-bad)+' of '+sections.length+' section(s) saved'+(bad?'. Some sections failed; nothing else was changed. You can restore the downloaded backup below.':'. Changes are live within about a minute.')});
+  log.unshift({ok:!bad,text:label+': '+(sections.length-bad)+' of '+sections.length+' section(s) saved'+(bad?'. Some sections failed; nothing else was changed. You can restore the downloaded backup below.':'. Changes are live now.')});
   return log;
 }
 window.mApply=async()=>{
@@ -2298,7 +2705,7 @@ window.mApply=async()=>{
   if(!res.changed.length){ toast('Nothing selected to change'); return; }
   const newer=mNewerApplied(mig);
   if(newer && !window.confirm('The newer update "'+(newer.data.title||newer.file)+'" is already applied.\n\nApplying this OLDER update can undo parts of it. Continue anyway?')) return;
-  if(!window.confirm('Apply the selected changes to: '+res.changed.join(', ')+'?\n\nA full backup will download first. The website shows the new content within about a minute.')) return;
+  if(!window.confirm('Apply the selected changes to: '+res.changed.join(', ')+'?\n\nA full backup will download first. The website shows the new content right away.')) return;
   maint.busy=true;
   mDownload(fresh,'content-backup-'+mStamp()+'-before-'+(mig.data.id||'update')+'.json');
   // Record the update as applied (in settings, saved with the other sections).
@@ -2353,4 +2760,6 @@ window.mRestore=async()=>{
 };
 
 renderNav(); switchTo('hero');
+// A change saved elsewhere (or a snapshot that did not finish) left the homepage text behind: renew it.
+setTimeout(()=>{ seoCall('seo_status').then(j=>{ const h=j&&j.ok&&j.status&&j.status.home; if(h&&h.state==='stale') homeSnapshot(); }).catch(()=>{}); },1500);
 </script></body></html>

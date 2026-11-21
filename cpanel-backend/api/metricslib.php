@@ -24,7 +24,20 @@ function metrics_source_url(): string
     // Optional override in config.php ('metrics_source_url'), used only by tests to simulate an outage.
     try { $c = config(); } catch (Throwable $e) { $c = []; }
     $u = is_array($c) ? (string)($c['metrics_source_url'] ?? '') : '';
-    return $u !== '' ? $u : 'https://api.openalex.org/authors/https://orcid.org/' . METRICS_ORCID;
+    return $u !== '' ? $u : 'https://api.openalex.org/authors/https://orcid.org/' . metrics_orcid();
+}
+/** The ORCID iD from the admin's Identity panel (identity.orcid), else the built-in one. */
+function metrics_orcid(): string
+{
+    try {
+        $st = db()->prepare("SELECT data FROM content WHERE section = 'identity' LIMIT 1");
+        $st->execute();
+        $r = $st->fetch();
+        $id = $r ? json_decode((string)$r['data'], true) : null;
+        $o = is_array($id) && is_string($id['orcid'] ?? null) ? trim($id['orcid']) : '';
+        if (preg_match('/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/D', $o)) return $o;
+    } catch (Throwable $e) {}
+    return METRICS_ORCID;
 }
 
 function metrics_cache_dir(): string
@@ -32,10 +45,9 @@ function metrics_cache_dir(): string
     $d = __DIR__ . '/cache';
     if (!is_dir($d)) @mkdir($d, 0755, true);
     if (is_dir($d) && is_writable($d)) return $d;
-    // Last resort when api/cache cannot be written: a private folder in the system temp dir.
-    $t = rtrim(sys_get_temp_dir(), '/') . '/pr-metrics-' . substr(hash('sha256', __DIR__), 0, 12);
-    if (!is_dir($t)) @mkdir($t, 0700, true);
-    return $t;
+    // Last resort when api/cache cannot be written: a private folder in the system temp dir, only
+    // when this account owns it (private_tmp_dir in db.php); else api/cache (writes then fail softly).
+    return private_tmp_dir('pr-metrics-', __DIR__) ?? $d;
 }
 
 function metrics_read_cache(): array

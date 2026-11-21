@@ -13,10 +13,18 @@
 //     the admin rewrites only the text between the MAINT-MESSAGE / MAINT-UNTIL markers)
 //   - /llms.txt, /llms-full.txt, /sitemap.xml (with image entries), /404.html
 //
-// Env overrides: DIST (default dist), CONTENT_DIR (default src/content).
+// Env overrides: DIST (default dist), CONTENT_DIR (default src/content), SEO_YEAR (copyright year;
+// default: the current UTC year).
+//
+// Live mode: cpanel-backend/api/seo/ (PHP) renders the same files from the database at request
+// time, so admin edits show without a rebuild. This script stays the build-time producer of the
+// static copies (the fallback) and writes dist/_seo/ for the PHP renderer: the literals below
+// (shared.json), the pristine homepage/blog shells, the bundled content and manifest.json.
+// palash-portfolio/scripts/seo-parity.mjs checks that both renderers give identical bytes, so a
+// change here needs the same change in cpanel-backend/api/seo/lib/gen.php.
 // `node scripts/generate-seo.mjs --check` validates the content only (no dist needed) and
 // exits non-zero on errors, so the build can fail fast before vite runs.
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync, statSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync, statSync, copyFileSync } from "fs";
 import path from "path";
 import { createHash } from "crypto";
 import { VARIANT_WIDTHS, variantPath } from "./image-variants-lib.mjs";
@@ -29,23 +37,28 @@ const CHECK_ONLY = process.argv.includes("--check");
 const SITE = "https://palashroy.me";
 const PERSON_ID = `${SITE}/#person`;
 const WEBSITE_ID = `${SITE}/#website`;
-const NAME = "Palash Ranjan Roy";
-const ORCID = "0000-0001-9470-4233";
-const EMAIL = "palash.roy@usask.ca";
+// Built-in identity: the defaults for the admin's Identity panel (identity.json). The values the
+// pages use (NAME, ORCID, EMAIL, IDS, ...) are resolved from the content below.
+const DEFAULT_NAME = "Palash Ranjan Roy";
+const DEFAULT_ORCID = "0000-0001-9470-4233";
+const DEFAULT_EMAIL = "palash.roy@usask.ca";
 const IMAGE = `${SITE}/images/palash_roy_headshot.jpg`;
 // Real content dates only (never the build date): see lastmodFor() and the sitemap.
-const isoDay = (d) => (/^\d{4}-\d{2}-\d{2}/.test(String(d || "")) ? String(d).slice(0, 10) : "");
+// Only a real calendar day (no 2026-02-31) between 1900 and 2099 reaches lastmod / datePublished.
+const isoDay = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || "")); if (!m || +m[1] < 1900 || +m[1] > 2099) return ""; const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); return t.getUTCMonth() === +m[2] - 1 && t.getUTCDate() === +m[3] ? m[0] : ""; };
 const newest = (...ds) => ds.flat().map(isoDay).filter(Boolean).sort().pop() || "";
 
 // Stable identity facts (verified against ORCID / dblp / OpenAlex / Semantic Scholar / Wikidata).
-const IDS = [
-  { propertyID: "ORCID", value: ORCID, url: `https://orcid.org/${ORCID}` },
+// The ORCID row follows identity.orcid; the whole list is identity.identifiers when set.
+const defaultIds = (orcid) => [
+  { propertyID: "ORCID", value: orcid, url: `https://orcid.org/${orcid}` },
   { propertyID: "dblp", value: "355/4465", url: "https://dblp.org/pid/355/4465.html" },
   { propertyID: "OpenAlex", value: "A5058812722", url: "https://openalex.org/A5058812722" },
   { propertyID: "Semantic Scholar", value: "2051272535", url: "https://www.semanticscholar.org/author/2051272535" },
   { propertyID: "Wikidata", value: "Q130853775", url: "https://www.wikidata.org/wiki/Q130853775" },
   { propertyID: "Google Scholar", value: "Vy_sw5UAAAAJ", url: "https://scholar.google.com/citations?user=Vy_sw5UAAAAJ" },
 ];
+const IDS_DEFAULT = defaultIds(DEFAULT_ORCID);
 // Used only when socials.json has no profile links at all; otherwise sameAs comes from the
 // admin-editable, non-hidden socials.json entries plus the fixed scholarly IDs above.
 const EXTRA_SAMEAS = [
@@ -53,7 +66,7 @@ const EXTRA_SAMEAS = [
   "https://www.linkedin.com/in/palashranjanroy/",
   "https://www.researchgate.net/profile/Palash_Roy",
 ];
-const ALT_NAMES = ["Palash Roy", "Palash R. Roy", "Palash R Roy", "P. R. Roy", "পলাশ রঞ্জন রায়"];
+const ALT_NAMES_DEFAULT = ["Palash Roy", "Palash R. Roy", "Palash R Roy", "P. R. Roy", "পলাশ রঞ্জন রায়"];
 const ORGS = {
   // Wikidata QIDs checked with wbsearchentities on 2026-11-20: Q1514848 "University of
   // Saskatchewan, public university in Saskatoon", Q4836325 "BRAC University, private university in Bangladesh".
@@ -102,11 +115,16 @@ const ldScript = (obj) => `<script type="application/ld+json">${JSON.stringify(o
 const breadcrumbLd = (trail) => ({ "@type": "BreadcrumbList", "@id": `${trail[trail.length - 1][1]}#breadcrumb`, itemListElement: trail.map(([name, item], i) => ({ "@type": "ListItem", position: i + 1, name, item })) });
 // Meta descriptions stay within 160 characters (search results cut longer ones).
 const metaDesc = (s) => clip(s, 158);
+const safeDecode = (u) => { try { return decodeURI(u); } catch { return u; } };
+// Site path ("/images/a b.jpg") -> encoded URL path, so file names with spaces/accents are valid in HTML and XML.
+const encPath = (u) => (/^https?:\/\//i.test(u) ? u : encodeURI(safeDecode(u)));
 const abs = (u) => (/^https?:\/\//.test(u) ? u : SITE + (u.startsWith("/") ? u : "/" + u));
 const normDoi = (d) => str(d).replace(/^https?:\/\/(dx\.)?doi\.org\//i, "").replace(/^doi:\s*/i, "").trim();
 const clip = (s, n) => { s = str(s).replace(/\s+/g, " "); return s.length <= n ? s : s.slice(0, s.lastIndexOf(" ", n - 1)).replace(/[,;:.]$/, "") + "…"; };
 const firstSentence = (s) => (str(s).match(/^.*?[.!?](\s|$)/) || [str(s)])[0].trim();
+const WRITTEN = [];
 const write = (rel, content) => {
+  if (!WRITTEN.includes(rel)) WRITTEN.push(rel);
   const file = path.join(DIST, rel);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, content);
@@ -115,13 +133,17 @@ const write = (rel, content) => {
 const inlineMd = (s, absolute = false) =>
   esc(s)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => `<a href="${absolute ? esc(abs(u.replace(/&amp;/g, "&"))) : u}">${t}</a>`);
+    // A link is kept only for web, mail, same-site ("/x", never "//x" or "/\\x") and "#" targets: no javascript: etc.
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, u) => (absolute || /^(https?:|mailto:|\/(?![/\\])|#)/i.test(u) ? `<a href="${absolute ? esc(abs(u.replace(/&amp;/g, "&"))) : u}">${t}</a>` : t));
 const mdParas = (s, absolute = false) => str(s).split(/\n{2,}/).map((p) => `<p>${inlineMd(p.trim(), absolute)}</p>`).join("\n");
 const mdAbsLinks = (s) => str(s).replace(/\]\((\/[^)\s]*)\)/g, (_, u) => `](${SITE}${u})`);
 const plainFromMd = (s) => str(s).replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/\*\*(.+?)\*\*/g, "$1");
 
 const OWNER_RE = /^(palash( ranjan| r)? roy|p r roy|p roy|roy,? p(alash)?( r(anjan)?)?)$/;
-const isOwner = (n) => OWNER_RE.test(str(n).toLowerCase().replace(/\./g, " ").replace(/\s+/g, " ").replace(/ ,/g, ",").trim());
+// Extra spellings of the owner (identity.name and identity.alternateNames), normalized like isOwner.
+const OWNER_SET = new Set();
+const ownerKey = (n) => str(n).toLowerCase().replace(/\./g, " ").replace(/\s+/g, " ").replace(/ ,/g, ",").trim();
+const isOwner = (n) => OWNER_RE.test(ownerKey(n)) || OWNER_SET.has(ownerKey(n));
 
 // ---------------------------------------------------------------- content
 const pubsRaw = items(readJson("publications", { items: [] }));
@@ -140,7 +162,7 @@ const highlights = items(readJson("highlights", { items: [] })).flatMap((h) => (
 const blogPosts = items(readJson("blog", { items: [] })).filter((p) => {
   const d = str(p?.draft).toLowerCase();
   return p && (p.slug || p.title) && !(p.draft === true || d === "yes" || d === "true" || d === "1");
-}).filter((p) => { const s = str(p.slug) || slugify(p.title); return /^[^/\\?#]+$/.test(s) && s !== "." && s !== ".."; })
+}).filter((p) => { const s = str(p.slug) || slugify(p.title); return /^[^/\\?#\x00-\x1f\x7f]+$/.test(s) && s !== "." && s !== ".."; })
   .sort((a, b) => str(b.date).localeCompare(str(a.date)));
 const footer = readJson("footer", {});
 const research = readJson("research", {});
@@ -150,13 +172,81 @@ const headings = readJson("headings", {});
 const hero = readJson("hero", {});
 const leadership = items(readJson("leadership", { items: [] })).filter((l) => l && str(l.role));
 const galleryItems = items(readJson("gallery", { items: [] })).filter((g) => g && str(g.image));
-const safeUrl = (u) => (/^(https?:\/\/|\/(?!\/))/i.test(str(u)) ? str(u) : "");
+const safeUrl = (u) => (/^(https?:\/\/|\/(?![/\\]))/i.test(str(u)) ? str(u) : "");
 // Tools & Benchmarks (SPEC-round3 §8): only items that are themselves the subject of a published
 // paper. The paper_slug must name a publication; the slug check happens once pubs are known.
 const softwareRaw = items(readJson("software", { items: [] }))
   .filter((s) => s && str(s.name) && str(s.paper_slug) && (safeUrl(s.url) || safeUrl(s.code_url) || safeUrl(s.dataset_url) || safeUrl(s.artifact_url)));
 const serviceItems = items(readJson("service", { items: [] })).filter((s) => s && str(s.role));
 const newsItems = items(readJson("news", { items: [] })).filter((n) => n && str(n.title));
+
+// ---------------------------------------------------------------- identity and SEO texts
+// identity.json (admin: Identity) and settings.seo (admin: Site Settings -> Search & sharing).
+// Every field falls back to the built-in value, so content without them gives the same pages.
+// cpanel-backend/api/seo/lib/gen.php resolveIdentity() mirrors this block.
+const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const idStr = (v) => (typeof v === "string" ? stripEmoji(v) : "");
+const extUrl = (v) => (/^https?:\/\/[^\s"<>]+$/i.test(idStr(v)) ? idStr(v) : "");
+const identity = isObj(readJson("identity", {})) ? readJson("identity", {}) : {};
+const idText = (k, d) => idStr(identity[k]) || d;
+const idList = (k, d) => { const v = Array.isArray(identity[k]) ? identity[k].map(idStr).filter(Boolean) : []; return v.length ? v : d; };
+const consultation = readJson("consultation", {});
+const validEmail = (e) => (/^[^\s@<>"'&]+@[^\s@<>"'&]+\.[^\s@<>"'&]+$/.test(e) ? e : "");
+const NAME = idText("name", DEFAULT_NAME);
+const ORCID = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(idStr(identity.orcid)) ? idStr(identity.orcid) : DEFAULT_ORCID;
+const EMAIL = validEmail(idStr(identity.email)) || validEmail(idStr(footer.email)) || validEmail(idStr(consultation.email)) || DEFAULT_EMAIL;
+const ALT_NAMES = idList("alternateNames", ALT_NAMES_DEFAULT);
+const GIVEN = idText("givenName", "Palash"), ADDITIONAL = idText("additionalName", "Ranjan"), FAMILY = idText("familyName", "Roy");
+// "Palash Roy / Palash R. Roy" (hero, paper pages, /about/, /publications/); empty when hidden.
+const PUBLISHED_AS = identity.showPublishedAs === false ? "" : idText("publishedAs", "Palash Roy / Palash R. Roy");
+// llms intro: the Latin-script name variants, without one that differs only by its dots.
+const LLMS_AS = ((list) => (list.length > 1 ? `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}` : list.join("")))(
+  ALT_NAMES.filter((n, i, a) => /^[\p{Script=Latin} .,'-]+$/u.test(n) && !a.slice(0, i).some((m) => m.replace(/\./g, "") === n.replace(/\./g, ""))));
+const JOB_TITLE = idText("jobTitle", "PhD Researcher in Computer Science");
+const SUMMARY_TEXT = idText("summary", SUMMARY);
+const LABS_LINE = idText("labsLine", "He works in the Software Research Lab (SRLab) and the Interactive Software Engineering and Analytics (iSE) Lab at the University of Saskatchewan, Canada, supervised by Dr. Kevin Schneider.");
+const DISAMBIGUATION = idText("disambiguation", `Disambiguation: he is identified by ORCID ${ORCID}, dblp 355/4465, OpenAlex A5058812722 and Semantic Scholar 2051272535. Other researchers named Palash Roy are different people.`);
+const PRON = { he: ["He", "his", "is"], she: ["She", "her", "is"], they: ["They", "their", "are"] }[str(identity.pronoun).toLowerCase()] || ["He", "his", "is"];
+const IDS = ((v) => (v.length ? v : defaultIds(ORCID)))((Array.isArray(identity.identifiers) ? identity.identifiers : []).filter(isObj)
+  .map((i) => ({ propertyID: idStr(i.propertyID), value: idStr(i.value), url: extUrl(i.url) })).filter((i) => i.propertyID && i.value)
+  .map((i) => (i.url ? i : { propertyID: i.propertyID, value: i.value })));
+// Organisations: identity.affiliation / memberOf / alumniOf ({name, url, sameAs, type, id}). An
+// alumniOf entry with the name of an affiliation points at that node; memberOf groups (labs) sit
+// under the first affiliation.
+const orgList = (k) => (Array.isArray(identity[k]) ? identity[k] : []).filter(isObj)
+  .map((o) => ({ id: slugify(idStr(o.id)), type: idStr(o.type), name: idStr(o.name), url: extUrl(o.url), sameAs: extUrl(o.sameAs) })).filter((o) => o.name);
+const orgNode = (o, type) => ({ "@type": o.type || type, "@id": `${SITE}/#${o.id || slugify(o.name)}`, name: o.name, ...(o.url ? { url: o.url } : {}), ...(o.sameAs ? { sameAs: o.sameAs } : {}) });
+const AFFILIATION = ((v) => (v.length ? v.map((o) => orgNode(o, "CollegeOrUniversity")) : [ORGS.usask]))(orgList("affiliation"));
+const MEMBER_OF = ((v) => (v.length ? v.map((o) => ({ "@type": o.type || "ResearchOrganization", name: o.name, ...(o.url ? { url: o.url } : {}), ...(AFFILIATION.length ? { parentOrganization: { "@id": AFFILIATION[0]["@id"] } } : {}) })) : [ORGS.srlab, ORGS.ise]))(orgList("memberOf"));
+const ALUMNI_OF = ((v) => (v.length ? v.map((o) => { const a = AFFILIATION.find((x) => x.name.toLowerCase() === o.name.toLowerCase()); return a ? { "@id": a["@id"] } : orgNode(o, "CollegeOrUniversity"); }) : [ORGS.brac, { "@id": `${SITE}/#usask` }]))(orgList("alumniOf"));
+// The node a thesis names as its institution (an affiliation or alma mater with that name).
+const orgFor = (inst) => {
+  if (!orgList("affiliation").length && !orgList("alumniOf").length) return /saskatchewan/i.test(inst) ? ORGS.usask : null;
+  const all = [...AFFILIATION, ...ALUMNI_OF.filter((o) => o.name)];
+  return all.find((o) => o.name && inst.toLowerCase().includes(o.name.toLowerCase())) || null;
+};
+for (const n of [NAME, ...ALT_NAMES]) OWNER_SET.add(ownerKey(n));
+// UTC, so the build machine's time zone never matters (the PHP renderer uses the UTC year too).
+const YEAR = /^\d{4}$/.test(str(process.env.SEO_YEAR)) ? str(process.env.SEO_YEAR) : String(new Date().getUTCFullYear());
+const SEO = isObj(settings.seo) ? settings.seo : {};
+const seoPage = (pg, f) => (isObj(SEO.pages) && isObj(SEO.pages[pg]) ? idStr(SEO.pages[pg][f]) : "");
+const KNOWS_SEED = ((v) => (v.length ? v : KNOWS_ABOUT))((Array.isArray(SEO.knowsAbout) ? SEO.knowsAbout : str(SEO.knowsAbout).split(/[;\n]/)).map((x) => idStr(typeof x === "string" ? x : "")).filter(Boolean));
+// Profile photo (admin: Home / Hero -> Upload new profile photo): hero.photo is the JPEG and
+// hero.photoSet {jpg, w, h, type, srcset: [{w, url}]} the resized copies made on upload. A set that
+// no longer matches hero.photo (the owner pasted another URL) is ignored.
+const PHOTO_SET = (() => {
+  const p = isObj(hero.photoSet) ? hero.photoSet : {};
+  const jpg = safeUrl(p.jpg);
+  if (!jpg || safeUrl(hero.photo) !== jpg) return {};
+  const set = (Array.isArray(p.srcset) ? p.srcset : []).filter((x) => isObj(x) && safeUrl(x.url) && Number.isInteger(x.w) && x.w > 0).map((x) => `${encodeURI(safeDecode(safeUrl(x.url)))} ${x.w}w`);
+  return { jpg, srcset: set.join(", "), type: p.type === "image/jpeg" ? "image/jpeg" : "image/webp" };
+})();
+const PHOTO_ALT = idStr(hero.photoAlt) || NAME;
+// og:image / twitter:image of every page: Search & sharing image, else the profile photo.
+const OG_IMAGE = ((u) => (u ? abs(encPath(u)) : IMAGE))(safeUrl(SEO.image) || safeUrl(hero.photo) || safeUrl(about.photo));
+const OG_ALT = idStr(SEO.imageAlt) || `Photograph of ${NAME}`;
+// Text fields with {name}, {orcid}, {publishedAs}, {year} placeholders (headings.*, footer copyright).
+const fillTokens = (t) => str(t).replace(/\{(name|orcid|publishedAs|year|email)\}/g, (_, k) => ({ name: NAME, orcid: ORCID, publishedAs: PUBLISHED_AS, email: EMAIL, year: YEAR })[k]);
 
 // Research-area tags (settings.tagVocabulary, admin-editable). Used when the setting is missing.
 const DEFAULT_TAGS = [
@@ -209,9 +299,10 @@ const EXPECTED_LONG = EXPECTED.replace(/^([A-Za-z]{3})[a-z]*\.?(?=\s)/, (m, a) =
 
 // Documents (CV, statements). Only entries with a URL are shown; settings.resumeUrl still
 // works as the CV when documents.json has no CV.
-const DOC_LABELS = { cv: "CV", resume: "Résumé", research_statement: "Research Statement", teaching_statement: "Teaching Statement", diversity_statement: "Diversity Statement" };
+const DOC_LABELS = { cv: "CV", resume: "Résumé", research_statement: "Research Statement", teaching_statement: "Teaching Statement", diversity_statement: "Diversity Statement", edi_statement: "EDI Statement", publication_list: "Publication List", teaching_portfolio: "Teaching Portfolio", cover_letter: "Cover Letter" };
+// In the admin's order; a hidden document (admin: Documents -> Hide) is left out everywhere.
 const documents = items(readJson("documents", { items: [] }))
-  .filter((d) => d && safeUrl(d.url))
+  .filter((d) => d && safeUrl(d.url) && !(d.hidden === true || /^(true|yes|1)$/i.test(str(d.hidden))))
   .map((d) => ({ kind: str(d.kind) || "other", url: safeUrl(d.url), label: stripEmoji(d.label) || DOC_LABELS[str(d.kind)] || "Document" }));
 if (safeUrl(settings.resumeUrl) && !documents.some((d) => d.kind === "cv")) documents.unshift({ kind: "cv", url: safeUrl(settings.resumeUrl), label: "CV" });
 const cvDoc = documents.find((d) => d.kind === "cv") || documents.find((d) => d.kind === "resume");
@@ -222,8 +313,9 @@ const hnav = (k, d) => stripEmoji(headings?.[k]?.nav) || d;
 const htitle = (k, d) => stripEmoji(headings?.[k]?.title) || d;
 const hsub = (k) => stripEmoji(headings?.[k]?.subtitle);
 const BLOG_SHOWN = !(headings?.blog?.hidden === true || settings.blogInNav === false);
+// Title line under the name (admin: Home / Hero -> Title line); any text is used as entered.
 const NAME_LINE = ((l) => (EXPECTED && !/expected/i.test(l) ? `${l} · expected ${EXPECTED}` : l))(
-  (/university/i.test(stripEmoji(hero.line2)) && stripEmoji(hero.line2)) || "PhD Researcher in Computer Science · University of Saskatchewan");
+  idStr(hero.title) || idStr(hero.titleLine) || idStr(hero.line2) || "PhD Researcher in Computer Science · University of Saskatchewan");
 const asSlugs = (v) => (Array.isArray(v) ? v : str(v).split(/[,;\n]/)).map((x) => slugify(x)).filter(Boolean);
 const THEMES = Array.isArray(research?.themes) && research.themes.some((t) => t && (t.title || t.label))
   ? research.themes
@@ -277,7 +369,7 @@ function normalize(p, i) {
   return {
     raw: p, index: i, title, slug, type, doi, arxiv, pdf,
     year: str(p.year), date: str(p.published_date) || str(p.year),
-    venue: str(p.venue), venueFull: str(p.venue_full) || str(p.venue), venueShort: str(p.venue_short) || [str(p.venue).match(/\(([A-Z][A-Za-z-]+)\)/)?.[1], str(p.year)].filter(Boolean).join(" ") || str(p.venue),
+    venue: str(p.venue), venueFull: str(p.venue_full) || str(p.venue), venueShort: str(p.venue_short) || venueShortOf(str(p.venue), str(p.year)),
     publisher: str(p.publisher), volume: str(p.volume), issue: str(p.issue), issn: str(p.issn),
     firstPage: str(p.first_page) || (fp && /^\d+$/.test(fp) ? fp : ""), lastPage: str(p.last_page) || (lp && /^\d+$/.test(lp) ? lp : ""),
     pages, pagesText: pages.replace(/\s*[-–]+\s*/, "–"), authors, award: stripEmoji(p.award), abstract: str(p.abstract), description: stripEmoji(p.description),
@@ -308,6 +400,12 @@ function sameAuthor(a, b) {
   const x = nameParts(a), y = nameParts(b);
   return x.full === y.full || (x.last === y.last && x.first === y.first);
 }
+// No short name: "ICSME 2026" from "… (ICSME)", else the venue name with its year.
+function venueShortOf(venue, year) {
+  const acr = venue.match(/\(([A-Z][A-Za-z-]+)\)/)?.[1];
+  if (acr) return [acr, year].filter(Boolean).join(" ");
+  return [venue, year && !venue.includes(year) ? year : ""].filter(Boolean).join(" ");
+}
 const isEqual = (p, a) => p.equal.length > 1 && p.equal.some((n) => sameAuthor(a, n));
 const errors = [];
 const pubs = pubsRaw.map(normalize);
@@ -317,7 +415,7 @@ for (const p of pubs) {
   if (!p.title) errors.push(`${label}: missing title`);
   if (!/^\d{4}$/.test(p.year)) errors.push(`${label}: missing or invalid year`);
   if (!p.venue) errors.push(`${label}: missing venue`);
-  if (!p.doi && !p.arxiv && !(p.type === "thesis" && p.handle)) errors.push(`${label}: needs a DOI or an arXiv id${p.type === "thesis" ? " (or, for a thesis, a handle)" : ""}`);
+  if (!p.doi && !p.arxiv && !(p.type === "thesis" && p.handle)) console.warn(`  [seo] warn: ${label} has no DOI or arXiv id${p.type === "thesis" ? " (or, for a thesis, a handle)" : ""} yet: its page has no DOI link, citation_doi or identifier until one is added`);
   if (p.handle && !/^https:\/\/hdl\.handle\.net\/\d+(\.\d+)*\/\S+$/.test(p.handle)) errors.push(`${label}: handle "${str(p.raw.handle)}" is not a handle (expected https://hdl.handle.net/<prefix>/<id>)`);
   if (!KNOWN_TYPES.includes(p.type)) console.warn(`  [seo] warn: ${label} has unknown type "${p.type}" (known: ${KNOWN_TYPES.join(", ")})`);
   for (const t of p.tags) if (!vocabFor(t)) console.warn(`  [seo] warn: ${label} tag "${t}" is not in settings.tagVocabulary`);
@@ -325,6 +423,7 @@ for (const p of pubs) {
   for (const n of p.equal) if (!p.authors.some((a) => sameAuthor(a, n))) console.warn(`  [seo] warn: ${label} equal_contribution name "${n}" is not one of its authors`);
   if (p.doi && !/^10\.\d{4,9}\/\S+$/.test(p.doi)) errors.push(`${label}: DOI "${p.doi}" is not a bare DOI (expected 10.xxxx/...)`);
   if (p.arxiv && !/^\d{4}\.\d{4,5}(v\d+)?$/.test(p.arxiv)) errors.push(`${label}: arXiv id "${p.arxiv}" is malformed`);
+  if (p.slug.length > 120) errors.push(`${label}: slug "${p.slug.slice(0, 40)}…" is longer than 120 characters`);
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(p.slug)) errors.push(`${label}: slug "${p.slug}" must be lowercase kebab-case`);
   if (seen.has(p.slug)) errors.push(`${label}: duplicate slug "${p.slug}" (also used by #${seen.get(p.slug) + 1})`);
   seen.set(p.slug, p.index);
@@ -422,9 +521,6 @@ function imageSize(buf) {
   }
   return null;
 }
-const safeDecode = (u) => { try { return decodeURI(u); } catch { return u; } };
-// Site path ("/images/a b.jpg") -> encoded URL path, so file names with spaces/accents are valid in HTML and XML.
-const encPath = (u) => (/^https?:\/\//i.test(u) ? u : encodeURI(safeDecode(u)));
 const sizeCache = new Map();
 function localImageSize(u) {
   u = str(u);
@@ -442,9 +538,10 @@ function localImageSize(u) {
   return size;
 }
 // Photos of the owner for Person.image: the hero photo set in the admin, then the bundled portraits.
-const HEADSHOTS = [...new Set([safeUrl(hero.photo), safeUrl(about.photo), "/images/palash_roy_headshot.jpg", "/images/palash_roy.jpg", "/images/palash_ranjan_roy.jpg"].filter(Boolean))]
-  .map((u) => ({ u, size: localImageSize(u) }))
-  .filter((h) => h.size || /^https?:\/\//.test(h.u));
+// Once the owner has set a photo, only that one (the bundled portraits are older photos).
+const headshotList = (us) => [...new Set(us.filter(Boolean))].map((u) => ({ u, size: localImageSize(u) })).filter((h) => h.size || /^https?:\/\//.test(h.u));
+const OWN_HEADSHOTS = headshotList([safeUrl(PHOTO_SET.jpg), safeUrl(hero.photo), safeUrl(about.photo)]);
+const HEADSHOTS = OWN_HEADSHOTS.length ? OWN_HEADSHOTS : headshotList(["/images/palash_roy_headshot.jpg", "/images/palash_roy.jpg", "/images/palash_ranjan_roy.jpg"]);
 const imageObject = (u, size, extra = {}) => ({ "@type": "ImageObject", contentUrl: abs(encPath(u)), url: abs(encPath(u)), ...(size ? { width: size.w, height: size.h } : {}), ...extra });
 // A portrait's photo credit comes from the gallery entry for the same file (admin: Gallery → photo
 // credit), so Google's image-licence fields are filled only with what the owner entered.
@@ -493,7 +590,7 @@ const awards = highlights
 // knowsAbout: the fixed topics plus the long names of the research areas used on papers
 // (always both umbrella areas, AI4SE and SE4AI).
 const KNOWS = (() => {
-  const out = [...KNOWS_ABOUT];
+  const out = [...KNOWS_SEED];
   const usedTags = new Set(pubs.flatMap((p) => p.tags).map((t) => t.toLowerCase()));
   const usedMl = new Set(pubs.flatMap((p) => p.ml).map((t) => t.toLowerCase()));
   const push = (k) => { if (k && !out.some((x) => x.toLowerCase() === k.toLowerCase())) out.push(k); };
@@ -517,21 +614,21 @@ const NEWS_ARTICLES = IN_THE_NEWS.filter((n) => n.kind === "article" && n.date).
   "@type": "NewsArticle", headline: clip(n.title, 110), url: n.url, datePublished: n.date,
   ...(n.publisher ? { publisher: { "@type": "Organization", name: n.publisher, url: new URL(n.url).origin + "/" } } : {}),
 }));
-const PERSON_DESC = SUMMARY + (EXPECTED_LONG ? ` PhD expected ${EXPECTED_LONG}.` : "");
+const PERSON_DESC = SUMMARY_TEXT + (EXPECTED_LONG ? ` PhD expected ${EXPECTED_LONG}.` : "");
 function personNode(full = true) {
   const base = { "@type": "Person", "@id": PERSON_ID, name: NAME, url: `${SITE}/` };
   if (!full) return { ...base, identifier: { "@type": "PropertyValue", propertyID: "ORCID", value: ORCID }, sameAs: [`https://orcid.org/${ORCID}`] };
   return {
     ...base,
-    givenName: "Palash", additionalName: "Ranjan", familyName: "Roy",
+    givenName: GIVEN, additionalName: ADDITIONAL, familyName: FAMILY,
     alternateName: ALT_NAMES,
     description: PERSON_DESC,
-    jobTitle: "PhD Researcher in Computer Science",
+    jobTitle: JOB_TITLE,
     email: `mailto:${EMAIL}`,
     image: PERSON_IMAGES.length ? PERSON_IMAGES : [{ "@type": "ImageObject", url: IMAGE, contentUrl: IMAGE, caption: NAME }],
-    affiliation: [ORGS.usask],
-    memberOf: [ORGS.srlab, ORGS.ise],
-    alumniOf: [ORGS.brac, { "@id": `${SITE}/#usask` }],
+    affiliation: AFFILIATION,
+    memberOf: MEMBER_OF,
+    alumniOf: ALUMNI_OF,
     ...(NEWS_ARTICLES.length ? { subjectOf: NEWS_ARTICLES } : {}),
     award: awards,
     knowsAbout: KNOWS,
@@ -542,7 +639,7 @@ function personNode(full = true) {
 }
 const websiteNode = {
   "@type": "WebSite", "@id": WEBSITE_ID, url: `${SITE}/`, name: NAME, inLanguage: "en",
-  description: `Research website of ${NAME}: publications, software and contact.`, publisher: { "@id": PERSON_ID }, about: { "@id": PERSON_ID },
+  description: idStr(SEO.websiteDescription) || `Research website of ${NAME}: publications, software and contact.`, publisher: { "@id": PERSON_ID }, about: { "@id": PERSON_ID },
 };
 const homeGraph = {
   "@context": "https://schema.org",
@@ -550,7 +647,7 @@ const homeGraph = {
     websiteNode,
     {
       "@type": "ProfilePage", "@id": `${SITE}/#profilepage`, url: `${SITE}/`,
-      name: `${NAME} | PhD Researcher in Computer Science | University of Saskatchewan`,
+      name: idStr(SEO.ogTitle) || `${NAME} | ${JOB_TITLE} | ${AFFILIATION[0] ? AFFILIATION[0].name : "University of Saskatchewan"}`,
       isPartOf: { "@id": WEBSITE_ID }, mainEntity: { "@id": PERSON_ID }, about: { "@id": PERSON_ID },
       ...(HOME_LASTMOD ? { dateModified: HOME_LASTMOD } : {}), inLanguage: "en",
       hasPart: pubs.map((p) => ({ "@type": p.type === "thesis" ? "Thesis" : "ScholarlyArticle", "@id": p.url + "#article", url: p.url, name: p.title })),
@@ -559,12 +656,37 @@ const homeGraph = {
   ],
 };
 
+// Pristine shells (dist/_seo/shells/): the prerendered homepage and blog pages before any of the
+// edits below, for the PHP renderer, which applies the same edits from live data. A file that
+// still has its <!--SEO-GRAPH--> placeholder is pristine and is copied there; one that has already
+// been through this script (a second run on a built dist, e.g. the parity harness) is first put
+// back from its pristine copy, so running this script twice gives the same output.
+const SEO_DIR = path.join(DIST, "_seo");
+const SHELL_DIR = path.join(SEO_DIR, "shells");
+const SHELLS = [];
+function shell(rel) {
+  const file = path.join(DIST, rel), keep = path.join(SHELL_DIR, rel);
+  if (!existsSync(file)) return;
+  if (readFileSync(file, "utf8").includes("<!--SEO-GRAPH-->")) { mkdirSync(path.dirname(keep), { recursive: true }); copyFileSync(file, keep); }
+  else if (existsSync(keep)) copyFileSync(keep, file);
+  if (existsSync(keep)) SHELLS.push(rel);
+}
+shell("index.html");
+(function walkShells(dir) {
+  if (!existsSync(dir)) return;
+  for (const f of readdirSync(dir).sort()) {
+    const p = path.join(dir, f);
+    if (statSync(p).isDirectory()) walkShells(p);
+    else if (f === "index.html") shell(path.relative(DIST, p));
+  }
+})(path.join(DIST, "blog"));
 function injectGraph(file, graph) {
   if (!existsSync(file)) return false;
   let html = readFileSync(file, "utf8");
   const tag = ldScript(graph);
-  if (html.includes("<!--SEO-GRAPH-->")) html = html.replace("<!--SEO-GRAPH-->", tag);
-  else { console.warn(`  [seo] warn: no <!--SEO-GRAPH--> placeholder in ${path.relative(DIST, file)}; inserting before </head>`); html = html.replace("</head>", tag + "\n</head>"); }
+  // Function replacements: a "$'" or "$&" in the content must not be read as a pattern.
+  if (html.includes("<!--SEO-GRAPH-->")) html = html.replace("<!--SEO-GRAPH-->", () => tag);
+  else { console.warn(`  [seo] warn: no <!--SEO-GRAPH--> placeholder in ${path.relative(DIST, file)}; inserting before </head>`); html = html.replace("</head>", () => tag + "\n</head>"); }
   writeFileSync(file, html);
   return true;
 }
@@ -576,7 +698,78 @@ function fixCreator(file) {
   const out = html.replace(/[ \t]*<meta name="twitter:creator" content="[^"]*"\s*\/?>\n?/, h ? `  <meta name="twitter:creator" content="${esc(h)}" />\n` : "");
   if (out !== html) writeFileSync(file, out);
 }
+// Sharing image of the homepage and blog shells (og:image / twitter:image): Search & sharing image,
+// else the profile photo (the 1200px JPEG of an upload); a post's cover replaces it (postHead).
+function shareImage(html) {
+  const setMeta = (attr, key, val) => {
+    const re = new RegExp(`(<meta ${attr}="${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}" content=")[^"]*(")`);
+    html = html.replace(re, (_, a, b) => a + esc(val) + b);
+  };
+  const img = safeUrl(SEO.image) || safeUrl(hero.photo) || safeUrl(about.photo);
+  if (img) {
+    const u = abs(encPath(img));
+    setMeta("property", "og:image", u);
+    setMeta("name", "twitter:image", u);
+    const size = localImageSize(img);
+    if (size) { setMeta("property", "og:image:width", String(size.w)); setMeta("property", "og:image:height", String(size.h)); }
+    else html = html.replace(/[ \t]*<meta property="og:image:(?:width|height)" content="[^"]*"\s*\/?>\n?/g, "");
+  }
+  setMeta("property", "og:image:alt", OG_ALT); setMeta("name", "twitter:image:alt", OG_ALT);
+  return html;
+}
 fixCreator(path.join(DIST, "index.html"));
+// Homepage head from settings.seo (admin: Site Settings -> Search & sharing; empty fields keep the
+// built-in text) and the hero photo: with hero.photo / about.photo set, the LCP preload points at
+// that photo (it used to keep preloading the bundled headshot) and the hero shows it. The PHP
+// renderer applies the same function (homePatch in cpanel-backend/api/seo/lib/shells.php).
+function homeHead(html) {
+  const v = (k) => stripEmoji(SEO[k]);
+  const setMeta = (attr, key, val) => {
+    const re = new RegExp(`(<meta ${attr}="${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}" content=")[^"]*(")`);
+    html = html.replace(re, (_, a, b) => a + esc(val) + b);
+  };
+  // The owner's name or email changed since the build (admin: Identity): the shell's head, wordmark,
+  // hero heading and <noscript> line still carry the build's. Author lists keep the published names.
+  const builtName = (html.match(/<meta name="author" content="([^"]*)"/) || [])[1] || "";
+  if (builtName && builtName !== esc(NAME)) {
+    const cut = html.indexOf(`<script type="application/ld+json">`), end = cut < 0 ? html.indexOf("</head>") : cut;
+    if (end > 0) html = html.slice(0, end).split(builtName).join(esc(NAME)) + html.slice(end);
+    html = html.replace(/(<a [^>]*class="wordmark[^"]*"[^>]*>)([^<]*)(<\/a>)/, (m, a, t, b) => (t === builtName ? a + esc(NAME) + b : m))
+      .replace(/(<h1 class="hero-name" id="hero-name">)([^<]*)(<\/h1>)/, (m, a, t, b) => (t === builtName ? a + esc(NAME) + b : m));
+  }
+  html = html.replace(/<noscript>[\s\S]*?<\/noscript>/, (m) => {
+    const e = (m.match(/mailto:([^"]+)"/) || [])[1];
+    let out = builtName && builtName !== esc(NAME) ? m.split(builtName).join(esc(NAME)) : m;
+    if (e && e !== EMAIL) out = out.split(e).join(EMAIL);
+    return out;
+  });
+  setMeta("property", "profile:first_name", GIVEN);
+  setMeta("property", "profile:last_name", FAMILY);
+  if (v("title")) html = html.replace(/<title>[^<]*<\/title>/, () => `<title>${esc(v("title"))}</title>`);
+  if (v("description")) setMeta("name", "description", v("description"));
+  if (v("ogTitle")) setMeta("property", "og:title", v("ogTitle"));
+  if (v("ogDescription")) setMeta("property", "og:description", v("ogDescription"));
+  if (v("twitterTitle")) setMeta("name", "twitter:title", v("twitterTitle"));
+  if (v("twitterDescription")) setMeta("name", "twitter:description", v("twitterDescription"));
+  html = shareImage(html);
+  const photo = hero.photo || about.photo;
+  const SIZES = "(min-width: 768px) 200px, 96px";
+  if (photo && typeof photo === "string") {
+    const ph = esc(photo);
+    const pre = PHOTO_SET.srcset ? `<link rel="preload" as="image" type="${PHOTO_SET.type}" fetchpriority="high" imagesrcset="${esc(PHOTO_SET.srcset)}" imagesizes="${SIZES}">` : `<link rel="preload" as="image" href="${ph}" fetchpriority="high">`;
+    const im = `<img src="${ph}" alt="${esc(PHOTO_ALT)}" class="hero-photo" width="200" height="200" decoding="async" fetchpriority="high">`;
+    html = html.replace(/<link rel="preload" as="image"[^>]*imagesrcset="[^"]*headshot[^"]*"[^>]*>/, () => pre)
+      .replace(/(<div class="hero-photo-wrap">)(?:<picture>[\s\S]*?<\/picture>|<img [^>]*>)(<\/div>)/, (_, a, b) => a + (PHOTO_SET.srcset ? `<picture><source srcset="${esc(PHOTO_SET.srcset)}" sizes="${SIZES}" type="${PHOTO_SET.type}">${im}</picture>` : im) + b);
+  } else {
+    html = html.replace(/(<div class="hero-photo-wrap">(?:<picture>[\s\S]*?)?<img [^>]*?alt=")([^"]*)(")/, (_, a, t, b) => a + esc(PHOTO_ALT) + b);
+  }
+  return html;
+}
+{
+  const f = path.join(DIST, "index.html");
+  const html = readFileSync(f, "utf8"), out = homeHead(html);
+  if (out !== html) writeFileSync(f, out);
+}
 // Prerendered blog pages share the homepage shell: /blog/ gets WebSite + Person; each
 // published post also gets a BlogPosting node and an article head (og:type article, its
 // cover as og:image, no profile:* or publications.md alternate).
@@ -620,6 +813,7 @@ const postBySlug = new Map(blogPosts.map((b) => [str(b.slug) || slugify(b.title)
       const rel = path.relative(path.join(DIST, "blog"), path.dirname(p));
       const post = rel && !rel.includes(path.sep) ? postBySlug.get(rel) : undefined;
       injectGraph(p, post ? postGraph(post, rel) : blogGraph);
+      { const h = readFileSync(p, "utf8"), o = shareImage(h); if (o !== h) writeFileSync(p, o); }
       if (post) postHead(p, post);
       fixCreator(p);
     }
@@ -844,15 +1038,20 @@ const PLATFORM_LABEL = {
   twitter: "X", x: "X", youtube: "YouTube", facebook: "Facebook", instagram: "Instagram", email: "Email",
 };
 const PLATFORM_ORDER = ["scholar", "orcid", "dblp", "github", "linkedin", "researchgate", "semanticscholar", "openalex", "x", "twitter", "facebook", "instagram", "youtube", "website"];
+// Glyphs drawn with strokes: [attributes of the <svg>, inner markup]; "globe" is the fallback.
+const ICON_SPECIAL = {
+  orcid: [`fill="none" stroke="currentColor"`, `<circle cx="8" cy="8" r="7.2" stroke-width="1.3"/><path d="M5.3 6.6v5" stroke-width="1.4"/><circle cx="5.3" cy="4.6" r=".85" fill="currentColor" stroke="none"/><path d="M7.6 6.6h1.5a2.5 2.5 0 0 1 0 5H7.6z" stroke-width="1.3"/>`],
+  scholar: [`fill="currentColor"`, `<path d="M8 1 0 6.4h16z"/><circle cx="8" cy="10.6" r="4"/>`],
+  researchgate: [`fill="none" stroke="currentColor"`, `<rect x=".8" y=".8" width="14.4" height="14.4" rx="2" stroke-width="1.3"/><path d="M3.9 11.4V4.6h2a1.75 1.75 0 0 1 0 3.5h-2m2 0 1.8 3.3M12.9 5.4a2.4 2.9 0 1 0 .5 4V8.3H11.9" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/>`],
+  dblp: [`fill="none" stroke="currentColor" stroke-width="1.3"`, `<ellipse cx="8" cy="3.4" rx="5.6" ry="2"/><path d="M2.4 3.4v9.2c0 1.1 2.5 2 5.6 2s5.6-.9 5.6-2V3.4"/><path d="M2.4 8c0 1.1 2.5 2 5.6 2s5.6-.9 5.6-2"/>`],
+  globe: [`fill="none" stroke="currentColor" stroke-width="1.3"`, `<circle cx="8" cy="8" r="7"/><path d="M1 8h14M8 1c2 2 2.8 4.4 2.8 7S10 13 8 15C6 13 5.2 10.6 5.2 8S6 3 8 1z"/>`],
+};
 function icon(platform) {
   const p = platform === "twitter" ? "x" : platform;
   const open = (attrs) => `<svg class="ic" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false" ${attrs}>`;
   if (ICON_PATHS[p]) return `${open(`fill="currentColor"`)}<path d="${ICON_PATHS[p]}"/></svg>`;
-  if (p === "orcid") return `${open(`fill="none" stroke="currentColor"`)}<circle cx="8" cy="8" r="7.2" stroke-width="1.3"/><path d="M5.3 6.6v5" stroke-width="1.4"/><circle cx="5.3" cy="4.6" r=".85" fill="currentColor" stroke="none"/><path d="M7.6 6.6h1.5a2.5 2.5 0 0 1 0 5H7.6z" stroke-width="1.3"/></svg>`;
-  if (p === "scholar") return `${open(`fill="currentColor"`)}<path d="M8 1 0 6.4h16z"/><circle cx="8" cy="10.6" r="4"/></svg>`;
-  if (p === "researchgate") return `${open(`fill="none" stroke="currentColor"`)}<rect x=".8" y=".8" width="14.4" height="14.4" rx="2" stroke-width="1.3"/><path d="M3.9 11.4V4.6h2a1.75 1.75 0 0 1 0 3.5h-2m2 0 1.8 3.3M12.9 5.4a2.4 2.9 0 1 0 .5 4V8.3H11.9" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  if (p === "dblp") return `${open(`fill="none" stroke="currentColor" stroke-width="1.3"`)}<ellipse cx="8" cy="3.4" rx="5.6" ry="2"/><path d="M2.4 3.4v9.2c0 1.1 2.5 2 5.6 2s5.6-.9 5.6-2V3.4"/><path d="M2.4 8c0 1.1 2.5 2 5.6 2s5.6-.9 5.6-2"/></svg>`;
-  return `${open(`fill="none" stroke="currentColor" stroke-width="1.3"`)}<circle cx="8" cy="8" r="7"/><path d="M1 8h14M8 1c2 2 2.8 4.4 2.8 7S10 13 8 15C6 13 5.2 10.6 5.2 8S6 3 8 1z"/></svg>`;
+  const [a, inner] = ICON_SPECIAL[p] || ICON_SPECIAL.globe;
+  return `${open(a)}${inner}</svg>`;
 }
 // The platform field is what the admin sets; older rows without it are recognised by label/URL.
 function platformOf(s) {
@@ -882,17 +1081,22 @@ if (!profileLinks.length) {
 const profileLink = (p) => `<a href="${esc(p.url)}" aria-label="${esc(p.k === "email" ? `Email ${EMAIL}` : `${p.label} profile`)}">${icon(p.k)}<span>${esc(p.label)}</span></a>`;
 const profileByKind = (k) => profileLinks.find((p) => p.k === k);
 const FOOTER_PAGES = [
-  ["Publications", "/publications/"],
+  [NAV_ITEMS[1][1], "/publications/"],
   ...(galleryItems.length ? [[hnav("photos", "Photos"), "/photos/"]] : []),
   ...(faqItems.length ? [[hnav("faq", "Research FAQ"), "/faq/"]] : []),
   [hnav("aboutPage", "About"), "/about/"],
   ...(BLOG_SHOWN || blogPosts.length ? [[hn(["blog"], "Blog"), "/blog/"]] : []),
 ];
-const COPYRIGHT = esc(stripEmoji(footer.copyright) || `© ${new Date().getFullYear()} ${NAME}`);
+// footer.copyright may use {year} (always the current year) and {name}.
+const COPYRIGHT = esc(fillTokens(stripEmoji(footer.copyright)) || `© ${YEAR} ${NAME}`);
+// CV links (admin: Footer -> CV link labels). "(PDF)" is added only when the file is a PDF.
+const CV_IS_PDF = !!cvDoc && /\.pdf([?#]|$)/i.test(cvDoc.url);
+const CV_NAV = idStr(footer.cvNavLabel) || "CV";
+const CV_FOOT = idStr(footer.cvLabel) || (CV_IS_PDF || !cvDoc ? "CV (PDF)" : "CV");
 // Same layout and link styles as SiteFooter in src/App.tsx: name · email · CV, profile logos,
 // a divider, the site pages, then "On the homepage" and the copyright in small text.
 const footerHtml = () => `<footer class="site"><div class="wrap">
-<div class="row"><span class="f-name">${esc(stripEmoji(footer.name) || NAME)}</span><a href="mailto:${EMAIL}">${EMAIL}</a>${cvDoc ? `<a href="${esc(cvDoc.url)}"${/\.pdf([?#]|$)/i.test(cvDoc.url) ? ` type="application/pdf"` : ""}>CV (PDF)</a>` : ""}</div>
+<div class="row"><span class="f-name">${esc(stripEmoji(footer.name) || NAME)}</span><a href="mailto:${esc(EMAIL)}">${esc(EMAIL)}</a>${cvDoc ? `<a href="${esc(cvDoc.url)}"${CV_IS_PDF ? ` type="application/pdf"` : ""}>${esc(CV_FOOT)}</a>` : ""}</div>
 ${footer.showSocials !== false && profileLinks.length ? `<ul class="prof" aria-label="Profiles">${profileLinks.map((p) => `<li>${profileLink(p)}</li>`).join("")}</ul>` : ""}
 <nav class="row pages" aria-label="Site pages">${FOOTER_PAGES.map(([l, u]) => `<a href="${u}">${esc(l)}</a>`).join("")}</nav>
 <nav class="row onhome" aria-labelledby="f-onhome"><span id="f-onhome">On the homepage:</span>${FOOTER_ON_HOME.map(([, l, u]) => `<a href="${u}">${esc(l)}</a>`).join("")}</nav>
@@ -913,17 +1117,17 @@ function page({ title, ogTitle = "", description, canonical, head = "", body, js
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 ${canonical ? `<link rel="canonical" href="${esc(canonical)}">\n<meta name="robots" content="${robots || "index, follow, max-image-preview:large"}">` : `<meta name="robots" content="noindex">`}
-<meta name="author" content="${NAME}">
+<meta name="author" content="${esc(NAME)}">
 <meta property="og:type" content="${ogType}">
-<meta property="og:site_name" content="${NAME}">
+<meta property="og:site_name" content="${esc(NAME)}">
 <meta property="og:title" content="${esc(ogTitle || title)}">
 <meta property="og:description" content="${esc(description)}">
-${canonical ? `<meta property="og:url" content="${esc(canonical)}">\n` : ""}<meta property="og:image" content="${IMAGE}">
-<meta property="og:image:alt" content="Photograph of ${NAME}">
+${canonical ? `<meta property="og:url" content="${esc(canonical)}">\n` : ""}<meta property="og:image" content="${esc(OG_IMAGE)}">
+<meta property="og:image:alt" content="${esc(OG_ALT)}">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="${esc(ogTitle || title)}">
 <meta name="twitter:description" content="${esc(description)}">
-<meta name="twitter:image" content="${IMAGE}">
+<meta name="twitter:image" content="${esc(OG_IMAGE)}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -935,11 +1139,11 @@ ${jsonld ? ldScript(jsonld) + "\n" : ""}</head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site"><div class="wrap">
-<a class="wordmark" href="/">${NAME}</a>
+<a class="wordmark" href="/">${esc(NAME)}</a>
 <nav class="site" aria-label="Primary">${nav}</nav>
 <div class="hdr-r">
-${cvDoc ? `<a class="btn" href="${esc(cvDoc.url)}">CV</a>\n` : ""}<button type="button" class="tt" id="tt" aria-label="Switch to dark theme" title="Switch to dark theme">${MOON}${SUN}</button>
-<details class="menu"><summary>${MENU_ICON}<span>Menu</span></summary><nav aria-label="Site menu">${nav}${cvDoc ? `<a class="m-cv" href="${esc(cvDoc.url)}">CV</a>` : ""}${ON_HOME.length ? `<span class="grp">On the homepage</span>` : ""}${ON_HOME.map(([, l, u]) => `<a href="${u}">${esc(l)}</a>`).join("")}</nav></details>
+${cvDoc ? `<a class="btn" href="${esc(cvDoc.url)}">${esc(CV_NAV)}</a>\n` : ""}<button type="button" class="tt" id="tt" aria-label="Switch to dark theme" title="Switch to dark theme">${MOON}${SUN}</button>
+<details class="menu"><summary>${MENU_ICON}<span>Menu</span></summary><nav aria-label="Site menu">${nav}${cvDoc ? `<a class="m-cv" href="${esc(cvDoc.url)}">${esc(CV_NAV)}</a>` : ""}${ON_HOME.length ? `<span class="grp">On the homepage</span>` : ""}${ON_HOME.map(([, l, u]) => `<a href="${u}">${esc(l)}</a>`).join("")}</nav></details>
 </div>
 </div></header>
 <main id="main" class="wrap">
@@ -1110,7 +1314,7 @@ function articleNode(p) {
   };
   if (thesis) {
     if (p.inSupportOf) node.inSupportOf = p.inSupportOf;
-    if (p.institution) node.sourceOrganization = /saskatchewan/i.test(p.institution) ? ORGS.usask : { "@type": "CollegeOrUniversity", name: p.institution };
+    if (p.institution) node.sourceOrganization = orgFor(p.institution) || { "@type": "CollegeOrUniversity", name: p.institution };
     if (p.institution) node.publisher = /saskatchewan/i.test(p.institution) ? { "@id": `${SITE}/#usask` } : { "@type": "CollegeOrUniversity", name: p.institution };
     if (p.handle) (node.identifier ||= []).push({ "@type": "PropertyValue", propertyID: "Handle", value: p.handle.replace(/^https:\/\/hdl\.handle\.net\//, ""), url: p.handle });
   } else if (p.type !== "journal") node.publication = { "@type": "PublicationEvent", name: p.venueShort };
@@ -1158,7 +1362,7 @@ for (const p of pubs) {
 <h1>${esc(p.title)}</h1>
 <p class="authors">${authorsHtml(p)}</p>
 ${eqNoteHtml(p)}<p class="meta">${metaLine(p)}</p>
-${p.award ? `<p class="award">${esc(p.award)}</p>\n` : ""}${p.myRole ? `<p class="small role">Role: ${esc(p.myRole)}</p>\n` : ""}${tagsHtml(p, 0)}<p class="small">${NAME} (published as Palash Roy / Palash R. Roy) · <a href="https://orcid.org/${ORCID}">ORCID ${ORCID}</a></p>
+${p.award ? `<p class="award">${esc(p.award)}</p>\n` : ""}${p.myRole ? `<p class="small role">Role: ${esc(p.myRole)}</p>\n` : ""}${tagsHtml(p, 0)}<p class="small">${esc(NAME)}${PUBLISHED_AS ? ` (published as ${esc(PUBLISHED_AS)})` : ""} · <a href="https://orcid.org/${ORCID}">ORCID ${ORCID}</a></p>
 ${links.length ? `<ul class="links">${links.map(([l, u, aria]) => `<li><a href="${esc(u)}"${aria ? ` aria-label="${esc(aria)}"` : ""}>${esc(l)}</a></li>`).join("")}</ul>` : ""}
 ${p.abstract ? `<h2>Abstract</h2>\n${absParas(p.abstract)}` : p.description ? `<h2>Summary</h2>\n<p>${esc(p.description)}</p>` : ""}
 ${p.problem ? `<h2>Problem addressed</h2>\n<p>${esc(p.problem)}</p>` : ""}
@@ -1246,7 +1450,8 @@ function themeCardsHtml() {
     return `<a href="/publications/${p.slug}/" aria-label="${esc(`${lead}: ${p.title}`)}">${esc(lead)}</a>${tool}`;
   };
   return `<ul class="cards">${cards.map((t) => {
-    const chips = (t.keywords.length ? t.keywords : keywordsOf(t.papers[0], 3)).slice(0, 4);
+    // Built-in themes (FALLBACK_THEMES, an older database copy) have no keywords: use the first paper's.
+    const chips = (t.keywords?.length ? t.keywords : keywordsOf(t.papers[0], 3)).slice(0, 4);
     return `<li class="card"><h3>${esc(t.name)}</h3>${t.summary ? `<p>${esc(t.summary)}</p>` : ""}${t.keyResult ? `<p class="res">${esc(t.keyResult)}</p>` : ""}${chipsHtml(chips)}<p class="pp">${t.papers.map(ref).join(" · ")}</p></li>`;
   }).join("")}</ul>${other ? `\n<p class="small">Also: ${other.papers.map(ref).join(" · ")}</p>` : ""}`;
 }
@@ -1280,8 +1485,10 @@ const FILTER_JS = `(function(){var g=document.getElementById("tagf");if(!g)retur
 <div class="tagf"><button type="button" data-f="" data-tag="" data-name="All" aria-pressed="true">All</button></div>
 ${areasUsed.length ? `<details class="tagf-d"><summary>Software Engineering areas <span class="n">(${areasUsed.length})</span></summary><div class="tagf" role="group" aria-label="Software Engineering areas">${areasUsed.map((a) => `<button type="button" data-f="tag" data-tag="${esc(a.tag)}" data-name="${esc(tagLong(a.tag))}" aria-pressed="false">${tagName(a.tag)}<span class="n"><span class="sr">, </span>${a.papers.length}<span class="sr"> publication${a.papers.length === 1 ? "" : "s"}</span></span></button>`).join("")}</div></details>\n` : ""}${mlUsed.length ? `<details class="tagf-d"><summary>AI/ML topics <span class="n">(${mlUsed.length})</span></summary><div class="tagf" role="group" aria-label="AI/ML topics">${mlUsed.map((a) => `<button type="button" data-f="ml" data-tag="${esc(a.tag)}" data-name="${esc(mlLong(a.tag))}" aria-pressed="false">${mlName(a.tag)}<span class="n"><span class="sr">, </span>${a.papers.length}<span class="sr"> publication${a.papers.length === 1 ? "" : "s"}</span></span></button>`).join("")}</div></details>\n` : ""}</div>
 <p id="tagf-s" class="small" role="status"></p>\n` : "";
-  const body = `<h1>Publications</h1>
-<p>All peer-reviewed papers and posters by ${NAME} (published as Palash Roy / Palash R. Roy, <a href="https://orcid.org/${ORCID}">ORCID ${ORCID}</a>)${pubs.some((p) => p.type === "thesis") ? ", and his thesis" : ""}. Each paper page has the abstract, links to the DOI, arXiv, code and artifacts, and BibTeX.</p>
+  const PUBS_T = ((t) => (/^portfolio$/i.test(t) ? "Publications" : t))(htitle("portfolio", "Publications"));
+  const intro = stripEmoji(headings?.portfolio?.pageIntro);
+  const body = `<h1>${esc(PUBS_T)}</h1>
+<p>${intro ? inlineMd(fillTokens(intro)) : `All peer-reviewed papers and posters by ${esc(NAME)} (${PUBLISHED_AS ? `published as ${esc(PUBLISHED_AS)}, ` : ""}<a href="https://orcid.org/${ORCID}">ORCID ${ORCID}</a>)${pubs.some((p) => p.type === "thesis") ? `, and ${PRON[1]} thesis` : ""}. Each paper page has the abstract, links to the DOI, arXiv, code and artifacts, and BibTeX.`}</p>
 ${themesUsed.length ? `<p class="small">Jump to: <a href="#by-year">By year</a> · <a href="#by-theme">By theme</a></p>` : ""}
 <div id="by-year">
 <h2 id="by-year-h">All publications by year</h2>
@@ -1300,9 +1507,9 @@ ${mlUsed.map((a) => `<h4 id="${mlId(a.tag)}">${mlLabel(a.tag) ? `${esc(mlLabel(a
 <p class="small"><a href="/publications.md">Markdown version</a></p>
 ${areasUsed.length || mlUsed.length ? `<script>${FILTER_JS}</script>` : ""}`;
   write("publications/index.html", page({
-    title: `Publications | ${NAME}`, canonical: `${SITE}/publications/`,
-    description: `Publications by ${NAME} on code clones, clone detection, LLMs for software engineering, model compression and model merging, with BibTeX.`,
-    crumbs: `<p class="crumbs"><a href="/">Home</a> / Publications</p>\n`, body, active: "publications",
+    title: seoPage("publications", "title") || `${PUBS_T} | ${NAME}`, canonical: `${SITE}/publications/`, ogTitle: seoPage("publications", "ogTitle"),
+    description: metaDesc(seoPage("publications", "description") || `Publications by ${NAME} on code clones, clone detection, LLMs for software engineering, model compression and model merging, with BibTeX.`),
+    crumbs: `<p class="crumbs"><a href="/">Home</a> / ${esc(PUBS_T)}</p>\n`, body, active: "publications",
     head: `<link rel="alternate" type="text/markdown" href="/publications.md">\n`,
     jsonld: {
       "@context": "https://schema.org",
@@ -1315,7 +1522,7 @@ ${areasUsed.length || mlUsed.length ? `<script>${FILTER_JS}</script>` : ""}`;
   }));
   write("publications.md", `# Publications of ${NAME}
 
-${NAME} (published as Palash Roy / Palash R. Roy; ORCID ${ORCID}). Newest first.
+${NAME} (${PUBLISHED_AS ? `published as ${PUBLISHED_AS}; ` : ""}ORCID ${ORCID}). Newest first.
 
 ${byYear.map((y) => `## ${y}\n\n${yearPubs(y).map((p) => `- [${p.title}](${SITE}/publications/${p.slug}.md). ${authorsMd(p)}. *${p.venueShort}*.${eqMd(p) ? ` ${eqMd(p)}` : ""}${p.award ? ` ${p.award}.` : ""}${p.tags.length ? ` Areas: ${p.tags.join(", ")}.` : ""}${p.ml.length ? ` ML topics: ${p.ml.join(", ")}.` : ""}${p.doi ? ` DOI: ${p.doi}.` : ""}${p.arxiv ? ` arXiv: ${p.arxiv}.` : ""}${p.handle ? ` Handle: ${p.handle}.` : ""}${p.slides ? ` Slides: ${abs(p.slides)}.` : ""}${p.video ? ` Video: ${abs(p.video)}.` : ""}`).join("\n")}`).join("\n\n")}
 `);
@@ -1331,9 +1538,9 @@ ${faqItems.map((f, i) => `<dt id="q${i + 1}">${esc(f.q)}</dt>\n<dd>${mdParas(f.a
 </dl>
 <p class="small"><a href="/faq.md">Markdown version</a></p>`;
   write("faq/index.html", page({
-    title: `${FAQ_T === "Research FAQ" ? "Research FAQ: Code Clones and LLMs" : FAQ_T} | ${NAME}`, canonical: `${SITE}/faq/`,
-    ogTitle: `${FAQ_T === "Research FAQ" ? "Research FAQ: code clones and LLMs for software engineering" : FAQ_T} | ${NAME}`,
-    description: metaDesc(`Answers on clone benchmarks, detecting clones in LLM-generated code, compressing code LLMs and merging fine-tuned models, with links to the papers.`),
+    title: seoPage("faq", "title") || `${FAQ_T === "Research FAQ" ? "Research FAQ: Code Clones and LLMs" : FAQ_T} | ${NAME}`, canonical: `${SITE}/faq/`,
+    ogTitle: seoPage("faq", "ogTitle") || `${FAQ_T === "Research FAQ" ? "Research FAQ: code clones and LLMs for software engineering" : FAQ_T} | ${NAME}`,
+    description: metaDesc(seoPage("faq", "description") || `Answers on clone benchmarks, detecting clones in LLM-generated code, compressing code LLMs and merging fine-tuned models, with links to the papers.`),
     crumbs: `<p class="crumbs"><a href="/">Home</a> / ${esc(FAQ_T)}</p>\n`, body,
     head: `<link rel="alternate" type="text/markdown" href="/faq.md">\n`,
     jsonld: {
@@ -1430,9 +1637,9 @@ const newsRows = [...IN_THE_NEWS.filter((n) => n.kind === "article").sort((a, b)
   const refs = headings?.references || {};
   const refNote = [stripEmoji(refs.subtitle), stripEmoji(refs.note)].filter(Boolean);
   const roleRow = (period, what) => `<li><span class="d">${esc(period)}</span><span>${what}</span></li>`;
-  const body = `<h1>${NAME}</h1>
+  const body = `<h1>${esc(NAME)}</h1>
 <p class="meta">${esc(NAME_LINE)}</p>
-<p class="small">Published as Palash Roy / Palash R. Roy · <a href="https://orcid.org/${ORCID}">ORCID ${ORCID}</a></p>
+<p class="small">${PUBLISHED_AS ? `Published as ${esc(PUBLISHED_AS)} · ` : ""}<a href="https://orcid.org/${ORCID}">ORCID ${ORCID}</a></p>
 ${paras.map((p) => `<p>${inlineMd(p)}</p>`).join("\n")}
 ${galleryItems.length ? `<p><a href="/photos/">Photos</a></p>` : ""}
 <h2>Research</h2>
@@ -1449,11 +1656,11 @@ ${nominations.length ? `<h2>Nominations</h2>\n<ul class="plain">${nominations.ma
 ${newsRows.length ? `<h2>In the news</h2>\n<ul class="roles">${newsRows.map((n) => roleRow(n.kind === "profile" ? "Profile" : newsDate(n.date), `<a href="${esc(n.url)}">${esc(n.title)}</a>${n.publisher ? `, ${esc(n.publisher)}` : ""}`)).join("")}</ul>` : ""}
 ${refNote.length ? `<h2>${esc(stripEmoji(refs.title) || "References")}</h2>\n${refNote.map((r) => `<p>${inlineMd(r)}</p>`).join("\n")}` : ""}
 <h2>Profiles and contact</h2>
-<ul class="plain"><li>Email: <a href="mailto:${EMAIL}">${EMAIL}</a></li>${IDS.map((i) => `<li>${i.propertyID}: <a href="${esc(i.url)}">${esc(i.value)}</a></li>`).join("")}</ul>`;
+<ul class="plain"><li>Email: <a href="mailto:${esc(EMAIL)}">${esc(EMAIL)}</a></li>${IDS.map((i) => `<li>${esc(i.propertyID)}: ${i.url ? `<a href="${esc(i.url)}">${esc(i.value)}</a>` : esc(i.value)}</li>`).join("")}</ul>`;
   write("about/index.html", page({
-    title: `About ${NAME}: Biography, Education, Awards`, canonical: `${SITE}/about/`, ogType: "profile",
-    ogTitle: `About ${NAME} | PhD Researcher, University of Saskatchewan`,
-    description: metaDesc(`Biography of ${NAME} (Palash Roy), PhD researcher at the University of Saskatchewan: education, teaching, leadership, awards and news coverage.`),
+    title: seoPage("about", "title") || `About ${NAME}: Biography, Education, Awards`, canonical: `${SITE}/about/`, ogType: "profile",
+    ogTitle: seoPage("about", "ogTitle") || `About ${NAME} | PhD Researcher, University of Saskatchewan`,
+    description: metaDesc(seoPage("about", "description") || `Biography of ${NAME}${ALT_NAMES[0] ? ` (${ALT_NAMES[0]})` : ""}, PhD researcher at the University of Saskatchewan: education, teaching, leadership, awards and news coverage.`),
     crumbs: `<p class="crumbs"><a href="/">Home</a> / ${esc(htitle("aboutPage", "About"))}</p>\n`, body,
     jsonld: {
       "@context": "https://schema.org",
@@ -1471,6 +1678,7 @@ ${refNote.length ? `<h2>${esc(stripEmoji(refs.title) || "References")}</h2>\n${r
 // a photo counts as his when its alt text, title or description names him.
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const showDate = (d) => { const m = str(d).match(/^(\d{4})-(\d{2})/); return m ? `${MONTHS[+m[2] - 1] || ""} ${m[1]}`.trim() : str(d); };
+const GALLERY_SIZES = "(min-width: 960px) 286px, (min-width: 884px) calc((100vw - 104px) / 3), (min-width: 640px) calc((100vw - 84px) / 2), (min-width: 580px) calc((100vw - 60px) / 2), calc(100vw - 40px)";
 const photos = galleryItems.map((g) => {
   const src = safeUrl(g.image);
   if (!src) return null;
@@ -1488,7 +1696,6 @@ if (photos.length) {
   // Smaller WebP copies made by `npm run images` (scripts/image-variants.mjs), when present: the
   // browser picks the one closest to the shown size (one column on phones, up to three of
   // about 286px on wide screens). The link still opens the original file.
-  const GALLERY_SIZES = "(min-width: 960px) 286px, (min-width: 884px) calc((100vw - 104px) / 3), (min-width: 640px) calc((100vw - 84px) / 2), (min-width: 580px) calc((100vw - 60px) / 2), calc(100vw - 40px)";
   const variantSet = (src) => {
     if (!src.startsWith("/images/")) return "";
     const rel = safeDecode(src.split(/[?#]/)[0]);
@@ -1508,13 +1715,13 @@ if (photos.length) {
   };
   const PH_T = htitle("photos", "Photos");
   const body = `<h1>${esc(PH_T)}</h1>
-<p>${hsub("photos") ? inlineMd(hsub("photos")) : `Photos of ${NAME} at university events and on his travels.`}</p>
+<p>${hsub("photos") ? inlineMd(hsub("photos")) : `Photos of ${esc(NAME)} at university events and on ${PRON[1]} travels.`}</p>
 <div class="gallery wide">
 ${photos.map(fig).join("\n")}
 </div>`;
   write("photos/index.html", page({
-    title: `${PH_T} | ${NAME}`, canonical: `${SITE}/photos/`, wide: true,
-    description: metaDesc(`Photos of ${NAME}, PhD researcher at the University of Saskatchewan: ${photos.filter((p) => p.owner).map((p) => p.title).filter(Boolean).join(", ")}.`),
+    title: seoPage("photos", "title") || `${PH_T} | ${NAME}`, canonical: `${SITE}/photos/`, wide: true, ogTitle: seoPage("photos", "ogTitle"),
+    description: metaDesc(seoPage("photos", "description") || `Photos of ${NAME}, PhD researcher at the University of Saskatchewan: ${photos.filter((p) => p.owner).map((p) => p.title).filter(Boolean).join(", ")}.`),
     crumbs: `<p class="crumbs"><a href="/">Home</a> / ${esc(PH_T)}</p>\n`, body,
     jsonld: {
       "@context": "https://schema.org",
@@ -1542,11 +1749,11 @@ if (!existsSync(path.join(DIST, "blog", "index.html"))) {
   const body = `<h1>${esc(stripEmoji(bh.title) || "Blog")}</h1>
 ${stripEmoji(bh.subtitle) ? `<p class="meta">${inlineMd(stripEmoji(bh.subtitle))}</p>` : ""}
 ${blogPosts.length ? blogPosts.map((b) => `<article class="post"><p class="small">${esc(showDate(b.date))}</p><h2><a href="/blog/${esc(postSlug(b))}/">${esc(stripEmoji(b.title))}</a></h2>${str(b.summary) ? `<p>${esc(stripEmoji(b.summary))}</p>` : ""}</article>`).join("\n")
-    : `<p class="empty">Posts coming soon.</p>`}`;
+    : `<p class="empty">${esc(stripEmoji(bh.emptyTitle) || "Posts coming soon")}.</p>`}`;
   write("blog/index.html", page({
-    title: `${stripEmoji(bh.title) || "Blog"} | ${NAME}`, canonical: `${SITE}/blog/`, active: "blog",
+    title: seoPage("blog", "title") || `${stripEmoji(bh.title) || "Blog"} | ${NAME}`, canonical: `${SITE}/blog/`, active: "blog",
     robots: blogPosts.length ? "" : "noindex, follow",
-    description: metaDesc([plainFromMd(stripEmoji(bh.subtitle)), `Posts by ${NAME}, PhD researcher in Computer Science at the University of Saskatchewan.`].filter(Boolean).join(" ")),
+    description: metaDesc(seoPage("blog", "description") || [plainFromMd(stripEmoji(bh.subtitle)), `Posts by ${NAME}, PhD researcher in Computer Science at the University of Saskatchewan.`].filter(Boolean).join(" ")),
     crumbs: `<p class="crumbs"><a href="/">Home</a> / Blog</p>\n`, body,
     jsonld: { "@context": "https://schema.org", "@graph": [websiteNode, personNode(false), breadcrumbLd([["Home", `${SITE}/`], ["Blog", `${SITE}/blog/`]])] },
   }));
@@ -1565,9 +1772,9 @@ ${blogPosts.length ? blogPosts.map((b) => `<article class="post"><p class="small
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Back soon | ${NAME}</title>
+<title>${esc(stripEmoji(isObj(settings.maintenance) ? settings.maintenance.title : "") || "Back soon")} | ${esc(NAME)}</title>
 <meta name="robots" content="noindex">
-<meta name="description" content="The website of ${NAME} is undergoing maintenance.">
+<meta name="description" content="The website of ${esc(NAME)} is undergoing maintenance.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <script>${THEME_JS}</script>
@@ -1579,11 +1786,11 @@ ${blogPosts.length ? blogPosts.map((b) => `<article class="post"><p class="small
 </head>
 <body>
 <main id="main" class="wrap maint">
-<h1>${NAME}</h1>
+<h1>${esc(NAME)}</h1>
 <p class="meta">${esc(NAME_LINE)}</p>
 <p><!--MAINT-MESSAGE-->The site is undergoing maintenance — back soon.<!--/MAINT-MESSAGE--></p>
 <p class="small until"><!--MAINT-UNTIL--><!--/MAINT-UNTIL--></p>
-<ul class="prof" aria-label="Contact and profiles"><li><a href="mailto:${EMAIL}">${icon("email")}<span>${EMAIL}</span></a></li><li>${profileLink(scholar)}</li><li>${profileLink(orcid)}</li></ul>
+<ul class="prof" aria-label="Contact and profiles"><li><a href="mailto:${esc(EMAIL)}">${icon("email")}<span>${esc(EMAIL)}</span></a></li><li>${profileLink(scholar)}</li><li>${profileLink(orcid)}</li></ul>
 </main>
 </body>
 </html>
@@ -1591,10 +1798,13 @@ ${blogPosts.length ? blogPosts.map((b) => `<article class="post"><p class="small
 }
 
 // ---------------------------------------------------------------- 404
+// Texts: admin Sections & Headings -> Page not found (headings.notFound).
+const NF = isObj(headings?.notFound) ? headings.notFound : {};
+const NF_T = stripEmoji(NF.title) || "Page not found";
 write("404.html", page({
-  title: `Page not found | ${NAME}`, description: "This page does not exist.", canonical: "", beacon: false, fonts: [500],
-  body: `<h1>Page not found</h1>
-<p>There is no page at this address. It may have moved.</p>
+  title: `${NF_T} | ${NAME}`, description: stripEmoji(NF.description) || "This page does not exist.", canonical: "", beacon: false, fonts: [500],
+  body: `<h1>${esc(NF_T)}</h1>
+<p>${stripEmoji(NF.text) ? inlineMd(fillTokens(stripEmoji(NF.text))) : "There is no page at this address. It may have moved."}</p>
 <ul class="plain"><li><a href="/">Home</a></li>${FOOTER_PAGES.map(([l, u]) => `<li><a href="${u}">${esc(l)}</a></li>`).join("")}</ul>`,
 }));
 
@@ -1625,15 +1835,15 @@ const software = softwareItems.map((s) => {
 const TOOLS_HEADING = TOOLS_LABEL;
 
 // ---------------------------------------------------------------- llms.txt / llms-full.txt
-const intro = `> ${NAME} (published as Palash Roy, Palash R. Roy and P. R. Roy; ORCID ${ORCID}) is a ${PERSON_DESC}`;
+const intro = `> ${NAME} (${LLMS_AS ? `published as ${LLMS_AS}; ` : ""}ORCID ${ORCID}) is a ${PERSON_DESC}`;
 const eqPapers = pubs.filter((p) => p.authors.some((a) => isOwner(a) && isEqual(p, a)));
 const prose = [
-  `He works in the Software Research Lab (SRLab) and the Interactive Software Engineering and Analytics (iSE) Lab at the University of Saskatchewan, Canada, supervised by Dr. Kevin Schneider.`,
-  eqPapers.length ? `He is co-first author (equal contribution) of ${eqPapers.map((p) => `${shortName(p)} (${p.venueShort}; with ${p.authors.filter((a) => isEqual(p, a) && !isOwner(a)).join(" and ")})`).join(" and of ")}.` : "",
-  `Disambiguation: he is identified by ORCID ${ORCID}, dblp 355/4465, OpenAlex A5058812722 and Semantic Scholar 2051272535. Other researchers named Palash Roy are different people.`,
+  LABS_LINE,
+  eqPapers.length ? `${PRON[0]} ${PRON[2]} co-first author (equal contribution) of ${eqPapers.map((p) => `${shortName(p)} (${p.venueShort}; with ${p.authors.filter((a) => isEqual(p, a) && !isOwner(a)).join(" and ")})`).join(" and of ")}.` : "",
+  DISAMBIGUATION,
   `Each paper below has an HTML page with the abstract and BibTeX and a Markdown version (linked here). Contact: ${EMAIL}.`,
 ].filter(Boolean).join("\n\n");
-const paperLine = (p) => `- [${p.title}](${SITE}/publications/${p.slug}.md): ${p.venueShort}${p.type === "doctoral_symposium" && !/doctoral/i.test(p.venueShort) ? " (Doctoral Symposium)" : ""}.${p.award ? ` ${p.award}.` : ""}${eqSentence(p) ? ` ${eqSentence(p)}` : ""} ${clip(p.problem || p.description || firstSentence(p.abstract), 240)}${p.doi ? ` DOI ${p.doi}.` : ""}${p.arxiv ? ` arXiv ${p.arxiv}.` : ""}${p.handle ? ` Handle ${p.handle}.` : ""}`.replace(/\s+$/, "");
+const paperLine = (p) => `- [${p.title}](${SITE}/publications/${p.slug}.md): ${p.venueShort}${p.type === "doctoral_symposium" && !/doctoral/i.test(p.venueShort) ? " (Doctoral Symposium)" : ""}.${p.award ? ` ${p.award}.` : ""}${eqSentence(p) ? ` ${eqSentence(p)}` : ""}${((c) => (c ? ` ${c}` : ""))(clip(p.problem || p.description || firstSentence(p.abstract), 240))}${p.doi ? ` DOI ${p.doi}.` : ""}${p.arxiv ? ` arXiv ${p.arxiv}.` : ""}${p.handle ? ` Handle ${p.handle}.` : ""}`.replace(/\s+$/, "");
 // Papers grouped by the two umbrella areas, AI for Software Engineering (AI4SE) and Software
 // Engineering for AI (SE4AI); a paper in both is listed under both. Papers in neither go under
 // their first area. Without any tags (an older database copy) the research themes are used.
@@ -1686,7 +1896,7 @@ ${paperSections.join("\n\n")}
 ${software.length ? `\n## ${TOOLS_HEADING}\n\n${software.map(swLine).join("\n")}\n` : ""}${awards.length ? `\n## Awards\n\n${awardLines}\n` : ""}${teachRows.length ? `\n## Teaching and mentoring\n\n${teachRows.map(teachLine).join("\n")}\n` : ""}${talks.length ? `\n## Invited talks\n\n${talks.map(talkLine).join("\n")}\n` : ""}${blogPosts.length ? `\n## Blog\n\n${blogPosts.map(blogLine).join("\n")}\n` : ""}${faqItems.length ? `\n## Research questions\n\n- [Questions this research addresses](${SITE}/faq.md): ${faqItems.map((f) => f.q).join(" ")}\n` : ""}
 ## Profiles
 
-${IDS.map((i) => `- [${i.propertyID}](${i.url}): ${i.value}`).join("\n")}
+${IDS.map((i) => (i.url ? `- [${i.propertyID}](${i.url}): ${i.value}` : `- ${i.propertyID}: ${i.value}`)).join("\n")}
 ${LLMS_PROFILES.map((p) => `- [${p.label}](${p.url})`).join("\n")}
 
 ## Optional
@@ -1715,7 +1925,7 @@ ${software.length ? `\n## ${TOOLS_HEADING}\n\n${software.map((s) => `- ${s.name}
 ].join("\n")}\n` : ""}${nominations.length ? `\n## Nominations\n\n${nominations.map((n) => `- ${stripEmoji(n.title)}: ${stripEmoji(n.description)}`).join("\n")}\n` : ""}${blogPosts.length ? `\n## Blog\n\n${blogPosts.map(blogLine).join("\n")}\n` : ""}${newsRows.length ? `\n## In the news\n\n${newsRows.map((n) => `- [${n.title}](${n.url})${n.publisher ? `, ${n.publisher}` : ""}${n.kind === "article" && n.date ? ` (${n.date})` : n.kind === "profile" ? " (lab profile page)" : ""}`).join("\n")}\n` : ""}${faqItems.length ? `\n## Research questions\n\n${faqItems.map((f) => `### ${f.q}\n\n${mdAbsLinks(f.a)}`).join("\n\n")}\n` : ""}
 ## Profiles
 
-${IDS.map((i) => `- ${i.propertyID}: ${i.url}`).join("\n")}
+${IDS.map((i) => `- ${i.propertyID}: ${i.url || i.value}`).join("\n")}
 ${LLMS_PROFILES.map((p) => `- ${p.label}: ${p.url}`).join("\n")}
 `;
 write("llms-full.txt", llmsFull);
@@ -1743,5 +1953,42 @@ ${urls.map(([u, pr, lm, imgs = []]) => `  <url><loc>${locEsc(u)}</loc>${lm ? `<l
 `);
 // Stale files from older builds that are no longer generated.
 for (const f of ["sitemap-index.xml", "about.html", "_redirects"]) rmSync(path.join(DIST, f), { force: true });
+
+// ---------------------------------------------------------------- dist/_seo (live renderer)
+// Build facts for cpanel-backend/api/seo/ (never served: _seo/.htaccess and the root .htaccess
+// deny it). SEO_API changes only when the PHP renderer and this file stop agreeing on the format.
+{
+  const SEO_API = 1;
+  mkdirSync(path.join(SEO_DIR, "content"), { recursive: true });
+  writeFileSync(path.join(SEO_DIR, ".htaccess"), "# Build metadata for the PHP renderer (api/seo/). Never served.\nRequire all denied\n");
+  const shared = {
+    SITE, NAME: DEFAULT_NAME, ORCID: DEFAULT_ORCID, EMAIL: DEFAULT_EMAIL, IMAGE, IDS: IDS_DEFAULT, EXTRA_SAMEAS, ALT_NAMES: ALT_NAMES_DEFAULT, ORGS, KNOWS_ABOUT, SUMMARY,
+    FALLBACK_THEMES: FALLBACK_THEMES.map((t) => ({ id: t.id, name: t.name, source: t.re.source, flags: t.re.flags })),
+    DEFAULT_TAGS, UMBRELLA_TAGS, MONTHS_LONG, DOC_LABELS, KNOWN_TYPES, TYPE_LABEL, EQ_NOTE,
+    KW_BROAD: [...KW_BROAD], KW_UMBRELLA: [...KW_UMBRELLA], KW_KIND: [...KW_KIND], KW_GENERIC: [...KW_GENERIC], KW_SPECIFIC,
+    CSS, THEME_JS, TOGGLE_JS, PROMPT_JS, FILTER_JS, MENU_ICON, SUN, MOON, ICON_PATHS, ICON_SPECIAL, PLATFORM_LABEL, PLATFORM_ORDER,
+    GALLERY_SIZES, VARIANT_WIDTHS,
+  };
+  const sharedJson = JSON.stringify(shared);
+  writeFileSync(path.join(SEO_DIR, "shared.json"), sharedJson);
+  // Bundled content (what this build used): sections the database does not have fall back to it.
+  for (const f of readdirSync(CONTENT).filter((x) => x.endsWith(".json")).sort()) copyFileSync(path.join(CONTENT, f), path.join(SEO_DIR, "content", f));
+  const blogPostsShells = {};
+  for (const rel of SHELLS) { const m = rel.match(/^blog\/([^/]+)\/index\.html$/); if (m) blogPostsShells[m[1]] = rel; }
+  const count = (rel, re) => (existsSync(path.join(DIST, rel)) ? (readFileSync(path.join(DIST, rel), "utf8").match(re) || []).length : 0);
+  const manifest = {
+    seoApi: SEO_API, builtAt: new Date().toISOString().replace(/\.\d+Z$/, "Z"), visitUrl: VISIT_URL,
+    shells: { home: "index.html", blogIndex: SHELLS.includes("blog/index.html") ? "blog/index.html" : "", blogPosts: blogPostsShells },
+    staticFiles: [...WRITTEN].sort(),
+    checks: {
+      homeLdCount: count("index.html", /<script type="application\/ld\+json">/g),
+      homeHeroWrap: count("index.html", /<div class="hero-photo-wrap">/g),
+      blogLdCount: count("blog/index.html", /<script type="application\/ld\+json">/g),
+    },
+  };
+  manifest.hash = createHash("sha256").update(sharedJson).update(JSON.stringify(manifest))
+    .update(SHELLS.map((r) => readFileSync(path.join(SHELL_DIR, r))).reduce((h, b) => h.update(b), createHash("sha256")).digest("hex")).digest("hex");
+  writeFileSync(path.join(SEO_DIR, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+}
 
 console.log(`  [seo] wrote ${pubs.length} paper pages, publications index, ${faqItems.length ? "FAQ, " : ""}about, ${photos.length ? `photos (${photos.length}), ` : ""}404, maintenance, llms.txt, llms-full.txt, sitemap (${urls.length} URLs)`);

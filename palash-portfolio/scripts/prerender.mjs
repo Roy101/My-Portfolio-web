@@ -150,7 +150,7 @@ await rm(path.join(DIST, "blog"), { recursive: true, force: true });
 await snap("/blog/", path.join(DIST, "blog", "index.html"), `${SITE}/blog/`, posts.length ? "" : "noindex, follow");
 for (const p of posts) {
   const slug = (p.slug && p.slug.trim()) ? p.slug.trim() : slugify(p.title);
-  if (!/^[^/\\?#]+$/.test(slug) || slug === "." || slug === "..") { console.warn(`  skipped blog post with unusable slug "${slug}"`); continue; }
+  if (!/^[^/\\?#\x00-\x1f\x7f]+$/.test(slug) || slug === "." || slug === "..") { console.warn(`  skipped blog post with unusable slug "${slug}"`); continue; }
   await snap(`/blog/${encodeURIComponent(slug)}/`, path.join(DIST, "blog", slug, "index.html"), `${SITE}/blog/${encodeURIComponent(slug)}/`);
 }
 console.log(`  prerendered blog: /blog${posts.length ? ` + ${posts.length} post(s)` : " (no published posts: empty state, noindex)"}`);

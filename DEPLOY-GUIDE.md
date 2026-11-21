@@ -1,3 +1,5 @@
+> **SUPERSEDED (Nov 2026):** this GitHub-based guide is out of date; see `cpanel-backend/SETUP.md` and `~/Desktop/Portfolio/rollback-2026-11/UPDATE-LIVE-SITE.md` (content is now edited in /admin and goes live on save, no GitHub or rebuild).
+
 # Deploy Guide — palashroy.me
 
 ## The mental model (what connects to what)

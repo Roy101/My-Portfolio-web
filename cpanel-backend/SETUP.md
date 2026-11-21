@@ -4,7 +4,13 @@ You upload **two things** into `public_html`:
 1. **The website** (the React build zip) — the pages visitors see.
 2. **The backend** (this `cpanel-backend` folder) — the database API + `/admin` editor.
 
-After this, you edit content at **palashroy.me/admin** and it goes live within a minute — no rebuild, no re-upload.
+After this, you edit content at **palashroy.me/admin** and it goes live as soon as you save: every public page,
+`sitemap.xml`, `llms.txt`, `llms-full.txt`, the Markdown copies and the search data (JSON-LD) are made from the
+database on the server (`api/seo/`, see "Live public pages" below). No rebuild, no re-upload, no GitHub.
+A new website build is needed only for design or code changes.
+
+The owner's step-by-step lists are `UPDATE-LIVE-SITE.md` (numbered checklist; Phase P = everyday updates)
+and `DEPLOY-STEPS.md` (background), kept in `~/Desktop/Portfolio/rollback-2026-11/`.
 
 ---
 
@@ -19,9 +25,14 @@ After this, you edit content at **palashroy.me/admin** and it goes live within a
 ## STEP 2 — Upload the backend files
 1. cPanel → **File Manager** → `public_html`.
 2. Upload these from `cpanel-backend/` into `public_html` (keep the folders):
-   - `api/`  (contains content.php, db.php, config.sample.php, .htaccess)
-   - `admin/`  (contains index.php)
+   - `api/`  (content.php, db.php, contact.php, visit*.php, tzcountry.php, countrynames.php, metrics*.php,
+     config.sample.php, .htaccess, `cache/.htaccess`, and `seo/`, the live public pages: serve.php, cli.php,
+     VERSION.php, .htaccess and `lib/`)
+   - `admin/`  (index.php, upload.php, captcha.php, fetchtitle.php, `migrations/`)
+   - `uploads/.htaccess`
    - `create-admin.php`
+   - The exact zip command (37 entries) is in `UPDATE-LIVE-SITE.md`, Phase B. Upload the backend and the
+     website from the same release: the admin refuses to mix them and serves the static pages until they match.
    - *(you do NOT need to upload `schema.sql` — it was only for the import; don't leave it on the server)*
 3. In `public_html/api/`, **copy `config.sample.php` → `config.php`** and edit `config.php` with the
    database name / user / password from Step 1. Save.
@@ -36,24 +47,28 @@ After this, you edit content at **palashroy.me/admin** and it goes live within a
    admin exists, so it can't be abused.) If it's still listed in File Manager afterward, delete it.
 
 ## STEP 4 — Upload the website
-1. Extract the website zip (`palashroy-cpanel.zip`) into `public_html` (index.html, assets/, images/, papers/, .htaccess…).
+1. Extract the website zip (`site.zip`, made from `palash-portfolio/dist/`) into `public_html` (index.html, assets/,
+   images/, papers/, .htaccess, and `_seo/`, the page templates the live pages need; never served).
    Let it overwrite older site files. Keep your new `api/` and `admin/` folders.
 2. Visit **https://palashroy.me** — the site loads and now pulls its content from the database.
+3. In **/admin → Site → Public pages & SEO** the status reads "Live: pages are made from the database." 
 
 ## STEP 5 — Use it
 - Go to **https://palashroy.me/admin** → log in.
-- Edit Publications, Achievements, News, In the News, Pictures, Leadership, Service, References.
-- Click **Save** on a section → live within ~1 minute (the site caches content for 60s).
+- Edit Publications, Awards & Honors, News & Milestones, In the News, Photos, Documents, Blog Posts, FAQ,
+  Leadership, Academic Service, Identity, Home / Hero, Site Settings and the rest.
+- Click **Save** on a section → live at once (pages, sitemap, llms files, `.md` copies and search data).
 
 ---
 
 ## Notes
-- **Pictures:** to add a new photo, upload the image via File Manager into `public_html/images/…`, then in
-  `/admin → Pictures` add an item and set its **image** field to that path (e.g. `/images/my-photo.jpg`).
+- **Photos:** `/admin → Photos` → **+ Add Photo** → upload the image (JPG, PNG, WebP or GIF, up to 8 MB; it is
+  stored in `public_html/uploads/` with GPS, camera and comment metadata removed) → alt text and caption →
+  **Save Photos**. It appears on `/photos/` and in the image sitemap at once. A path to a file you placed in
+  `public_html/images/` yourself also works.
 - **Citation metrics:** see "Citation metrics (OpenAlex, updated daily)" below.
-- **Structured data (SEO):** the prerendered HTML + JSON-LD reflect the content as of the last website build.
-  New items you add via /admin show to visitors and Google immediately; to also refresh the JSON-LD, rebuild
-  the site occasionally (or ask me to).
+- **Structured data (SEO):** the JSON-LD on every page is made from the database at request time (cached), so
+  a new paper, award or post is in the search data as soon as you save. See "Live public pages" below.
 
 See **SECURITY.md** for the security checklist.
 
@@ -76,7 +91,7 @@ the new design shows your old database text.
    new one. Changes to fields you have edited yourself are marked **you edited this** and are left
    unticked; tick them only if you want the new text. Untick anything you want to keep.
 5. Click **Download backup, then apply …** and confirm. A second backup downloads automatically,
-   then each changed section is saved through the normal admin save. The site updates within a minute.
+   then each changed section is saved through the normal admin save. The site updates at once.
 6. If something looks wrong, use **Restore from a backup file** on the same page with the backup
    from step 3 (you can restore single sections).
 
@@ -150,7 +165,7 @@ coverage of you (`subjectOf`), never as your own profiles.
    yet: **2026-11 redesign** → **2026-11 round 2** → **2026-11 round 3** → **2026-11 round 4**
    (**Preview changes** → apply, each once). A backup downloads first. Round 4 only fills the list when
    it is empty, and running it twice changes nothing.
-3. Rebuild and upload the website (the `/about/` page and the search data are generated at build time).
+3. Nothing to rebuild: `/about/` and the search data update as soon as the update is applied.
    To add a later article, use **Biography → In the news**: the headline exactly as on the page, the
    link, the publisher and the date (YYYY-MM-DD); choose "Lab profile page" for people/team pages.
 
@@ -187,6 +202,37 @@ The admin's own limit is 20 MB per PDF (8 MB per image), but the server's PHP li
 `upload_max_filesize` and `post_max_size` (often 2 to 64 MB on cPanel). If an upload says "File too
 large for this server", raise both in **cPanel → MultiPHP INI Editor** (see "Slides and videos for
 papers" above) or use a smaller file.
+
+Rows are shown in the order of the list (↑/↓), and each row has a **Hide** box (hidden documents
+appear nowhere on the site, in llms.txt or in `/api/content.php`; the uploaded file itself stays reachable at
+its own link, so delete it from `public_html/uploads/` too if it must disappear). Kinds: CV, Résumé, research, teaching, EDI and diversity
+statements, teaching portfolio, publication list, cover letter, or **Other** with any label. To
+replace a file, click **Upload PDF** again on that row and save: the new file gets a new address, so
+the year-long browser cache never shows the old copy.
+
+## Identity, profile photo and page titles (no code needed)
+
+- **/admin → Identity** holds your name, other spellings, "Published as", ORCID, public email, job
+  title, summary, labs sentence, scholarly IDs (ORCID, dblp, OpenAlex, …) and organisations. Every
+  page, the JSON-LD, llms.txt, the sharing previews, the contact-form error text and the OpenAlex
+  metrics (ORCID) use them. Until you save it, the built-in values are used.
+- **/admin → Home / Hero → Upload new profile photo** (JPG, PNG or WebP, up to 15 MB). The server
+  checks the file is an image, crops it to a centred square and, with the PHP **GD** extension,
+  writes WebP copies of 200/240/480/640 px and a 1200 px JPEG (og:image), all with content-hashed
+  names. Without GD the original is stored in one size and the admin says so; enable GD in
+  **cPanel → Select PHP Version → Extensions → gd** for the fast version. GD is detected at upload time
+  (including WebP support); the largest photo it will resize follows the server's `memory_limit`, and EXIF
+  rotation is applied after scaling, so the exif extension is not needed. Larger photos are stored as they
+  are. Location, camera and comment metadata are removed from JPEG, PNG and WebP uploads with or without GD
+  (a JPEG keeps its orientation).
+- After a new photo, link previews of the homepage, `/blog/` and posts without a cover use it, and the
+  search data lists only that photo.
+- **/admin → Site Settings → Search & sharing**: homepage title/description/sharing image, and the
+  title and description of /publications/, /faq/, /about/, /photos/ and /blog/, the WebSite
+  description and the "knowsAbout" topics. Empty fields keep the built-in text.
+- **Sections & Headings** also has the 404 page texts, the /publications/ intro, the empty-blog
+  texts, the contact-form thank-you text and the "All awards" link; **Footer** has the CV link
+  labels and a `{year}` placeholder for the copyright line; **Maintenance** has the page title.
 
 ## Maintenance mode
 
@@ -275,13 +321,87 @@ Files: `api/metrics.php`, `api/metricslib.php` (blocked from direct access) and 
 (normal on cPanel; if not, a private folder in the system temp directory is used). The request to
 OpenAlex uses cURL (5 s timeout) or, without cURL, `allow_url_fopen`, and sends no personal data.
 `api/content.php` reports whether `metrics.php` exists (`_metrics`), so an older backend never gets
-these requests. The prerendered homepage HTML (what search engines read first) keeps the numbers
-from the last build until the live ones arrive.
+these requests. The homepage HTML that search engines read first is the admin's last homepage snapshot
+(see "When changes appear"), so its numbers can lag slightly behind the live ones.
 
 ## When changes appear
 
-The homepage and blog read the database, so edits show within about a minute. Generated pages
-(`/publications/`, each paper page, `/faq/`, `/photos/`, `/about/`, the static blog pages,
-`llms.txt`, `llms-full.txt` and `sitemap.xml`) are built from the content at build time: rebuild
-(`npm run build`) and upload `dist/` to refresh them after editing papers (including tags, slides,
-videos and co-first authors), the FAQ, photos, socials, Tools & Benchmarks or your biography.
+Right after you save in the admin. `api/seo/` renders every public page from the database: the homepage
+head and search data, `/publications/` and each paper page (with `cite.bib` and the `.md` copy),
+`/publications.md`, `/faq/` and `/faq.md`, `/about/`, `/photos/`, `/blog/` and each post, `sitemap.xml`,
+`llms.txt` and `llms-full.txt`. The pages are kept ready in a cache (`api/cache/seo/`) that each save
+refreshes, so the next visitor gets them at once. An edit made directly in phpMyAdmin shows within 30 seconds.
+HTML pages are sent with `max-age=0`; `sitemap.xml`, `llms.txt`, `llms-full.txt` and the `.md` files with
+`max-age=3600`, so a browser that opened one of those in the last hour may need **Ctrl+Shift+R** (crawlers
+fetch fresh copies). Search Console needs no action after an edit: Google rereads `sitemap.xml` by itself.
+For a new paper, **URL Inspection → Request indexing** on its page is optional and only speeds things up.
+
+A new paper gets its page at `/publications/<slug>/` and a sitemap entry with that day's date; a new
+post gets `/blog/<slug>/`; a draft post has a preview page that search engines are told not to index.
+A deleted paper's address answers 404. A paper or post saved without a slug gets one from its title on
+the first save (shown in the slug field), so fixing a typo in the title later does not move the page; if
+you change a slug yourself, the old address redirects (301) to the new one. A paper without a DOI or arXiv
+id yet (an accepted paper) is saved with a note; one that the website build would refuse (no title, venue
+or year, a malformed DOI, a duplicate slug, ...) is **not saved**: the admin lists what to fix.
+
+**Homepage text for search engines and readers without JavaScript.** The homepage is drawn by the React
+app, which PHP cannot reproduce. So after every save the admin page renders the homepage in a hidden frame
+in your browser (as the build does) and sends it to the server, which serves it until the next change
+(admin → Public pages & SEO shows whether it is up to date, with an **Update homepage text now** button).
+Keep the admin open a few seconds after saving. An edit made directly in phpMyAdmin is picked up the next
+time you open the admin; until then those readers get the previous text (visitors with JavaScript always
+see the newest content).
+
+Only design or code changes need a new website build: React/UI changes, WebP size variants for new files
+under `/images/` (`npm run images`; uploads have none), and new page types. Replacing or deleting a file
+over FTP or File Manager (a PDF, an image) is not a content change: the pages pick it up at the next save,
+or at once with **Rebuild cache now**.
+
+## Live public pages (api/seo/)
+
+Requirements: PHP 7.4 or newer (8.1+ recommended; the page output is tested to be identical to the
+build's on PHP 7.4, 8.0 and 8.2) with the mbstring, ctype and json extensions (standard on cPanel; the
+admin's Public pages & SEO panel says when one is missing, and the build's static copies are served then).
+`api/cache/` must be writable by PHP; a folder in the system temp directory is used only when it belongs
+to your account and nobody else can read it (otherwise the static copies are served).
+
+How it works: `.htaccess` (rule 3b) sends the generated URLs to `api/seo/serve.php`: `/`, `/publications/`,
+`/publications/<slug>/` and its `cite.bib`, `/publications/<slug>.md`, `/publications.md`, `/faq/`, `/faq.md`,
+`/about/`, `/photos/`, `/blog/`, `/blog/<slug>/`, `/sitemap.xml`, `/llms.txt`, `/llms-full.txt`. Rule 3b is
+skipped when `/.seo-static` exists or `api/seo/serve.php` is missing; maintenance mode (503) is checked before
+it, and every other file (assets, papers, uploads, images, 404.html, maintenance.html) is served by Apache as
+before. `serve.php` answers 200, 301 (trailing slash, or a slug that was changed), 304 or a real 404; a direct
+request to `/api/seo/serve.php` is 404, and `api/seo/.htaccess` denies everything else in that folder. It
+serves the cached page for the current content version, or renders all pages once (about 100 ms) when the
+content changed. It never writes to the database.
+
+Cache folder: `api/cache/seo/` (created by PHP, mode 0755; never served: `api/cache/.htaccess` and
+`api/.htaccess` block it). It holds the rendered versions, `errors.log` and `render-failed.json` (a failed
+render is not retried for 300 s; visitors get the previous version meanwhile, and the admin switches to a
+new version only once it is fully rendered). Deleting the folder is safe: it is rebuilt on the next request.
+The admin keeps item dates and the homepage snapshot in the `content` rows `_private_seo` and
+`_private_home`; they are not in `ALLOWED_SECTIONS`, so `/api/content.php` never returns them. Do not edit or
+delete them by hand. The website build (`dist/_seo/`, never served) brings the page
+shells, the shared styles and scripts and `manifest.json`; upload it with the rest of the website.
+
+If the database is down, the pages already in the cache are served. With no cache either, the copies
+from the last website build are served (they are still uploaded, as before), and a page added after
+that build answers 503 "try again later" (search engines keep it). Invalid content written directly in
+phpMyAdmin keeps the last good version online.
+
+Admin → **Site → Public pages & SEO** shows the status, links to all generated files, notes on the
+content (for example a paper without an abstract), a **Rebuild cache now** button and an **emergency
+switch**: it creates the empty file `/.seo-static`, after which Apache serves the last uploaded build's
+copies exactly as before this feature. You can also create that file yourself in File Manager (for
+example if pages ever show errors); delete it to go back to live pages. Not uploading `api/seo/` has the
+same effect.
+
+`404.html` and `maintenance.html` stay plain files for Apache (unknown addresses and maintenance mode);
+the admin rewrites them after each save so their menus and footers match, keeping your maintenance message.
+
+Optional, in `config.php`: `'seo_block_title_sha256' => ['<sha256 of a lower-case title with only a-z0-9>', …]`
+refuses to publish papers with those titles (a guard for work under review; the titles never appear on
+the server in plain text). The admin checks it on every save of Publications, even when `api/seo/` or the
+website build is missing, and `api/content.php` never sends such a paper. Test-only switches (never on
+the live site): `seo_test_db_down`, `seo_force_fail`, `seo_debug_header` (adds `X-SEO-Cache: hit|miss|stale|static`
+to public pages; off by default because it would show anyone when the database is down).

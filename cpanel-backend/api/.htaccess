@@ -5,7 +5,7 @@
 Options -Indexes
 # Server-side cache (api/cache/metrics.json and its lock file): never served.
 RedirectMatch 404 ^/api/cache(/|$)
-# Every endpoint here sets its own Cache-Control (content.php: 60 seconds; visit.php and
+# Every endpoint here sets its own Cache-Control (content.php: no-cache + ETag; seo/serve.php: per page; visit.php and
 # metrics.php: up to 1 hour). Without this, the site-wide mod_expires rule for JSON would
 # append a second, contradictory "max-age=0" to those headers.
 <IfModule mod_expires.c>

@@ -1,0 +1,17 @@
+# Live SEO renderer. Only serve.php is reachable (through the root .htaccess rewrite of the public
+# URLs; it answers 404 to a direct request). lib/, cli.php and VERSION.php are never served.
+Options -Indexes
+<IfModule mod_authz_core.c>
+  Require all denied
+  <Files "serve.php">
+    Require all granted
+  </Files>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+  <Files "serve.php">
+    Order deny,allow
+    Allow from all
+  </Files>
+</IfModule>

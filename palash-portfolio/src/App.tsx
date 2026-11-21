@@ -89,10 +89,29 @@ const defaultLeadership: LeadershipRole[] = (leadershipDataRaw as any).items as 
 const defaultService: ServiceItem[] = (serviceDataRaw as any).items as ServiceItem[];
 const defaultHighlights: HighlightItem[] = (highlightsDataRaw as any).items as HighlightItem[];
 
-const OWNER_NAME = "Palash Ranjan Roy";
-const OWNER_ORCID = "0000-0001-9470-4233";
-const PUBLIC_EMAIL = "palash.roy@usask.ca";
 const DEFAULT_TITLE_LINE = "PhD Researcher in Computer Science · University of Saskatchewan";
+
+// Owner identity (admin: Identity; same fallbacks as scripts/generate-seo.mjs). `ID` is set from
+// the content at the top of App's render, before any component that reads it renders.
+type Identity = { name: string; orcid: string; email: string; publishedAs: string; names: string[] };
+const ID_DEFAULT: Identity = { name: "Palash Ranjan Roy", orcid: "0000-0001-9470-4233", email: "palash.roy@usask.ca", publishedAs: "Palash Roy / Palash R. Roy", names: [] };
+let ID: Identity = ID_DEFAULT;
+// CV link labels (admin: Footer -> CV link labels), set with ID.
+let CV_LABELS = { nav: "CV", footer: "" };
+const idStr = (v: any) => (typeof v === "string" ? noEmoji(v) : "");
+const validEmail = (e: string) => (/^[^\s@<>"'&]+@[^\s@<>"'&]+\.[^\s@<>"'&]+$/.test(e) ? e : "");
+function resolveIdentity(identity: any, footer: any, consultation: any): Identity {
+  const i = identity && typeof identity === "object" && !Array.isArray(identity) ? identity : {};
+  const orcid = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(idStr(i.orcid)) ? idStr(i.orcid) : ID_DEFAULT.orcid;
+  const name = idStr(i.name) || ID_DEFAULT.name;
+  const alt = Array.isArray(i.alternateNames) ? i.alternateNames.map(idStr).filter(Boolean) : [];
+  return {
+    name, orcid,
+    email: validEmail(idStr(i.email)) || validEmail(idStr(footer?.email)) || validEmail(idStr(consultation?.email)) || ID_DEFAULT.email,
+    publishedAs: i.showPublishedAs === false ? "" : idStr(i.publishedAs) || ID_DEFAULT.publishedAs,
+    names: name === ID_DEFAULT.name && !alt.length ? [] : [name, ...alt],
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Small text helpers
@@ -162,7 +181,7 @@ function fmtMonthYear(d?: string): string {
 // as-is, auto-prepend https:// to a bare domain (e.g. srlab.usask.ca), else reject.
 function normUrl(u: string): string | null {
   const t = String(u || "").trim();
-  if (/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(t)) return t;
+  if (/^(https?:\/\/|mailto:|tel:|\/(?![/\\])|#)/i.test(t)) return t; // "/x" yes; "//x" and "/\\x" (another host) no
   if (/^[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(t)) return "https://" + t;
   return null;
 }
@@ -365,12 +384,20 @@ function renderMarkdown(md: string): React.ReactNode {
 // Stored values: "light" | "dark" | "system" ("system" = follow the OS, and
 // also records that the first-visit prompt was answered or closed).
 type ThemePref = Theme | "system";
+// Homepage snapshot for visitors without JavaScript: after a save, the admin loads "/" in a hidden
+// frame named "seo-home-snapshot", waits for the "seo-home-snapshot" message and stores the rendered
+// page (cpanel-backend/api/seo/, action seo_home_snapshot). In that frame the page renders as the
+// build's prerender does: its theme state, no theme prompt, no visit count, no visitor line, fresh content.
+const SNAPSHOT = typeof window !== "undefined" && window.name === "seo-home-snapshot";
 const systemTheme = (): Theme =>
   (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
 function readThemePref(): string | null {
   try { return window.localStorage.getItem("theme"); } catch { return null; }
 }
 function initialTheme(): Theme {
+  // Snapshot: the same theme state as the build's prerendered page (read from its toggle before React
+  // replaces it), so the stored page differs from the build's only where the content changed.
+  if (SNAPSHOT) return /light/i.test(document.getElementById("theme-toggle")?.getAttribute("aria-label") || "") ? "dark" : "light";
   if (typeof document !== "undefined") {
     const t = document.documentElement.dataset.theme;
     if (t === "light" || t === "dark") return t;
@@ -386,7 +413,7 @@ function useTheme(): { theme: Theme; pref: ThemePref; toggle: () => void; choose
   useEffect(() => { document.documentElement.setAttribute("data-theme", theme); }, [theme]);
   // Follow OS changes while the visitor has not picked light or dark.
   useEffect(() => {
-    if (!window.matchMedia) return;
+    if (!window.matchMedia || SNAPSHOT) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
       const saved = readThemePref();
@@ -437,7 +464,7 @@ function ThemePrompt({ pref, onChoose, enabled }: { pref: ThemePref; onChoose: (
     if (boxRef.current && boxRef.current.contains(document.activeElement)) document.getElementById("theme-toggle")?.focus();
   };
   useEffect(() => {
-    if (!enabled || typeof window === "undefined") return;
+    if (!enabled || typeof window === "undefined" || SNAPSHOT) return;
     if ((navigator as any).webdriver) return;
     if (readThemePref() !== null) return;
     let timer = 0, ready = false, done = false;
@@ -542,7 +569,7 @@ function MobileDrawer({ links, extra, extraLabel, onClose, cvUrl, activeId, curr
             </>
           )}
         </nav>
-        {cvUrl && <a href={cvUrl} className="btn btn-solid mt-6 w-full" {...extProps(cvUrl)} onClick={onClose}>CV (PDF)</a>}
+        {cvUrl && <a href={cvUrl} className="btn btn-solid mt-6 w-full" {...extProps(cvUrl)} onClick={onClose}>{cvFooterLabel(cvUrl)}</a>}
       </div>
     </>, document.body);
 }
@@ -558,7 +585,7 @@ function SiteNav({ links, extra, extraLabel, theme, onToggleTheme, cvUrl, homeHr
   return (
     <header className="site-nav">
       <div className="wrap flex items-center justify-between gap-4" style={{ minHeight: 60 }}>
-        <a href={homeHref} className="wordmark font-serif-display inline-flex items-center min-h-[44px] text-[19px] text-[var(--c-text)] hover:no-underline hover:text-[var(--c-accent)] whitespace-nowrap">{OWNER_NAME}</a>
+        <a href={homeHref} className="wordmark font-serif-display inline-flex items-center min-h-[44px] text-[19px] text-[var(--c-text)] hover:no-underline hover:text-[var(--c-accent)] whitespace-nowrap">{ID.name}</a>
         <nav aria-label="Primary" className="hidden md:flex items-center gap-6">
           {links.map((l) => (
             <a key={l.href} href={l.href} className="nav-link"
@@ -566,7 +593,7 @@ function SiteNav({ links, extra, extraLabel, theme, onToggleTheme, cvUrl, homeHr
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          {cvUrl && <a href={cvUrl} className="btn btn-solid nav-cv" style={{ padding: "0 14px" }} {...extProps(cvUrl)}>CV</a>}
+          {cvUrl && <a href={cvUrl} className="btn btn-solid nav-cv" style={{ padding: "0 14px" }} {...extProps(cvUrl)}>{CV_LABELS.nav}</a>}
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button ref={btnRef} type="button" className="menu-btn md:hidden" aria-expanded={open} aria-controls="mobile-menu" onClick={() => setOpen(true)}>
             <svg className="menu-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
@@ -756,9 +783,13 @@ function pubVenueShort(p: Publication): string {
   return m ? `${m[1]} ${p.year || ""}`.trim() : String(p.year || "");
 }
 
-// Bold the owner's name inside an author string, keeping everything else as text.
-const OWNER_RE = /(Palash\s+Ranjan\s+Roy|Palash\s+R\.?\s+Roy|Palash\s+Roy|P\.\s*R\.\s*Roy|P\.\s*Roy|Roy,\s*P(?:alash)?\.?(?:\s*R(?:anjan)?\.?)?)/g;
-const OWNER_ONE = new RegExp(`^(?:${OWNER_RE.source})$`);
+// Bold the owner's name inside an author string, keeping everything else as text. The admin's
+// name and name variants (Identity) are matched too, with flexible spaces and optional dots.
+const OWNER_SRC = "Palash\\s+Ranjan\\s+Roy|Palash\\s+R\\.?\\s+Roy|Palash\\s+Roy|P\\.\\s*R\\.\\s*Roy|P\\.\\s*Roy|Roy,\\s*P(?:alash)?\\.?(?:\\s*R(?:anjan)?\\.?)?";
+const ownerSrc = () => [...ID.names.filter((n) => /\S/.test(n)).sort((a, b) => b.length - a.length)
+  .map((n) => n.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\./g, "\\.?").replace(/\s+/g, "\\s+")), OWNER_SRC].join("|");
+const ownerRe = () => new RegExp(`(${ownerSrc()})`, "g");
+const ownerOne = (n: string) => new RegExp(`^(?:${ownerSrc()})$`).test(n);
 function AuthorLine({ authors, item }: { authors: string; item?: Publication }) {
   const eq = item ? equalContribution(item) : new Set<string>();
   if (item && eq.size) {
@@ -772,14 +803,14 @@ function AuthorLine({ authors, item }: { authors: string; item?: Publication }) 
           return (
             <React.Fragment key={i}>
               {i > 0 && ", "}
-              {OWNER_ONE.test(n) ? <strong>{n}{mark}</strong> : <>{n}{mark}</>}
+              {ownerOne(n) ? <strong>{n}{mark}</strong> : <>{n}{mark}</>}
             </React.Fragment>
           );
         })}
       </>
     );
   }
-  const parts = authors.split(OWNER_RE);
+  const parts = authors.split(ownerRe());
   return <>{parts.map((s, i) => (i % 2 === 1 ? <strong key={i}>{s}</strong> : <React.Fragment key={i}>{s}</React.Fragment>))}</>;
 }
 function EqualNote({ item }: { item: Publication }) {
@@ -1488,7 +1519,7 @@ function RoleRows({ rows }: { rows: RoleRow[] }) {
 // ---------------------------------------------------------------------------
 // Contact
 // ---------------------------------------------------------------------------
-function ContactForm() {
+function ContactForm({ successText }: { successText?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [err, setErr] = useState("");
   // Per-field errors, shown under the field and tied to it with aria-describedby.
@@ -1515,8 +1546,8 @@ function ContactForm() {
       const r = await fetch("/api/contact.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
       const j = await r.json();
       if (j.ok) { setStatus("ok"); f.reset(); }
-      else { setStatus("error"); setErr(j.error || `Something went wrong. Please try again, or email ${PUBLIC_EMAIL}.`); }
-    } catch { setStatus("error"); setErr(`Network error. Please try again, or email ${PUBLIC_EMAIL}.`); }
+      else { setStatus("error"); setErr(j.error || `Something went wrong. Please try again, or email ${ID.email}.`); }
+    } catch { setStatus("error"); setErr(`Network error. Please try again, or email ${ID.email}.`); }
   };
   // Clear a field's error once it is fixed (checked when the visitor leaves the field).
   const onBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -1555,7 +1586,7 @@ function ContactForm() {
           {status === "sending" ? "Sending…" : "Send message"}
         </button>
         <span role="status" aria-live="polite" className="small">
-          {status === "ok" && <span style={{ color: "var(--c-ok)" }}>Thank you. Your message has been sent.</span>}
+          {status === "ok" && <span style={{ color: "var(--c-ok)" }}>{successText || "Thank you. Your message has been sent."}</span>}
           {status === "error" && <span style={{ color: "var(--c-error)" }}>{err}</span>}
         </span>
       </div>
@@ -1674,8 +1705,10 @@ function TextLinks({ items, className, label }: { items: { label: string; url: s
 // Documents (CV, research/teaching statements ...). Only entries with a URL render.
 // ---------------------------------------------------------------------------
 type Doc = { label: string; url: string; kind: string };
-const DOC_ORDER = ["cv", "resume", "research_statement", "teaching_statement", "diversity_statement", "other"];
-const DOC_LABEL: Record<string, string> = { cv: "CV", resume: "Résumé", research_statement: "Research Statement", teaching_statement: "Teaching Statement", diversity_statement: "Diversity Statement", other: "Document" };
+const DOC_LABEL: Record<string, string> = { cv: "CV", resume: "Résumé", research_statement: "Research Statement", teaching_statement: "Teaching Statement", diversity_statement: "Diversity Statement",
+  edi_statement: "EDI Statement", publication_list: "Publication List", teaching_portfolio: "Teaching Portfolio", cover_letter: "Cover Letter", other: "Document" };
+// "CV (PDF)" for a PDF, else "CV"; the admin's label wins.
+const cvFooterLabel = (url?: string) => CV_LABELS.footer || (!url || isPdfUrl(url) ? "CV (PDF)" : "CV");
 function readDocuments(raw: any, resumeUrl: any): Doc[] {
   const docs: Doc[] = listOf(raw).filter((d) => d && d.url && normUrl(String(d.url)) && !isTrue(d.hidden)).map((d) => {
     const kind = String(d.kind || "other").toLowerCase();
@@ -1683,10 +1716,8 @@ function readDocuments(raw: any, resumeUrl: any): Doc[] {
   });
   const legacy = resumeUrl && normUrl(String(resumeUrl));
   if (legacy && !docs.some((d) => d.kind === "cv")) docs.unshift({ kind: "cv", label: "CV", url: legacy });
-  return docs.sort((a, b) => {
-    const ia = DOC_ORDER.indexOf(a.kind), ib = DOC_ORDER.indexOf(b.kind);
-    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-  });
+  // The admin's order (Documents panel, up/down buttons); the first one is the solid button.
+  return docs;
 }
 function DocumentButtons({ docs, className }: { docs: Doc[]; className?: string }) {
   if (!docs.length) return null;
@@ -1771,14 +1802,15 @@ function SiteFooter({ footer, email, cvUrl, profiles, siteLinks, onPage, onPageL
   visitorLine?: string | null;
 }) {
   const year = new Date().getFullYear();
-  const copyright = noEmoji(footer?.copyright) || `© ${year} ${OWNER_NAME}`;
+  // {year} is always the current year, {name} the owner's name (admin: Footer -> Copyright line).
+  const copyright = noEmoji(footer?.copyright).replace(/\{(year|name)\}/g, (_, k) => (k === "year" ? String(year) : ID.name)) || `© ${year} ${ID.name}`;
   return (
     <footer className="site-footer border-t border-[var(--c-border)] mt-16 md:mt-24">
       <div className="wrap py-10 small muted">
         <div className="flex flex-wrap items-center gap-x-5">
-          <span className="font-serif-display text-[17px] text-[var(--c-text)] mr-1">{noEmoji(footer?.name) || OWNER_NAME}</span>
+          <span className="font-serif-display text-[17px] text-[var(--c-text)] mr-1">{noEmoji(footer?.name) || ID.name}</span>
           <a href={`mailto:${email}`} className="inline-flex items-center min-h-[44px]">{email}</a>
-          {cvUrl && <a href={cvUrl} {...extProps(cvUrl)} className="inline-flex items-center min-h-[44px]">CV (PDF)</a>}
+          {cvUrl && <a href={cvUrl} {...extProps(cvUrl)} className="inline-flex items-center min-h-[44px]">{cvFooterLabel(cvUrl)}</a>}
         </div>
         {footer?.showSocials !== false && profiles.length > 0 && <ProfileLinks items={profiles} compact />}
         <nav aria-label="Site" className="mt-3 pt-3 border-t border-[var(--c-border)]">
@@ -1871,12 +1903,14 @@ function PostList({ posts, headingLevel = 2 }: { posts: BlogPost[]; headingLevel
   );
 }
 
-function BlogIndex({ posts, head }: { posts: BlogPost[]; head?: any }) {
+function BlogIndex({ posts, head, seo }: { posts: BlogPost[]; head?: any; seo?: any }) {
   const title = noEmoji(head?.title) || "Blog";
   const subtitle = head?.subtitle ?? "Research notes and paper walkthroughs.";
+  // Search & sharing overrides (admin: Site Settings -> Search & sharing -> Blog page).
+  const seoTitle = idStr(seo?.title), seoDesc = idStr(seo?.description);
   useEffect(() => {
-    setPageHead({ title: `${title} | ${OWNER_NAME}`, path: "/blog/", description: clipDesc([noEmoji(String(subtitle || "")).replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").trim(), `Posts by ${OWNER_NAME}, PhD researcher in Computer Science at the University of Saskatchewan.`].filter(Boolean).join(" ")), noindex: !posts.some((p) => !isDraft(p)) });
-  }, [title, subtitle, posts]);
+    setPageHead({ title: seoTitle || `${title} | ${ID.name}`, path: "/blog/", description: clipDesc(seoDesc || [noEmoji(String(subtitle || "")).replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").trim(), `Posts by ${ID.name}, PhD researcher in Computer Science at the University of Saskatchewan.`].filter(Boolean).join(" ")), noindex: !posts.some((p) => !isDraft(p)) });
+  }, [title, subtitle, posts, seoTitle, seoDesc]);
   return (
     <>
       <header className="mb-8">
@@ -1885,8 +1919,8 @@ function BlogIndex({ posts, head }: { posts: BlogPost[]; head?: any }) {
       </header>
       {posts.length === 0 ? (
         <div className="empty-state" role="status">
-          <h2 className="text-[19px] font-semibold m-0">Posts coming soon</h2>
-          <p className="muted mt-2 mb-0">There are no posts yet. Meanwhile, the <a href="/publications/">publications</a> and the <a href="/faq/">research FAQ</a> cover the work so far.</p>
+          <h2 className="text-[19px] font-semibold m-0">{noEmoji(head?.emptyTitle) || "Posts coming soon"}</h2>
+          <p className="muted mt-2 mb-0">{noEmoji(head?.emptyText) ? rich(noEmoji(head.emptyText)) : <>There are no posts yet. Meanwhile, the <a href="/publications/">publications</a> and the <a href="/faq/">research FAQ</a> cover the work so far.</>}</p>
         </div>
       ) : (
         <PostList posts={posts} />
@@ -1896,7 +1930,7 @@ function BlogIndex({ posts, head }: { posts: BlogPost[]; head?: any }) {
 }
 function BlogPostView({ post }: { post: BlogPost }) {
   useEffect(() => {
-    if (post?.title) setPageHead({ title: `${post.title} | ${OWNER_NAME}`, path: `/blog/${eslug(post)}/`, description: clipDesc(post.summary ? noEmoji(String(post.summary)) : `${noEmoji(post.title)}: a post by ${OWNER_NAME}.`), noindex: isDraft(post) });
+    if (post?.title) setPageHead({ title: `${post.title} | ${ID.name}`, path: `/blog/${eslug(post)}/`, description: clipDesc(post.summary ? noEmoji(String(post.summary)) : `${noEmoji(post.title)}: a post by ${ID.name}.`), noindex: isDraft(post) });
   }, [post]);
   return (
     <article>
@@ -1915,7 +1949,7 @@ function BlogPostView({ post }: { post: BlogPost }) {
 }
 
 function PostNotFound({ slug }: { slug: string }) {
-  useEffect(() => { setPageHead({ title: `Post not found | ${OWNER_NAME}`, path: `/blog/${encodeURIComponent(slug)}/`, noindex: true }); }, [slug]);
+  useEffect(() => { setPageHead({ title: `Post not found | ${ID.name}`, path: `/blog/${encodeURIComponent(slug)}/`, noindex: true }); }, [slug]);
   return (
     <div className="py-12">
       <h1 className="page-title">Post not found</h1>
@@ -1961,7 +1995,7 @@ const DEFAULT_HIDDEN = ["pictures", "references"];
 function visitCountingAllowed(): boolean {
   try {
     const nav = navigator as any;
-    if (nav.webdriver) return false;
+    if (nav.webdriver || SNAPSHOT) return false;
     if (nav.globalPrivacyControl === true || nav.doNotTrack === "1" || (window as any).doNotTrack === "1") return false;
     if (/bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|embedly/i.test(nav.userAgent || "")) return false;
     if (/^\/admin(\/|$)/.test(location.pathname)) return false;
@@ -2011,7 +2045,7 @@ function useVisitBeacon(enabled: boolean) {
 // "Visitors from N countries" (settings.visitorLine {show, min, text}); fetched lazily.
 // Only when /api/content.php says the counter exists (remote._visit), like the beacon.
 function useVisitorLine(cfg: any, available: boolean): string | null {
-  const show = available && !!cfg && typeof cfg === "object" && isTrue(cfg.show);
+  const show = available && !SNAPSHOT && !!cfg && typeof cfg === "object" && isTrue(cfg.show);
   const [n, setN] = useState<number | null>(null);
   useEffect(() => {
     if (!show || typeof window === "undefined") return;
@@ -2066,17 +2100,23 @@ export default function App() {
   const { theme, pref, toggle: toggleTheme, choose: chooseTheme } = useTheme();
 
   // Live content from the cPanel API (falls back to the prerendered/baked content).
-  const [remote, setRemote] = useState<Record<string, any>>({});
+  // Blog pages that the server rendered from live data after the build (cpanel-backend/api/seo/)
+  // carry that data in <script type="application/json" id="seo-live">, so React's first render
+  // matches the served HTML (no layout shift) before /api/content.php answers.
+  const [remote, setRemote] = useState<Record<string, any>>(() => {
+    try { const el = typeof document !== "undefined" ? document.getElementById("seo-live") : null; const d = el ? JSON.parse(el.textContent || "{}") : {}; return d && typeof d === "object" ? d : {}; } catch { return {}; }
+  });
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     // Apply the live update during idle time to keep the re-render out of the
     // interactivity window.
     const apply = (d: Record<string, any>) => {
       // As a transition, the re-render with the live content is sliced into short tasks.
-      const run = () => startTransition(() => setRemote(d));
+      const run = () => startTransition(() => { setRemote(d); setLoaded(true); });
       if ("requestIdleCallback" in window) (window as any).requestIdleCallback(run, { timeout: 2500 });
       else setTimeout(run, 200);
     };
-    fetch("/api/content.php")
+    fetch("/api/content.php", SNAPSHOT ? { cache: "no-store" } : undefined)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d && typeof d === "object") apply(d); })
       .catch(() => {});
@@ -2101,6 +2141,14 @@ export default function App() {
   // in at build time (metricsData). Manual mode uses the live row.
   const metricsAuto = !!remote.metrics && typeof remote.metrics === "object" && (remote.metrics as any).auto === true;
   const liveMetrics = useLiveMetrics(metricsAuto && remote._metrics === true);
+  // Snapshot frame (see SNAPSHOT): tell the admin once the live content, and in automatic metrics
+  // mode the live citation numbers (or 6 s without them), are on the page.
+  useEffect(() => {
+    if (!SNAPSHOT || !loaded) return;
+    const waitMetrics = metricsAuto && remote._metrics === true && !liveMetrics;
+    const t = window.setTimeout(() => { try { window.parent.postMessage({ type: "seo-home-snapshot" }, window.location.origin); } catch { /* not framed */ } }, waitMetrics ? 6000 : 400);
+    return () => window.clearTimeout(t);
+  }, [loaded, liveMetrics]); // eslint-disable-line react-hooks/exhaustive-deps
   const metrics: any = (remote.metrics && typeof remote.metrics === "object" && !metricsAuto) ? remote.metrics
     : liveMetrics ? { ...metricsData, ...Object.fromEntries(Object.entries(liveMetrics).filter(([, v]) => v !== undefined)) } : metricsData;
   const hero: any = obj("hero", heroData);
@@ -2112,6 +2160,10 @@ export default function App() {
   const research: any = obj("research", researchData);
   const footer: any = obj("footer", footerData);
   const consultation: any = obj("consultation", consultationData);
+  // Identity first: the components below read ID / CV_LABELS while they render.
+  ID = resolveIdentity(obj("identity", optionalContent("identity") || {}), footer, consultation);
+  CV_LABELS = { nav: noEmoji(footer.cvNavLabel) || "CV", footer: noEmoji(footer.cvLabel) };
+  const seoPages: any = settings.seo && typeof settings.seo === "object" && settings.seo.pages && typeof settings.seo.pages === "object" ? settings.seo.pages : {};
   const socialLinks: any[] = (remote.socials && Array.isArray((remote.socials as any).links)) ? (remote.socials as any).links : (socialsData as any).links;
   const documents = readDocuments(list("documents"), settings.resumeUrl);
   const softwareItems = list("software");
@@ -2120,7 +2172,7 @@ export default function App() {
 
   const cvDoc = documents.find((d) => d.kind === "cv") || documents.find((d) => d.kind === "resume");
   const cvUrl = cvDoc?.url;
-  const email = String(footer.email || consultation.email || PUBLIC_EMAIL).trim() || PUBLIC_EMAIL;
+  const email = ID.email;
   const profiles = visibleProfiles(socialLinks);
   const scholarUrl = profiles.find((p) => p.platform === "scholar")?.url || "https://scholar.google.com/citations?user=Vy_sw5UAAAAJ";
   // Hero link row: Google Scholar · LinkedIn · GitHub · Email by default; an admin list
@@ -2225,7 +2277,7 @@ export default function App() {
   const spyIds = onHome ? ["research", "publications", "tools", "experience", "awards", "news", "blog", "contact"] : [];
 
   const siteLinks = [
-    { label: "Publications", url: "/publications/", aria: "Publications page (all papers)" },
+    { label: navText(["publications", "portfolio"], "Publications", /^portfolio$/i), url: "/publications/", aria: "Publications page (all papers)" },
     { label: navText(["photos"], "Photos"), url: "/photos/" },
     { label: navText(["faq"], "Research FAQ"), url: "/faq/" },
     { label: navText(["aboutPage"], "About"), url: "/about/" },
@@ -2257,7 +2309,7 @@ export default function App() {
   if (blogMatch) {
     const slug = blogMatch[1] ? decodeURIComponent(blogMatch[1]) : null;
     const wrapMain = (n: React.ReactNode) => <main id="main" tabIndex={-1} className="wrap pt-12 md:pt-16 flex-1 w-full"><div className="prose-w">{n}</div></main>;
-    if (!slug) return chrome(wrapMain(<BlogIndex posts={blogPosts} head={headings.blog} />), "/", "blog-page");
+    if (!slug) return chrome(wrapMain(<BlogIndex posts={blogPosts} head={headings.blog} seo={seoPages.blog} />), "/", "blog-page");
     // A direct URL finds any post (including drafts) so it can be previewed.
     const post = allPosts.find((p) => eslug(p) === slug);
     if (post) return chrome(wrapMain(<BlogPostView post={post} />), "/", "blog-page");
@@ -2265,7 +2317,8 @@ export default function App() {
   }
 
   // ---- Homepage ----
-  const titleLine = noEmoji(hero.title || hero.titleLine || (/university/i.test(String(hero.line2 || "")) ? hero.line2 : "")) || DEFAULT_TITLE_LINE;
+  // Title line (admin: Home / Hero -> Title line), used as entered.
+  const titleLine = idStr(hero.title) || idStr(hero.titleLine) || idStr(hero.line2) || DEFAULT_TITLE_LINE;
   const education: any[] = Array.isArray(about.education) ? about.education.filter((e: any) => e && e.degree) : [];
   const phd = education.find((e) => /ph\.?\s*d/i.test(String(e.degree)));
   const msc = education.find((e) => /\bm\.?\s*sc\b|master/i.test(String(e.degree)));
@@ -2281,6 +2334,13 @@ export default function App() {
     ? (() => { const [text, url] = x.split("|").map((t: string) => t.trim()); return { text: noEmoji(text), url: url ? normUrl(url) || "" : "" }; })()
     : { text: noEmoji(x?.text), url: fieldStr(x?.url) ? normUrl(fieldStr(x.url)) || "" : "" }).filter((x: any) => x.text);
   const heroPhoto: string | undefined = hero.photo || about.photo || undefined;
+  // hero.photoSet: the copies the admin made on upload ({jpg, type, srcset: [{w, url}]}); ignored
+  // when hero.photo was later replaced by hand (same rule as generate-seo.mjs PHOTO_SET).
+  const pset: any = hero.photoSet && typeof hero.photoSet === "object" ? hero.photoSet : {};
+  const photoSrcset = heroPhoto && pset.jpg === hero.photo && Array.isArray(pset.srcset)
+    ? pset.srcset.filter((x: any) => x && typeof x.url === "string" && /^\/(?!\/)|^https?:\/\//i.test(x.url) && Number.isInteger(x.w) && x.w > 0).map((x: any) => `${encodeURI(x.url)} ${x.w}w`).join(", ") : "";
+  const photoType = pset.type === "image/jpeg" ? "image/jpeg" : "image/webp";
+  const photoAlt = idStr(hero.photoAlt) || ID.name;
 
   // ---- Research ----
   const themes = readThemes(research);
@@ -2452,7 +2512,7 @@ export default function App() {
         )}
         {plan.other.length > 0 && (
           <>
-            <Sub>{plan.selected.length ? (noEmoji(headings.portfolio?.otherTitle) || "Other publications") : "All publications"}</Sub>
+            <Sub>{plan.selected.length ? (noEmoji(headings.portfolio?.otherTitle) || "Other publications") : hx("portfolio", "allTitle", "All publications")}</Sub>
             <OtherPublications items={plan.other} companionsOf={plan.companionsOf} />
           </>
         )}
@@ -2589,7 +2649,7 @@ export default function App() {
           {!hidden.has("contact") && (
             <div>
               <h3 className="sub-title" style={{ marginTop: 0 }}>{hx("contact", "formTitle", "Send a message")}</h3>
-              <ContactForm />
+              <ContactForm successText={hx("contact", "successText", "")} />
             </div>
           )}
         </div>
@@ -2603,13 +2663,13 @@ export default function App() {
       <span id="home" aria-hidden="true" />
       <div className="hero-grid">
         <div className="hero-main min-w-0 prose-w">
-          <h1 className="hero-name" id="hero-name">{OWNER_NAME}</h1>
+          <h1 className="hero-name" id="hero-name">{ID.name}</h1>
           <p className="mt-2 mb-0 text-[17px] font-medium text-[var(--c-text)]">
             {titleLine}{expected && <span className="muted font-normal"> · expected {expected}</span>}
           </p>
           <p className="mt-1 mb-0 small muted">
-            Published as Palash Roy / Palash R. Roy · ORCID{" "}
-            <a href={`https://orcid.org/${OWNER_ORCID}`} target="_blank" rel="noopener noreferrer">{OWNER_ORCID}</a>
+            {/* one text node, as before (no sub-pixel shift) */}{(ID.publishedAs ? `Published as ${ID.publishedAs} · ` : "") + "ORCID"}{" "}
+            <a href={`https://orcid.org/${ID.orcid}`} target="_blank" rel="noopener noreferrer">{ID.orcid}</a>
           </p>
           {hero.description && <p className="mt-5 mb-0">{rich(hero.description)}</p>}
           {heroHighlights.length > 0 ? (
@@ -2641,13 +2701,19 @@ export default function App() {
           </div>
         </div>
         <div className="hero-photo-wrap">
-          {heroPhoto ? (
-            <img src={heroPhoto} alt={OWNER_NAME} className="hero-photo" width={200} height={200} decoding="async" fetchPriority="high" />
+          {heroPhoto && photoSrcset ? (
+            // Uploaded in the admin: resized WebP copies (hero.photoSet) and the JPEG as the fallback.
+            <picture>
+              <source srcSet={photoSrcset} sizes="(min-width: 768px) 200px, 96px" type={photoType} />
+              <img src={heroPhoto} alt={photoAlt} className="hero-photo" width={200} height={200} decoding="async" fetchPriority="high" />
+            </picture>
+          ) : heroPhoto ? (
+            <img src={heroPhoto} alt={photoAlt} className="hero-photo" width={200} height={200} decoding="async" fetchPriority="high" />
           ) : (
             <picture>
               {/* object-fit: cover crops the 640x552 photo to a square, so it is drawn about 1.16x the box width. */}
               <source srcSet="/images/palash_roy_headshot-200w.webp 200w, /images/palash_roy_headshot-240w.webp 240w, /images/palash_roy_headshot-480w.webp 480w, /images/palash_roy_headshot.webp 640w" sizes="(min-width: 768px) 200px, 96px" type="image/webp" />
-              <img src="/images/palash_roy_headshot.jpg" alt={OWNER_NAME} width={200} height={200} className="hero-photo" decoding="async" fetchPriority="high" />
+              <img src="/images/palash_roy_headshot.jpg" alt={photoAlt} width={200} height={200} className="hero-photo" decoding="async" fetchPriority="high" />
             </picture>
           )}
         </div>
@@ -2655,7 +2721,7 @@ export default function App() {
           <div className="hero-latest">
             <LatestList rows={latestRows} title={noEmoji(headings.latest?.title) || "Latest"}
               more={newsRows.length && visibleSet.has("news") ? { href: "#news", label: noEmoji(headings.latest?.allLabel) || "All news" }
-                : awards.rows.length && visibleSet.has("awards") ? { href: "#awards", label: "All awards" } : undefined} />
+                : awards.rows.length && visibleSet.has("awards") ? { href: "#awards", label: hx("latest", "allAwardsLabel", "All awards") } : undefined} />
           </div>
         )}
       </div>

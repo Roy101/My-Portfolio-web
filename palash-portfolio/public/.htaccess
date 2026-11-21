@@ -21,8 +21,8 @@ ErrorDocument 503 /maintenance.html
   AddCharset UTF-8 .html .css .js .json .xml
 </IfModule>
 
-# The maintenance flag file and the bypass-token marker files are never served.
-<FilesMatch "^\.(maintenance|maint-ok-.*)$">
+# The maintenance flag file, the bypass-token marker files and the live-pages switch are never served.
+<FilesMatch "^\.(maintenance|maint-ok-.*|seo-static)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
@@ -53,7 +53,9 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 #     switched on); while maintenance is on, the admin also writes an empty marker file
 #     /.maint-ok-<token>. Apache lets a request through only when the cookie's token has a
 #     matching marker file, so a made-up cookie gets the 503 like everyone else.
-RewriteRule ^\.(maintenance|maint-ok-) - [F,L]
+RewriteRule ^\.(maintenance|maint-ok-|seo-static) - [F,L]
+# Build metadata for the live pages (dist/_seo/: manifest, page shells, bundled content): never served.
+RewriteRule ^_seo(/|$) - [R=404,L]
 RewriteCond %{DOCUMENT_ROOT}/.maintenance -f
 RewriteCond %{HTTP_COOKIE} (?:^|;)\s*pr_maint_bypass=([a-f0-9]{48})(?:;|$)
 RewriteCond %{DOCUMENT_ROOT}/.maint-ok-%1 -f
@@ -80,6 +82,19 @@ RewriteRule ^papers/A_Study_on_Paper_and_Author_Ranking\.pdf$ /publications/pape
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^papers/Are_large_language\.pdf$ /publications/llms-threat-programming-platforms/ [R=301,L]
 RewriteRule ^papers/07710-AAAI24\.DuY\.pdf$ - [G,L]
+
+# 3b) Live pages from the database. The admin's saves show at once: cpanel-backend/api/seo/serve.php
+#     renders these URLs from the content table (same output as scripts/generate-seo.mjs, cached in
+#     api/cache/seo/) and answers 200, 301 (trailing slash), 304, or a real 404 for an unknown paper
+#     or post. Maintenance mode (1b) and the moved URLs (3) are handled before this.
+#     Switch back to the build's static copies (rules 4-7, exactly as before) by creating an empty
+#     file /.seo-static in the web root (admin: Public pages & SEO), or by not uploading api/seo/.
+RewriteCond %{DOCUMENT_ROOT}/.seo-static !-f
+RewriteCond %{DOCUMENT_ROOT}/api/seo/serve.php -f
+RewriteRule ^(?:index\.html)?$ api/seo/serve.php [L]
+RewriteCond %{DOCUMENT_ROOT}/.seo-static !-f
+RewriteCond %{DOCUMENT_ROOT}/api/seo/serve.php -f
+RewriteRule ^(?:publications(?:/[a-z0-9]+(?:-[a-z0-9]+)*)?(?:/(?:index\.html|cite\.bib)?)?|publications/[a-z0-9]+(?:-[a-z0-9]+)*\.md|publications\.md|faq(?:/(?:index\.html)?)?|faq\.md|about(?:/(?:index\.html)?)?|photos(?:/(?:index\.html)?)?|blog(?:/(?:index\.html)?)?|blog/[^/]+(?:/(?:index\.html)?)?|sitemap\.xml|llms\.txt|llms-full\.txt)$ api/seo/serve.php [L]
 
 # 4) Generated static pages: /publications/, /publications/<slug>/, /faq/, /about/, /photos/
 #    and the prerendered blog. Add the trailing slash (the canonical form), then serve index.html.
