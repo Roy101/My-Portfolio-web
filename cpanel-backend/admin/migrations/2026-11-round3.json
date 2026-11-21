@@ -3560,7 +3560,7 @@
             },
             {
               "id": "clone-refactoring",
-              "title": "Just-in-time clone refactoring (PhD direction)",
+              "title": "Just-in-time clone refactoring",
               "summary": "Helping developers refactor clones as they write code.",
               "keywords": [
                 "Software Maintenance & Evolution",
@@ -3633,7 +3633,7 @@
           },
           {
             "id": "clone-refactoring",
-            "title": "Just-in-time clone refactoring (PhD direction)",
+            "title": "Just-in-time clone refactoring",
             "summary": "Helping developers refactor clones as they write code.",
             "keywords": [
               "Software Maintenance & Evolution",
