@@ -272,6 +272,53 @@ if ($action === 'backup' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// ---- visitor-country statistics (AJAX, logged-in only) ----
+// POST index.php?action=visitors with JSON {"csrf"} -> per-country counts for three ranges.
+// POST index.php?action=visitors_reset with JSON {"csrf"} -> deletes all counts.
+// Counting happens in api/visit.php; the data stays private (the public endpoint only gives
+// the number of countries, and only while the website line is switched on).
+if (($action === 'visitors' || $action === 'visitors_reset') && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!is_logged_in()) { http_response_code(401); json_out(['error' => 'Not logged in']); }
+    $body = json_decode((string)file_get_contents('php://input'), true);
+    require_csrf(is_array($body) && is_string($body['csrf'] ?? null) ? $body['csrf'] : '');
+    require_once __DIR__ . '/../api/visitlib.php';
+    header('Cache-Control: no-store');
+    try {
+        $db = db();
+        visit_ensure_tables($db);
+        if ($action === 'visitors_reset') {
+            $db->exec("DELETE FROM visit_stats");
+            $db->exec("DELETE FROM visit_seen");
+            $db->exec("DELETE FROM visit_salt");
+            json_out(['ok' => true]);
+        }
+        visit_purge_old($db); // yesterday's key and hashes, if no visit has come in today yet
+        $today = visit_today();
+        $ranges = [
+            'd30' => gmdate('Y-m-d', strtotime($today . ' -29 days')),
+            'm12' => gmdate('Y-m-d', strtotime($today . ' -12 months +1 day')),
+            'all' => '1000-01-01',
+        ];
+        $names = require __DIR__ . '/../api/countrynames.php';
+        $out = ['ok' => true, 'today' => $today, 'since' => null, 'ranges' => [], 'names' => []];
+        $out['since'] = $db->query("SELECT MIN(day) FROM visit_stats")->fetchColumn() ?: null;
+        $st = $db->prepare("SELECT country, SUM(hits) AS n FROM visit_stats WHERE day >= ? GROUP BY country ORDER BY n DESC, country");
+        foreach ($ranges as $k => $from) {
+            $st->execute([$from]);
+            $rows = []; $total = 0;
+            foreach ($st->fetchAll() as $r) {
+                $cc = (string)$r['country']; $n = (int)$r['n'];
+                $rows[] = [$cc, $n]; $total += $n;
+                if (!isset($out['names'][$cc])) $out['names'][$cc] = is_array($names) && isset($names[$cc]) ? $names[$cc] : $cc;
+            }
+            $out['ranges'][$k] = ['from' => $k === 'all' ? $out['since'] : $from, 'total' => $total, 'countries' => count($rows), 'rows' => $rows];
+        }
+        json_out($out);
+    } catch (Throwable $e) {
+        http_response_code(500); json_out(['error' => 'Database error']);
+    }
+}
+
 // ---- maintenance mode on/off (AJAX, logged-in only) ----
 // POST index.php?action=maintenance with JSON {"csrf", "on": bool, "message": str, "until": str}.
 // Writes maintenance.html, then creates/deletes the .maintenance flag, then records the state in settings.maintenance.
@@ -485,7 +532,7 @@ h2{font-size:16px;margin:0 0 4px}
 .lead{color:#a2a5b9;font-size:13px;margin:0 0 16px}
 label{display:block;font-size:12px;color:#a2a5b9;margin:10px 0 4px;text-transform:capitalize}
 input,textarea,select{width:100%;padding:8px;background:#0c0d16;border:1px solid #2d324b;border-radius:6px;color:#fff;font-family:inherit;font-size:14px}
-[data-doc] label,[data-sw] label,[data-sk] label,[data-mm] label,[data-r] label{text-transform:none}
+[data-doc] label,[data-sw] label,[data-sk] label,[data-mm] label,[data-r] label,[data-vis] label{text-transform:none}
 textarea{min-height:70px;resize:vertical}
 .row{display:flex;gap:6px;margin-bottom:8px}
 .item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px}
@@ -568,6 +615,7 @@ const NAV = [
     {id:'footer',label:'Footer'},
     {id:'settings',label:'Site Settings'},
     {id:'metrics',label:'Research Metrics'},
+    {id:'visitors',label:'Visitors'},
     {id:'maintenance',label:'Maintenance Mode & Backup'},
   ]},
   {group:'Account', items:[
@@ -1249,6 +1297,72 @@ window.saveConsultation=()=>{
   DATA.consultation=data; postSection('consultation',data,'Collaboration');
 };
 
+// ---- Visitors (aggregate visitor countries; data from index.php?action=visitors) ----
+const VIS = {data:null, range:'d30', err:''};
+const VIS_RANGES = [['d30','Last 30 days'],['m12','Last 12 months'],['all','All time']];
+function visLine(){ const s=(DATA.settings && DATA.settings.visitorLine && typeof DATA.settings.visitorLine==='object') ? DATA.settings.visitorLine : {};
+  return {show:s.show===true, min:Math.max(1,parseInt(s.min,10)||10), text:(typeof s.text==='string' && s.text.trim()) ? s.text.trim() : 'Visitors from {n} countries'}; }
+async function visLoad(){
+  VIS.err='';
+  try{
+    const r=await fetch('index.php?action=visitors',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',cache:'no-store',body:JSON.stringify({csrf:CSRF})});
+    const j=await r.json(); if(!j.ok) throw new Error(j.error||'failed'); VIS.data=j;
+  }catch(e){ VIS.data=null; VIS.err=String(e.message||e); }
+  if(current==='visitors') renderVisitors();
+}
+function renderVisitors(){
+  const d=VIS.data, L=visLine();
+  const rg=d && d.ranges ? d.ranges[VIS.range] : null;
+  let html=`<h2>Visitors</h2><p class="lead">Roughly where your visitors come from, by country. Counted on the homepage and blog: one visit per network per day.</p>`;
+  html+=`<div class="item" data-vis><div class="item-head"><b>Countries</b><div class="acts" role="group" aria-label="Time range">`+
+    VIS_RANGES.map(([k,l])=>`<button type="button" aria-pressed="${VIS.range===k}" style="${VIS.range===k?'background:#35c7ff;color:#0c0d16;font-weight:600':''}" onclick="visRange('${k}')">${l}</button>`).join('')+`</div></div>`;
+  if(!d && !VIS.err) html+=`<p class="lead" role="status">Loading…</p>`;
+  else if(VIS.err) html+=`<p class="lead" style="color:#ff6b6b" role="alert">Could not load the statistics (${escA(VIS.err)}).</p>`;
+  else {
+    html+=`<div style="display:flex;gap:28px;flex-wrap:wrap;margin:8px 0 14px"><div><div style="font-size:26px;font-weight:700" data-vis-total>${rg.total.toLocaleString('en')}</div><small style="margin:0">visits</small></div>`+
+      `<div><div style="font-size:26px;font-weight:700" data-vis-countries>${rg.countries.toLocaleString('en')}</div><small style="margin:0">countries</small></div></div>`;
+    if(!rg.rows.length) html+=`<p class="lead">No visits counted in this period yet.</p>`;
+    else {
+      const max=rg.rows[0][1]||1;
+      html+=`<table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="color:#a2a5b9;text-align:left"><th scope="col" style="padding:6px 4px;font-weight:600">Country</th><th scope="col" style="padding:6px 4px;font-weight:600;text-align:right">Visits</th><th scope="col" style="padding:6px 4px;font-weight:600;width:40%">Share</th></tr></thead><tbody>`+
+        rg.rows.map(([cc,n])=>{ const pct=rg.total?Math.round(n*1000/rg.total)/10:0; return `<tr style="border-top:1px solid #23263a"><td style="padding:6px 4px">${escA(d.names[cc]||cc)}</td><td style="padding:6px 4px;text-align:right;font-variant-numeric:tabular-nums">${n.toLocaleString('en')}</td>`+
+          `<td style="padding:6px 4px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#0c0d16;border:1px solid #23263a;border-radius:4px;height:10px;overflow:hidden" aria-hidden="true"><div style="height:100%;width:${Math.max(1,Math.round(n*100/max))}%;background:#35c7ff"></div></div><span style="min-width:46px;text-align:right;color:#a2a5b9;font-variant-numeric:tabular-nums">${pct}%</span></div></td></tr>`; }).join('')+
+        `</tbody></table>`;
+    }
+    html+=`<small>${d.since?`Counting since ${escA(d.since)} (UTC days).`:'Nothing counted yet. Counting starts when the new backend files are on the server.'}</small>`;
+  }
+  html+=`</div>`;
+  html+=`<div class="item" data-vis><div class="item-head"><b>Line on the website</b></div>`+
+    chk('vis_show', L.show, 'Show "visitors from N countries" on the website', 'One small line in the footer of the homepage and blog, with N = all-time number of countries. Off by default.')+
+    `<label for="vis_min">Minimum number of countries before the line appears</label><input id="vis_min" type="number" min="1" max="250" value="${escA(L.min)}">`+
+    `<label for="vis_text">Text ({n} is replaced by the number)</label><input id="vis_text" maxlength="80" value="${escA(L.text)}" placeholder="Visitors from {n} countries">`+
+    `<small>Visitors may see a change up to an hour later (the number is cached by browsers for one hour).</small>`+
+    `<div style="margin-top:14px"><button class="primary" onclick="visSave()">Save</button></div></div>`;
+  html+=`<div class="item" data-vis><div class="item-head"><b>Privacy</b></div>`+
+    `<p class="lead" style="margin:4px 0">Only a date, a country and a count are stored. The country comes from the time zone the visitor's browser reports (for example America/Regina = Canada), not from the IP address, so VPN users or people abroad may be counted in another country. This counter uses no cookies, stores no IP addresses or browser details in the statistics, and sends nothing to outside services. To count each network once per day, a keyed hash of a shortened IP address (the network part only: IPv4 /24, IPv6 /48) is kept for the current day only, under a random key that is deleted with the hashes the next day; both can appear in that day's database backups. Visitors with Do Not Track or Global Privacy Control switched on, and known bots, are not counted.</p>`+
+    `<small>Because this counter stores nothing personal, it does not need a cookie banner of its own. (Google Analytics, which the website also loads, is separate and does set cookies.) If you like, add one sentence about the counter to your site, for example: "Visits are counted by country only, from the browser's time zone; the counter stores no cookies or IP addresses."</small></div>`;
+  html+=`<div class="item" data-vis style="border-color:#7a2b36"><div class="item-head"><b>Reset statistics</b></div><p class="lead" style="margin:4px 0">Deletes every count. This cannot be undone.</p>`+
+    `<button class="del" onclick="visReset()">Reset statistics</button></div>`;
+  app().innerHTML=html;
+  if(!d && !VIS.err && !VIS.loading){ VIS.loading=true; visLoad().finally(()=>{ VIS.loading=false; }); }
+}
+window.visRange=k=>{ VIS.range=k; renderVisitors(); };
+window.visSave=()=>{
+  const base=(DATA.settings && typeof DATA.settings==='object' && !Array.isArray(DATA.settings)) ? DATA.settings : {};
+  const text=(v('vis_text')||'Visitors from {n} countries').slice(0,80);
+  if(text.indexOf('{n}')<0){ toast('The text needs {n} where the number goes'); return; }
+  const data=Object.assign({}, base, {visitorLine:{show:document.getElementById('vis_show').checked, min:Math.min(250,Math.max(1,parseInt(v('vis_min'),10)||10)), text}});
+  DATA.settings=data; postSection('settings',data,'Visitor line');
+};
+window.visReset=async()=>{
+  if(!window.confirm('Reset visitor statistics?\n\nEvery country count is deleted. This cannot be undone.')) return;
+  try{
+    const r=await fetch('index.php?action=visitors_reset',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({csrf:CSRF})});
+    const j=await r.json(); if(!j.ok){ toast('Error: '+(j.error||'failed')); return; }
+    toast('Statistics reset ✓'); VIS.data=null; renderVisitors();
+  }catch(e){ toast('Network error'); }
+};
+
 // ---- Metrics ----
 function renderMetrics(){
   const m = DATA.metrics || {citations:0,hIndex:0,works:0};
@@ -1569,6 +1683,7 @@ function renderSection(){
   if(current==='metrics'){ renderMetrics(); return; }
   if(current==='password'){ renderPassword(); return; }
   if(current==='maintenance'){ renderMaintenance(); return; }
+  if(current==='visitors'){ VIS.data=null; VIS.err=''; renderVisitors(); return; }
   if(current==='documents'){ renderDocuments(); return; }
   if(current==='software'){ renderSoftware(); return; }
   if(current==='skills'){ renderSkills(); return; }

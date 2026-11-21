@@ -212,6 +212,48 @@ an optional message and an optional "expected back" time.
 - Uploading a new website build replaces `maintenance.html` with the default text. If maintenance
   mode is on at that moment, click **Update message** again.
 
+## Visitor countries (optional "Visitors from N countries" line)
+
+**/admin → Site → Visitors** shows roughly where visitors come from, by country (last 30 days,
+last 12 months or all time), and has a switch for one small footer line on the homepage and blog,
+"Visitors from N countries". The line is **off** by default and appears only once N reaches the
+minimum you set (default 10). **Reset statistics** deletes all counts.
+
+How it works, and what is stored:
+- The homepage and blog send one tiny request per browser session to `api/visit.php` with only the
+  browser's time zone name (for example `America/Regina`). The server turns it into a country code
+  with `api/tzcountry.php` (generated from the IANA time zone database) and adds 1 to that day's
+  count. Stored: **date, country, count**. No IP address, cookie, user agent or time zone string.
+- Abuse limit: one counted visit per **network** per day (UTC): the address is first shortened to
+  its network part (IPv4 /24, IPv6 /48). For that, a keyed hash (HMAC) of the shortened address is
+  kept **for the current day only**, under a random key created that day (tables `visit_salt`,
+  `visit_seen`). Key and hashes from earlier days are deleted on the first visit of a new day, when
+  the summary is requested and when the admin panel opens. They can appear in that day's cPanel
+  database backup; even then a hash only reveals a network, not one device. Several people on one
+  network (a university, for example) are therefore counted once per day. Extra caps: at most
+  20,000 networks per day and 2,000 visits per country per day.
+- The limit uses the connection address (`REMOTE_ADDR`). If the site is ever put behind Cloudflare
+  or another proxy/CDN, enable the host's real-visitor-IP support (mod_remoteip / cPanel's
+  Cloudflare option) first, otherwise all visitors share the proxy's few addresses and are counted
+  only a handful of times per day.
+- Not counted: Do Not Track / Global Privacy Control, automated browsers, obvious bots, requests
+  from other sites or without an Origin/Referer (browsers always send one), unknown time zones and UTC.
+- The country is a guess from the time zone, not a location: VPN users and travellers may be
+  counted elsewhere.
+- The tables (`visit_stats`, `visit_salt`, `visit_seen`) are **created automatically** on the
+  first counted visit; they are also in `schema.sql` for fresh installs.
+- `GET /api/visit.php?summary` gives `{"countries": N, "since": "YYYY-MM-DD"}` (N is 0 while the
+  switch is off or N is below the minimum) and is cached for one hour, so a change can take up to an hour to show.
+- Files: `api/visit.php`, `api/visitlib.php`, `api/tzcountry.php`, `api/countrynames.php` (the
+  last three are blocked from direct access by `api/.htaccess`). `api/content.php` reports whether
+  `visit.php` exists, so an older backend never receives these requests. To refresh the time zone
+  map after a tzdata release: `node cpanel-backend/tools/gen-tzcountry.mjs`.
+- Privacy note: the counter sets no cookies and its statistics hold nothing personal, so it needs
+  no cookie banner of its own (only the daily network hash above is short-lived pseudonymous data).
+  (Google Analytics, which the site also loads, is separate.) If you wish, add one sentence to the
+  site, e.g. "Visits are counted by country only, from the browser's time zone; the counter sets
+  no cookies and keeps no IP addresses."
+
 ## When changes appear
 
 The homepage and blog read the database, so edits show within about a minute. Generated pages

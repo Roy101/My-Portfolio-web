@@ -1,5 +1,11 @@
-# Never serve the DB credentials or the connection include directly.
-<FilesMatch "^(config\.php|config\.sample\.php|db\.php)$">
+# Never serve the DB credentials or the include files directly.
+<FilesMatch "^(config\.php|config\.sample\.php|db\.php|visitlib\.php|tzcountry\.php|countrynames\.php)$">
   Require all denied
 </FilesMatch>
 Options -Indexes
+# visit.php sets its own Cache-Control (summary: 1 hour); keep mod_expires from appending max-age=0.
+<IfModule mod_expires.c>
+  <Files "visit.php">
+    ExpiresActive Off
+  </Files>
+</IfModule>

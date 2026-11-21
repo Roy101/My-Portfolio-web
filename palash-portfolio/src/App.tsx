@@ -1753,8 +1753,9 @@ function CustomSection({ data }: { data: any }) {
 // ---------------------------------------------------------------------------
 // Footer
 // ---------------------------------------------------------------------------
-function SiteFooter({ footer, email, cvUrl, profiles, siteLinks, onPage, onPageLabel }: {
+function SiteFooter({ footer, email, cvUrl, profiles, siteLinks, onPage, onPageLabel, visitorLine }: {
   footer: any; email: string; cvUrl?: string; profiles: Profile[]; siteLinks: { label: string; url: string }[]; onPage: NavLink[]; onPageLabel: string;
+  visitorLine?: string | null;
 }) {
   const year = new Date().getFullYear();
   const copyright = noEmoji(footer?.copyright) || `© ${year} ${OWNER_NAME}`;
@@ -1777,6 +1778,14 @@ function SiteFooter({ footer, email, cvUrl, profiles, siteLinks, onPage, onPageL
           </nav>
         )}
         <div className="mt-4 tiny">{copyright}</div>
+        {visitorLine && (
+          <p className="mt-2 tiny inline-flex items-center gap-1.5">
+            <svg aria-hidden="true" focusable="false" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            {visitorLine}
+          </p>
+        )}
       </div>
     </footer>
   );
@@ -1931,6 +1940,84 @@ const DEFAULT_ORDER = ["research", "publications", "tools", "experience", "award
 const DEFAULT_HIDDEN = ["pictures", "references"];
 
 // ---------------------------------------------------------------------------
+// Visitor countries (privacy-first, aggregate only; see cpanel-backend/api/visit.php)
+// ---------------------------------------------------------------------------
+// Never for automated browsers (the build's prerender is headless Chrome), obvious bots,
+// visitors with Do Not Track / Global Privacy Control, or the admin.
+function visitCountingAllowed(): boolean {
+  try {
+    const nav = navigator as any;
+    if (nav.webdriver) return false;
+    if (nav.globalPrivacyControl === true || nav.doNotTrack === "1" || (window as any).doNotTrack === "1") return false;
+    if (/bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit|embedly/i.test(nav.userAgent || "")) return false;
+    if (/^\/admin(\/|$)/.test(location.pathname)) return false;
+    return true;
+  } catch { return false; }
+}
+// Run after the load event, in idle time, so it never competes with rendering (LCP/CLS).
+function afterLoadIdle(fn: () => void): () => void {
+  let cancelled = false, idleId = 0, timer = 0;
+  const go = () => {
+    if (cancelled) return;
+    const w = window as any;
+    if (w.requestIdleCallback) idleId = w.requestIdleCallback(() => { if (!cancelled) fn(); }, { timeout: 5000 });
+    else timer = window.setTimeout(() => { if (!cancelled) fn(); }, 1500);
+  };
+  if (document.readyState === "complete") go(); else window.addEventListener("load", go, { once: true });
+  return () => {
+    cancelled = true;
+    window.removeEventListener("load", go);
+    if (idleId && (window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
+    if (timer) window.clearTimeout(timer);
+  };
+}
+// One anonymous "visit" per browser session: just the time zone name, e.g. "America/Regina".
+// Only when /api/content.php says the counter exists (remote._visit), so an older backend
+// never gets a request that would end in a 404.
+function useVisitBeacon(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined" || !visitCountingAllowed()) return;
+    return afterLoadIdle(() => {
+      try {
+        if (sessionStorage.getItem("pr_visit") === "1") return;
+        sessionStorage.setItem("pr_visit", "1");
+      } catch { return; } // no session storage: skip rather than count every page
+      let tz = "";
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { /* old browser */ }
+      if (!tz || /^(Etc\/|UTC$|GMT)/.test(tz)) return;
+      const body = JSON.stringify({ tz });
+      try {
+        // text/plain keeps it a "simple" request; the server reads the raw body.
+        if (navigator.sendBeacon && navigator.sendBeacon("/api/visit.php", new Blob([body], { type: "text/plain" }))) return;
+      } catch { /* fall through */ }
+      try { fetch("/api/visit.php", { method: "POST", body, keepalive: true, credentials: "omit", headers: { "Content-Type": "text/plain" } }).catch(() => {}); } catch { /* ignore */ }
+    });
+  }, [enabled]);
+}
+// "Visitors from N countries" (settings.visitorLine {show, min, text}); fetched lazily.
+// Only when /api/content.php says the counter exists (remote._visit), like the beacon.
+function useVisitorLine(cfg: any, available: boolean): string | null {
+  const show = available && !!cfg && typeof cfg === "object" && isTrue(cfg.show);
+  const [n, setN] = useState<number | null>(null);
+  useEffect(() => {
+    if (!show || typeof window === "undefined") return;
+    if ((navigator as any).webdriver) return; // keep it out of the prerendered HTML
+    return afterLoadIdle(() => {
+      fetch("/api/visit.php?summary", { credentials: "omit" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { const v = Number(d && d.countries); if (Number.isFinite(v) && v > 0) setN(Math.floor(v)); })
+        .catch(() => {});
+    });
+  }, [show]);
+  if (!show || n === null) return null;
+  const min = Math.max(1, Math.round(Number(cfg.min)) || 10);
+  if (n < min) return null;
+  const text = typeof cfg.text === "string" && cfg.text.includes("{n}") ? cfg.text.trim().slice(0, 80) : "Visitors from {n} countries";
+  const out = text.replace("{n}", n.toLocaleString("en"));
+  return noEmoji(n === 1 ? out.replace(/\bcountries\b/, "country") : out) || null;
+}
+
+// ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
 export default function App() {
@@ -1972,6 +2059,8 @@ export default function App() {
   const hero: any = obj("hero", heroData);
   const about: any = obj("about", aboutData);
   const settings: any = obj("settings", settingsData);
+  useVisitBeacon(remote._visit === true);
+  const visitorLine = useVisitorLine(settings.visitorLine, remote._visit === true);
   const headings: any = obj("headings", headingsData);
   const research: any = obj("research", researchData);
   const footer: any = obj("footer", footerData);
@@ -2106,7 +2195,7 @@ export default function App() {
       <SiteNav links={navLinks} extra={onPageLinks} extraLabel={onPageLabel} theme={theme} onToggleTheme={toggleTheme} cvUrl={cvUrl}
         homeHref={homeHref} activeId={onHome ? activeId : undefined} currentPage={currentPage} />
       {node}
-      <SiteFooter footer={footer} email={email} cvUrl={cvUrl} profiles={profiles} siteLinks={siteLinks}
+      <SiteFooter footer={footer} email={email} cvUrl={cvUrl} profiles={profiles} siteLinks={siteLinks} visitorLine={visitorLine}
         onPage={[
           { id: "research", label: navLinks[0].label, href: h("research") },
           { id: "publications", label: navText(["publications", "portfolio"], "Publications", /^portfolio$/i), href: h("publications") },
