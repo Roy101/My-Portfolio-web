@@ -548,7 +548,7 @@
       "fields": {
         "portfolio.selectedTitle": {
           "from": null,
-          "to": "Selected publications"
+          "to": "Featured publications"
         },
         "portfolio.otherTitle": {
           "from": null,
@@ -633,7 +633,7 @@
           "badge": "",
           "title": "Publications",
           "subtitle": "",
-          "selectedTitle": "Selected publications",
+          "selectedTitle": "Featured publications",
           "otherTitle": "Other publications"
         },
         "news": {

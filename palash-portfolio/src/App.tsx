@@ -2311,7 +2311,7 @@ export default function App() {
         <h2 id="publications-h" className="section-title">{titleText(["publications", "portfolio"], "Publications", /^portfolio$/i)}</h2>
         {plan.selected.length > 0 && (
           <>
-            <Sub>{noEmoji(headings.portfolio?.selectedTitle) || "Selected publications"}</Sub>
+            <Sub>{noEmoji(headings.portfolio?.selectedTitle) || "Featured publications"}</Sub>
             {plan.selected.map((p) => <PublicationEntry key={pubSlug(p)} item={p} companions={plan.companionsOf.get(pubSlug(p)) || []} />)}
           </>
         )}
