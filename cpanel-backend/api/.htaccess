@@ -1,11 +1,13 @@
 # Never serve the DB credentials or the include files directly.
-<FilesMatch "^(config\.php|config\.sample\.php|db\.php|visitlib\.php|tzcountry\.php|countrynames\.php)$">
+<FilesMatch "^(config\.php|config\.sample\.php|db\.php|visitlib\.php|metricslib\.php|tzcountry\.php|countrynames\.php)$">
   Require all denied
 </FilesMatch>
 Options -Indexes
-# visit.php sets its own Cache-Control (summary: 1 hour); keep mod_expires from appending max-age=0.
+# Server-side cache (api/cache/metrics.json and its lock file): never served.
+RedirectMatch 404 ^/api/cache(/|$)
+# Every endpoint here sets its own Cache-Control (content.php: 60 seconds; visit.php and
+# metrics.php: up to 1 hour). Without this, the site-wide mod_expires rule for JSON would
+# append a second, contradictory "max-age=0" to those headers.
 <IfModule mod_expires.c>
-  <Files "visit.php">
-    ExpiresActive Off
-  </Files>
+  ExpiresActive Off
 </IfModule>

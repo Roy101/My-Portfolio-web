@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.unsplash.com https://news.usask.ca https://www.google-analytics.com data:; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; font-src 'self' data:; frame-src 'self' https://www.youtube-nocookie.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://images.unsplash.com https://news.usask.ca https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com https://*.analytics.google.com https://*.g.doubleclick.net https://www.google.com https://www.google.ca data:; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://www.google.com https://www.google.ca https://*.g.doubleclick.net; font-src 'self' data:; frame-src 'self' https://www.youtube-nocookie.com;" />
 
   <!-- Theme before first paint (no flash): saved choice, else the OS preference.
        Allowed by script-src 'unsafe-inline' above. Do not add a script hash to that
@@ -61,7 +61,7 @@
   <!-- Fonts (self-hosted) and the above-the-fold hero image -->
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/images/palash_roy_headshot.webp" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" as="image" type="image/webp" fetchpriority="high" imagesrcset="/images/palash_roy_headshot-200w.webp 200w, /images/palash_roy_headshot-240w.webp 240w, /images/palash_roy_headshot-480w.webp 480w, /images/palash_roy_headshot.webp 640w" imagesizes="(min-width: 768px) 200px, 96px" />
 
   <!-- Google Analytics, loaded lazily (first interaction, or 3s after load) -->
   <script>
@@ -84,8 +84,8 @@
       window.addEventListener('load', function () { setTimeout(loadGA, 3000); });
     })();
   </script>
-  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
-  <link rel="preconnect" href="https://www.google-analytics.com" crossorigin />
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
+  <link rel="preconnect" href="https://www.google-analytics.com" />
 
   <!-- Structured data (WebSite, ProfilePage, Person) is generated at build time from
        src/content/*.json by scripts/generate-seo.mjs, which replaces this placeholder. -->

@@ -50,8 +50,7 @@ After this, you edit content at **palashroy.me/admin** and it goes live within a
 ## Notes
 - **Pictures:** to add a new photo, upload the image via File Manager into `public_html/images/…`, then in
   `/admin → Pictures` add an item and set its **image** field to that path (e.g. `/images/my-photo.jpg`).
-- **Citation metrics** (31 citations, h-index…) still come from the website build, not the database, so they
-  stay accurate automatically.
+- **Citation metrics:** see "Citation metrics (OpenAlex, updated daily)" below.
 - **Structured data (SEO):** the prerendered HTML + JSON-LD reflect the content as of the last website build.
   New items you add via /admin show to visitors and Google immediately; to also refresh the JSON-LD, rebuild
   the site occasionally (or ask me to).
@@ -220,7 +219,8 @@ last 12 months or all time), and has a switch for one small footer line on the h
 minimum you set (default 10). **Reset statistics** deletes all counts.
 
 How it works, and what is stored:
-- The homepage and blog send one tiny request per browser session to `api/visit.php` with only the
+- The homepage, the blog and the generated pages (`/publications/`, paper pages, `/about/`, `/faq/`,
+  `/photos/`) send one tiny request per browser session in total to `api/visit.php` with only the
   browser's time zone name (for example `America/Regina`). The server turns it into a country code
   with `api/tzcountry.php` (generated from the IANA time zone database) and adds 1 to that day's
   count. Stored: **date, country, count**. No IP address, cookie, user agent or time zone string.
@@ -248,11 +248,35 @@ How it works, and what is stored:
   last three are blocked from direct access by `api/.htaccess`). `api/content.php` reports whether
   `visit.php` exists, so an older backend never receives these requests. To refresh the time zone
   map after a tzdata release: `node cpanel-backend/tools/gen-tzcountry.mjs`.
+- The generated pages cannot ask `content.php` first, so they load the small script `/visit.js`
+  (deferred, after the page has loaded). The build adds it only when `cpanel-backend/api/visit.php`
+  is in the repo: **upload the backend `api/` folder together with the website**, otherwise those
+  pages send their one request to a missing `visit.php` (a harmless 404, but avoid it).
 - Privacy note: the counter sets no cookies and its statistics hold nothing personal, so it needs
   no cookie banner of its own (only the daily network hash above is short-lived pseudonymous data).
   (Google Analytics, which the site also loads, is separate.) If you wish, add one sentence to the
   site, e.g. "Visits are counted by country only, from the browser's time zone; the counter sets
   no cookies and keeps no IP addresses."
+
+## Citation metrics (OpenAlex, updated daily)
+
+**/admin → Research Metrics** has two modes:
+- **Automatic (OpenAlex)**: `api/metrics.php` asks OpenAlex (by ORCID) for citations, h-index and
+  works **at most once a day** and keeps the answer in `api/cache/metrics.json`. The homepage loads
+  those numbers after the page has loaded, so they update without a rebuild. The admin page shows
+  the numbers on the website now and when they were last fetched, and has **Check OpenAlex now**.
+  If OpenAlex cannot be reached, the last good numbers stay (a failed attempt is retried after 15
+  minutes); before the first successful fetch the site shows the numbers from the last build. The
+  "as of" date changes only when a number changes.
+- **Manual**: the numbers you type are shown; `metrics.php` answers 204 (empty) and is not asked.
+
+Files: `api/metrics.php`, `api/metricslib.php` (blocked from direct access) and `api/cache/`
+(with its own `.htaccess`; also blocked by `api/.htaccess`). PHP must be able to write `api/cache/`
+(normal on cPanel; if not, a private folder in the system temp directory is used). The request to
+OpenAlex uses cURL (5 s timeout) or, without cURL, `allow_url_fopen`, and sends no personal data.
+`api/content.php` reports whether `metrics.php` exists (`_metrics`), so an older backend never gets
+these requests. The prerendered homepage HTML (what search engines read first) keeps the numbers
+from the last build until the live ones arrive.
 
 ## When changes appear
 

@@ -18,6 +18,8 @@
 // exits non-zero on errors, so the build can fail fast before vite runs.
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync, statSync } from "fs";
 import path from "path";
+import { createHash } from "crypto";
+import { VARIANT_WIDTHS, variantPath } from "./image-variants-lib.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const DIST = path.resolve(process.env.DIST || path.join(ROOT, "dist"));
@@ -349,6 +351,19 @@ if (!existsSync(path.join(DIST, "index.html"))) {
   console.error(`  [seo] ${DIST}/index.html not found; run vite build first`);
   process.exit(1);
 }
+// Visitor-country beacon for the static pages (/visit.js, from scripts/visit-beacon.js; same
+// rules as the homepage's useVisitBeacon). Only when the backend that answers it
+// (cpanel-backend/api/visit.php) is in the repo, because these pages cannot ask content.php
+// first; the backend's api/ folder must be uploaded together with the site.
+const BACKEND_API = path.resolve(process.env.BACKEND_API_DIR || path.join(ROOT, "..", "cpanel-backend", "api"));
+const VISIT_ON = existsSync(path.join(BACKEND_API, "visit.php"));
+const VISIT_SRC = VISIT_ON ? readFileSync(path.join(ROOT, "scripts", "visit-beacon.js")) : null;
+// Pages ask for /visit.js?v=<content hash>: .htaccess caches that URL for a year (immutable),
+// and a changed script gets a new URL. Plain /visit.js stays short-lived (1 day).
+const VISIT_URL = VISIT_ON ? `/visit.js?v=${createHash("sha256").update(VISIT_SRC).digest("hex").slice(0, 10)}` : "";
+if (VISIT_ON) writeFileSync(path.join(DIST, "visit.js"), VISIT_SRC);
+else if (existsSync(path.join(DIST, "visit.js"))) rmSync(path.join(DIST, "visit.js"));
+console.log(`  [seo] visitor beacon on static pages: ${VISIT_ON ? "on (/visit.js)" : "off (no cpanel-backend/api/visit.php)"}`);
 
 pubs.sort((a, b) => b.date.localeCompare(a.date) || a.index - b.index);
 // lastmod: an explicit `updated` date on a paper, else its publication date. The homepage and the
@@ -729,7 +744,7 @@ ul.roles .small{display:inline-block;margin-top:2px;line-height:1.5}
 .gallery{columns:3 260px;column-gap:20px;margin-top:28px}
 .gallery figure{break-inside:avoid;margin:0 0 24px}
 .gallery a.ph{display:block;border-radius:6px;overflow:hidden;background:var(--surface);border:1px solid var(--border)}
-.gallery img{display:block;width:100%;height:auto}
+.gallery picture,.gallery img{display:block;width:100%;height:auto}
 .gallery img.noar{aspect-ratio:4/3;object-fit:cover}
 .gallery figcaption{margin-top:8px;font-size:15px;line-height:1.5}
 .gallery figcaption strong{display:block;font-weight:600}
@@ -835,7 +850,7 @@ function icon(platform) {
   if (ICON_PATHS[p]) return `${open(`fill="currentColor"`)}<path d="${ICON_PATHS[p]}"/></svg>`;
   if (p === "orcid") return `${open(`fill="none" stroke="currentColor"`)}<circle cx="8" cy="8" r="7.2" stroke-width="1.3"/><path d="M5.3 6.6v5" stroke-width="1.4"/><circle cx="5.3" cy="4.6" r=".85" fill="currentColor" stroke="none"/><path d="M7.6 6.6h1.5a2.5 2.5 0 0 1 0 5H7.6z" stroke-width="1.3"/></svg>`;
   if (p === "scholar") return `${open(`fill="currentColor"`)}<path d="M8 1 0 6.4h16z"/><circle cx="8" cy="10.6" r="4"/></svg>`;
-  if (p === "researchgate") return `${open(`fill="none" stroke="currentColor"`)}<rect x=".8" y=".8" width="14.4" height="14.4" rx="2" stroke-width="1.3"/><text x="8" y="11" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor" stroke="none" font-family="Inter,system-ui,sans-serif">RG</text></svg>`;
+  if (p === "researchgate") return `${open(`fill="none" stroke="currentColor"`)}<rect x=".8" y=".8" width="14.4" height="14.4" rx="2" stroke-width="1.3"/><path d="M3.9 11.4V4.6h2a1.75 1.75 0 0 1 0 3.5h-2m2 0 1.8 3.3M12.9 5.4a2.4 2.9 0 1 0 .5 4V8.3H11.9" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   if (p === "dblp") return `${open(`fill="none" stroke="currentColor" stroke-width="1.3"`)}<ellipse cx="8" cy="3.4" rx="5.6" ry="2"/><path d="M2.4 3.4v9.2c0 1.1 2.5 2 5.6 2s5.6-.9 5.6-2V3.4"/><path d="M2.4 8c0 1.1 2.5 2 5.6 2s5.6-.9 5.6-2"/></svg>`;
   return `${open(`fill="none" stroke="currentColor" stroke-width="1.3"`)}<circle cx="8" cy="8" r="7"/><path d="M1 8h14M8 1c2 2 2.8 4.4 2.8 7S10 13 8 15C6 13 5.2 10.6 5.2 8S6 3 8 1z"/></svg>`;
 }
@@ -886,7 +901,9 @@ ${footer.showSocials !== false && profileLinks.length ? `<ul class="prof" aria-l
 
 // <title> is kept short (≤ 60 characters where the content allows); og:title / twitter:title may
 // carry the full name of the page (e.g. the complete paper title) via ogTitle.
-function page({ title, ogTitle = "", description, canonical, head = "", body, jsonld, ogType = "website", crumbs = "", active = "", wide = false, robots = "" }) {
+// fonts: the extra Inter weights the page uses (all pages: 500 in the header; content pages also
+// 600). Preloaded so they are fetched with the HTML instead of after the first layout.
+function page({ title, ogTitle = "", description, canonical, head = "", body, jsonld, ogType = "website", crumbs = "", active = "", wide = false, robots = "", beacon = true, fonts = [500, 600] }) {
   const nav = navLinks(active);
   return `<!doctype html>
 <html lang="en">
@@ -912,7 +929,7 @@ ${canonical ? `<meta property="og:url" content="${esc(canonical)}">\n` : ""}<met
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
-${head}<script>${THEME_JS}</script>
+${fonts.map((w) => `<link rel="preload" href="/fonts/inter-latin-${w}-normal.woff2" as="font" type="font/woff2" crossorigin>\n`).join("")}${head}${beacon && VISIT_ON ? `<script src="${VISIT_URL}" defer></script>\n` : ""}<script>${THEME_JS}</script>
 <style>${CSS}${wide ? "\nmain>.wide{max-width:none}" : ""}</style>
 ${jsonld ? ldScript(jsonld) + "\n" : ""}</head>
 <body>
@@ -1468,10 +1485,27 @@ const photos = galleryItems.map((g) => {
 }).filter(Boolean);
 for (const ph of photos) if (!ph.size) console.warn(`  [seo] warn: photo ${ph.src} is not in the build (or unreadable); no width/height on /photos/`);
 if (photos.length) {
-  const fig = (ph, i) => `<figure>
-<a class="ph" href="${esc(ph.url)}"><img src="${esc(ph.url)}" alt="${esc(ph.alt)}"${ph.size ? ` width="${ph.size.w}" height="${ph.size.h}"` : ` class="noar"`} loading="${i < 3 ? "eager" : "lazy"}" decoding="async"></a>
+  // Smaller WebP copies made by `npm run images` (scripts/image-variants.mjs), when present: the
+  // browser picks the one closest to the shown size (one column on phones, up to three of
+  // about 286px on wide screens). The link still opens the original file.
+  const GALLERY_SIZES = "(min-width: 960px) 286px, (min-width: 884px) calc((100vw - 104px) / 3), (min-width: 640px) calc((100vw - 84px) / 2), (min-width: 580px) calc((100vw - 60px) / 2), calc(100vw - 40px)";
+  const variantSet = (src) => {
+    if (!src.startsWith("/images/")) return "";
+    const rel = safeDecode(src.split(/[?#]/)[0]);
+    const ws = [...VARIANT_WIDTHS, ...(localImageSize(src) ? [localImageSize(src).w] : [])].filter((w, k, a) => a.indexOf(w) === k).sort((a, b) => a - b);
+    // Each URL carries ?v=<content hash>: images are cached for a year (.htaccess), so a copy
+    // regenerated under the same name still reaches returning visitors after the next build.
+    return ws.filter((w) => existsSync(path.join(ROOT, "public", variantPath(rel, w))))
+      .map((w) => `${variantPath(rel, w)}?v=${createHash("sha256").update(readFileSync(path.join(ROOT, "public", variantPath(rel, w)))).digest("hex").slice(0, 10)} ${w}w`).join(", ");
+  };
+  const fig = (ph, i) => {
+    const img = `<img src="${esc(ph.url)}" alt="${esc(ph.alt)}"${ph.size ? ` width="${ph.size.w}" height="${ph.size.h}"` : ` class="noar"`} loading="${i === 0 ? "eager" : "lazy"}"${i === 0 ? ` fetchpriority="high"` : ""} decoding="async">`;
+    const set = variantSet(ph.src);
+    return `<figure>
+<a class="ph" href="${esc(ph.url)}">${set ? `<picture><source type="image/webp" srcset="${esc(set)}" sizes="${GALLERY_SIZES}">${img}</picture>` : img}</a>
 <figcaption>${ph.title ? `<strong>${esc(ph.title)}</strong>` : ""}${ph.visible ? `${esc(ph.visible)}` : ""}${((meta) => (meta.length ? `<span class="small">${meta.join(" · ")}</span>` : ""))([ph.owner && !/palash/i.test(ph.title + " " + ph.visible) && `Pictured: ${NAME}`, esc(showDate(ph.date)), ph.credit && `Photo: ${esc(ph.credit)}`].filter(Boolean))}</figcaption>
 </figure>`;
+  };
   const PH_T = htitle("photos", "Photos");
   const body = `<h1>${esc(PH_T)}</h1>
 <p>${hsub("photos") ? inlineMd(hsub("photos")) : `Photos of ${NAME} at university events and on his travels.`}</p>
@@ -1558,7 +1592,7 @@ ${blogPosts.length ? blogPosts.map((b) => `<article class="post"><p class="small
 
 // ---------------------------------------------------------------- 404
 write("404.html", page({
-  title: `Page not found | ${NAME}`, description: "This page does not exist.", canonical: "",
+  title: `Page not found | ${NAME}`, description: "This page does not exist.", canonical: "", beacon: false, fonts: [500],
   body: `<h1>Page not found</h1>
 <p>There is no page at this address. It may have moved.</p>
 <ul class="plain"><li><a href="/">Home</a></li>${FOOTER_PAGES.map(([l, u]) => `<li><a href="${u}">${esc(l)}</a></li>`).join("")}</ul>`,

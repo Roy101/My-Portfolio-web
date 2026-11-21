@@ -134,6 +134,26 @@ RewriteRule ^blog(/.*)?$ /index.html [L]
   <Files "maintenance.html">
     Header set X-Robots-Tag "noindex"
   </Files>
+  # Caching. Build output in /assets/ has a content hash in every file name (a new build makes
+  # new names), and the self-hosted fonts never change under the same name: both are cached for
+  # a year without revalidation. HTML stays short-lived (mod_expires below: max-age=0, so each
+  # visit revalidates with the ETag and sees a new build at once).
+  <If "%{REQUEST_URI} =~ m#^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(js|css)$#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  <FilesMatch "\.woff2$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # The generated pages load /visit.js?v=<content hash> (scripts/generate-seo.mjs): that exact
+  # URL never changes content, so it is cached like the hashed assets.
+  <Files "visit.js">
+    <If "%{QUERY_STRING} =~ /^v=[0-9a-f]{10}$/">
+      Header set Cache-Control "public, max-age=31536000, immutable"
+      # mod_expires (below) would still add a 1-day Expires to this URL; drop it so the two
+      # headers agree (Cache-Control wins anyway).
+      Header unset Expires
+    </If>
+  </Files>
 </IfModule>
 
 <IfModule mod_deflate.c>
@@ -152,13 +172,20 @@ RewriteRule ^blog(/.*)?$ /index.html [L]
   ExpiresByType font/woff2 "access plus 1 year"
   ExpiresByType video/mp4 "access plus 1 month"
   ExpiresByType video/webm "access plus 1 month"
-  ExpiresByType text/css "access plus 1 month"
-  ExpiresByType text/javascript "access plus 1 month"
-  ExpiresByType application/javascript "access plus 1 month"
-  ExpiresByType application/x-javascript "access plus 1 month"
+  # CSS/JS: the hashed /assets/ files (made immutable above); /visit.js is set below.
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType application/x-javascript "access plus 1 year"
+  # JSON files only; the PHP API sets its own Cache-Control (api/.htaccess turns this off there).
   ExpiresByType application/json "access plus 0 seconds"
   ExpiresByType text/html "access plus 0 seconds"
   ExpiresByType text/plain "access plus 1 hour"
   ExpiresByType text/markdown "access plus 1 hour"
   ExpiresByType application/xml "access plus 1 hour"
+  # /visit.js has no hash in its name; keep it short-lived so a new version is picked up.
+  <Files "visit.js">
+    ExpiresByType text/javascript "access plus 1 day"
+    ExpiresByType application/javascript "access plus 1 day"
+  </Files>
 </IfModule>

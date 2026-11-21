@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { createPortal } from "react-dom";
 
 // Single-source content (editable via the /admin CMS). At runtime the live
@@ -143,10 +143,19 @@ function dateCell(p: string): string {
   return String(p || "").replace(/([A-Za-z]{3,}\.?) ((?:19|20)\d{2})/g, "$1\u00a0$2").replace(/ – /g, "\u00a0– ");
 }
 
+// English month names, formatted by hand: the output is what toLocaleDateString("en-US") gives
+// ("May 2026", "May 3, 2026"), but the first Intl date formatter costs the browser about 15 ms
+// to set up, which was the slowest part of the page's first render on phones.
+// Years and ISO dates sort correctly by code point; localeCompare() would set up an Intl
+// collator (slow the first time) for nothing.
+const cmpStr = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 function fmtMonthYear(d?: string): string {
   if (!d) return "";
   const dt = new Date(/^\d{4}-\d{2}(-\d{2})?$/.test(d) ? d.slice(0, 7) + "-01T00:00:00" : d);
-  return isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  if (isNaN(dt.getTime())) return String(d);
+  return `${MONTHS_SHORT[dt.getMonth()]} ${dt.getFullYear()}`;
 }
 
 // Turn an editable URL into a safe href: allow http(s)/mailto/tel/relative/anchor
@@ -538,9 +547,11 @@ function MobileDrawer({ links, extra, extraLabel, onClose, cvUrl, activeId, curr
     </>, document.body);
 }
 
-function SiteNav({ links, extra, extraLabel, theme, onToggleTheme, cvUrl, homeHref, activeId, currentPage }: {
-  links: NavLink[]; extra: NavLink[]; extraLabel: string; theme: Theme; onToggleTheme: () => void; cvUrl?: string; homeHref: string; activeId?: string; currentPage?: string;
+function SiteNav({ links, extra, extraLabel, theme, onToggleTheme, cvUrl, homeHref, spyIds, currentPage }: {
+  links: NavLink[]; extra: NavLink[]; extraLabel: string; theme: Theme; onToggleTheme: () => void; cvUrl?: string; homeHref: string; spyIds: string[]; currentPage?: string;
 }) {
+  // The scroll position is tracked here, so scrolling re-renders only the nav, not the page.
+  const activeId = useActiveSection(spyIds);
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const close = useCallback(() => { setOpen(false); setTimeout(() => btnRef.current?.focus(), 0); }, []);
@@ -582,10 +593,12 @@ function useActiveSection(ids: string[]): string | undefined {
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && ids.length) cur = ids[ids.length - 1];
       setActive(cur);
     };
-    onScroll();
+    // First reading in the next frame, where the browser lays the page out anyway; measuring
+    // here, right after React's commit, forced an extra full layout inside the same long task.
+    const raf = requestAnimationFrame(onScroll);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
-    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return active;
@@ -923,7 +936,7 @@ function CompanionLine({ item }: { item: Publication }) {
   const lead = type === "poster" ? "Also presented as a poster" : "Companion";
   return (
     <div className="pub-companion" id={`pub-${pubSlug(item)}`}>
-      <span className="muted">{lead}: </span><a href={`/publications/${pubSlug(item)}/`} aria-label={`${lead}: ${item.title}`}><em>{venueInline(noEmoji(item.venue_short || item.venue).replace(/\s*\((poster|demo)\)\s*$/i, ""))}</em></a>
+      <span className="muted">{lead}: </span><a href={`/publications/${pubSlug(item)}/`}><em>{venueInline(noEmoji(item.venue_short || item.venue).replace(/\s*\((poster|demo)\)\s*$/i, ""))}</em><span className="sr-only">{` (${noEmoji(item.title)})`}</span></a>
       <div className="link-row">{paperLinks(item, { onCite: () => setCiteOpen(true), onVideo: () => setVideoOpen(true), withPage: false })}</div>
       {citeOpen && <CiteModal item={item} onClose={() => setCiteOpen(false)} />}
       {videoOpen && hasVideo(item) && <VideoModal url={fieldStr(item.video)} onClose={() => setVideoOpen(false)} />}
@@ -1000,7 +1013,7 @@ function OtherPublications({ items, companionsOf }: { items: Publication[]; comp
     if (!byYear.has(y)) byYear.set(y, []);
     byYear.get(y)!.push(p);
   });
-  const years = Array.from(byYear.keys()).sort((a, b) => (b === "Other" ? -1 : a === "Other" ? 1 : b.localeCompare(a)));
+  const years = Array.from(byYear.keys()).sort((a, b) => (b === "Other" ? -1 : a === "Other" ? 1 : cmpStr(b, a)));
   return (
     <div>
       {years.map((y) => (
@@ -1269,7 +1282,7 @@ function buildNews(news: any[], highlights: HighlightItem[], media: any[], usedM
     if (dup) { if (!dup.url && r.url) dup.url = r.url; }
     else kept.push(r);
   });
-  return kept.sort((x, y) => (y.year - x.year) || (x.iso && y.iso ? y.iso.localeCompare(x.iso) : 0) || (x.order - y.order));
+  return kept.sort((x, y) => (y.year - x.year) || (x.iso && y.iso ? cmpStr(y.iso, x.iso) : 0) || (x.order - y.order));
 }
 
 // A news line without its own link points at the paper it is about: an explicit
@@ -1797,7 +1810,8 @@ function SiteFooter({ footer, email, cvUrl, profiles, siteLinks, onPage, onPageL
 function fmtDate(d?: string) {
   if (!d) return "";
   const dt = new Date(d + (/^\d{4}-\d{2}-\d{2}$/.test(String(d)) ? "T00:00:00" : ""));
-  return isNaN(dt.getTime()) ? String(d) : dt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  if (isNaN(dt.getTime())) return String(d);
+  return `${MONTHS_LONG[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`;
 }
 function isDraft(p: BlogPost) { const d = String(p?.draft ?? "").toLowerCase(); return p?.draft === true || d === "yes" || d === "true" || d === "1"; }
 function eslug(p: BlogPost) { return (p.slug && p.slug.trim()) ? p.slug.trim() : slugify(p.title); }
@@ -2017,6 +2031,34 @@ function useVisitorLine(cfg: any, available: boolean): string | null {
   return noEmoji(n === 1 ? out.replace(/\bcountries\b/, "country") : out) || null;
 }
 
+// Live citation numbers in automatic (OpenAlex) mode: /api/metrics.php serves them from a
+// server-side cache refreshed once a day. Only when /api/content.php says the endpoint exists
+// (remote._metrics), so an older backend never gets a 404. A 204 (manual mode, nothing fetched
+// yet) or any error keeps the numbers baked in at build time.
+function useLiveMetrics(enabled: boolean): Record<string, any> | null {
+  const [live, setLive] = useState<Record<string, any> | null>(null);
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+    return afterLoadIdle(() => {
+      fetch("/api/metrics.php", { credentials: "omit" })
+        .then((r) => (r.status === 200 ? r.json() : null))
+        .then((d) => {
+          if (!d || typeof d !== "object") return;
+          const n = (v: any) => Number.isInteger(v) && v >= 0;
+          if (!n(d.citations) || !n(d.hIndex) || !n(d.works)) return;
+          startTransition(() => setLive({
+            citations: d.citations, hIndex: d.hIndex, works: d.works, source: "OpenAlex",
+            profileUrl: typeof d.profileUrl === "string" && /^https:\/\/openalex\.org\/A\d+$/.test(d.profileUrl) ? d.profileUrl : undefined,
+            openAlexId: typeof d.openAlexId === "string" ? d.openAlexId : undefined,
+            updated: typeof d.updated === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.updated) ? d.updated : undefined,
+          }));
+        })
+        .catch(() => {});
+    });
+  }, [enabled]);
+  return live;
+}
+
 // ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
@@ -2029,7 +2071,8 @@ export default function App() {
     // Apply the live update during idle time to keep the re-render out of the
     // interactivity window.
     const apply = (d: Record<string, any>) => {
-      const run = () => setRemote(d);
+      // As a transition, the re-render with the live content is sliced into short tasks.
+      const run = () => startTransition(() => setRemote(d));
       if ("requestIdleCallback" in window) (window as any).requestIdleCallback(run, { timeout: 2500 });
       else setTimeout(run, 200);
     };
@@ -2053,9 +2096,13 @@ export default function App() {
   const academicServiceData = arr<ServiceItem>("service", defaultService);
   const newsItems = arr<any>("news", (newsData as any).items);
   const mediaItems = arr<any>("media", (mediaData as any).items);
-  // In "auto" mode the live row only carries a flag; the real numbers are the
-  // values baked at build time (metricsData). Manual mode uses the live row.
-  const metrics: any = (remote.metrics && typeof remote.metrics === "object" && (remote.metrics as any).auto !== true) ? remote.metrics : metricsData;
+  // In "auto" mode the live row only carries a flag; the numbers come from /api/metrics.php
+  // (OpenAlex, refreshed daily on the server), and until that answers, from the values baked
+  // in at build time (metricsData). Manual mode uses the live row.
+  const metricsAuto = !!remote.metrics && typeof remote.metrics === "object" && (remote.metrics as any).auto === true;
+  const liveMetrics = useLiveMetrics(metricsAuto && remote._metrics === true);
+  const metrics: any = (remote.metrics && typeof remote.metrics === "object" && !metricsAuto) ? remote.metrics
+    : liveMetrics ? { ...metricsData, ...Object.fromEntries(Object.entries(liveMetrics).filter(([, v]) => v !== undefined)) } : metricsData;
   const hero: any = obj("hero", heroData);
   const about: any = obj("about", aboutData);
   const settings: any = obj("settings", settingsData);
@@ -2088,7 +2135,7 @@ export default function App() {
 
   // Published blog posts, newest first (drafts hidden).
   const allPosts = arr<BlogPost>("blog", (blogData as any).items).filter((p) => p && (p.slug || p.title));
-  const blogPosts = allPosts.filter((p) => !isDraft(p)).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const blogPosts = allPosts.filter((p) => !isDraft(p)).slice().sort((a, b) => cmpStr(String(b.date || ""), String(a.date || "")));
 
   // Section order + visibility (computed before any branch so hooks stay stable).
   const customSections: any[] = (Array.isArray(remote.customSections) ? remote.customSections : []).filter((c: any) => c && c.id && !(c.id in MERGED));
@@ -2176,7 +2223,6 @@ export default function App() {
   ];
   const onPageLabel = onHome ? "On this page" : "On the homepage";
   const spyIds = onHome ? ["research", "publications", "tools", "experience", "awards", "news", "blog", "contact"] : [];
-  const activeId = useActiveSection(spyIds);
 
   const siteLinks = [
     { label: "Publications", url: "/publications/", aria: "Publications page (all papers)" },
@@ -2193,7 +2239,7 @@ export default function App() {
       {/* Fixed at the bottom visually, but right after the skip link in the DOM / Tab order. */}
       <ThemePrompt pref={pref} onChoose={chooseTheme} enabled={settings.themePrompt !== false && !isTrue(settings.themePromptOff)} />
       <SiteNav links={navLinks} extra={onPageLinks} extraLabel={onPageLabel} theme={theme} onToggleTheme={toggleTheme} cvUrl={cvUrl}
-        homeHref={homeHref} activeId={onHome ? activeId : undefined} currentPage={currentPage} />
+        homeHref={homeHref} spyIds={spyIds} currentPage={currentPage} />
       {node}
       <SiteFooter footer={footer} email={email} cvUrl={cvUrl} profiles={profiles} siteLinks={siteLinks} visitorLine={visitorLine}
         onPage={[
@@ -2599,7 +2645,8 @@ export default function App() {
             <img src={heroPhoto} alt={OWNER_NAME} className="hero-photo" width={200} height={200} decoding="async" fetchPriority="high" />
           ) : (
             <picture>
-              <source srcSet="/images/palash_roy_headshot.webp" type="image/webp" />
+              {/* object-fit: cover crops the 640x552 photo to a square, so it is drawn about 1.16x the box width. */}
+              <source srcSet="/images/palash_roy_headshot-200w.webp 200w, /images/palash_roy_headshot-240w.webp 240w, /images/palash_roy_headshot-480w.webp 480w, /images/palash_roy_headshot.webp 640w" sizes="(min-width: 768px) 200px, 96px" type="image/webp" />
               <img src="/images/palash_roy_headshot.jpg" alt={OWNER_NAME} width={200} height={200} className="hero-photo" decoding="async" fetchPriority="high" />
             </picture>
           )}

@@ -319,6 +319,22 @@ if (($action === 'visitors' || $action === 'visitors_reset') && $_SERVER['REQUES
     }
 }
 
+// ---- live citation metrics (AJAX, logged-in only) ----
+// POST index.php?action=metrics_status with JSON {"csrf", "refresh": bool}
+//   -> {"ok", "auto", "data", "fetched", "tried", "error"}: what api/metrics.php serves (see api/metricslib.php).
+//   "refresh": true asks OpenAlex now (only in automatic mode), instead of waiting for the daily refresh.
+if ($action === 'metrics_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!is_logged_in()) { http_response_code(401); json_out(['error' => 'Not logged in']); }
+    $body = json_decode((string)file_get_contents('php://input'), true);
+    require_csrf(is_array($body) && is_string($body['csrf'] ?? null) ? $body['csrf'] : '');
+    header('Cache-Control: no-store');
+    if (!is_file(__DIR__ . '/../api/metricslib.php')) json_out(['ok' => false, 'error' => 'api/metricslib.php is not on the server']);
+    require_once __DIR__ . '/../api/metricslib.php';
+    try { $auto = metrics_auto_on(db()); } catch (Throwable $e) { $auto = false; }
+    $c = ($auto && ($body['refresh'] ?? false) === true) ? metrics_get(true) : metrics_read_cache();
+    json_out(['ok' => true, 'auto' => $auto, 'data' => $c['data'], 'fetched' => $c['fetched'], 'tried' => $c['tried'], 'error' => $c['error']]);
+}
+
 // ---- maintenance mode on/off (AJAX, logged-in only) ----
 // POST index.php?action=maintenance with JSON {"csrf", "on": bool, "message": str, "until": str}.
 // Writes maintenance.html, then creates/deletes the .maintenance flag, then records the state in settings.maintenance.
@@ -1369,8 +1385,9 @@ function renderMetrics(){
   const auto = m.auto===true;
   app().innerHTML = `<h2>Research Metrics</h2><p class="lead">The citation numbers shown in your hero and Publications section.</p>`+
     `<div class="item">`+
-    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef"><input type="checkbox" id="m_auto" style="width:auto" onchange="renderMetricsMode()" ${auto?'checked':''}> Update automatically from OpenAlex (via your ORCID) on each rebuild</label>`+
-    `<small>Automatic uses OpenAlex, which usually reports <b>fewer</b> citations than Google Scholar. Leave it off to show your own Google Scholar numbers.</small>`+
+    `<label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px;color:#e8e8ef"><input type="checkbox" id="m_auto" style="width:auto" onchange="renderMetricsMode()" ${auto?'checked':''}> Update automatically from OpenAlex (via your ORCID)</label>`+
+    `<small>Automatic: the website updates the numbers itself once a day from OpenAlex; no rebuild needed. OpenAlex usually reports <b>fewer</b> citations than Google Scholar. Leave it off to show your own Google Scholar numbers.</small>`+
+    `<div id="m_live" style="${auto?'':'display:none'};margin-top:12px"><div id="m_live_box" aria-live="polite"><small>Loading the current OpenAlex numbers…</small></div></div>`+
     `<div id="m_manual" style="${auto?'display:none':''};margin-top:12px">`+
     `<label>Citations</label><input id="m_citations" type="number" value="${escA(m.citations??'')}">`+
     `<label>h-index</label><input id="m_hIndex" type="number" value="${escA(m.hIndex??'')}">`+
@@ -1381,8 +1398,27 @@ function renderMetrics(){
     `</div></div>`+
     `<div class="bar"><button class="primary" onclick="saveMetrics()">Save Metrics</button></div>`+
     `<small>Manual tip: open your Google Scholar profile and copy the "Cited by" total and h-index here.</small>`;
+  loadMetricsLive(false);
 }
-window.renderMetricsMode=()=>{ const on=document.getElementById('m_auto').checked; document.getElementById('m_manual').style.display = on?'none':''; };
+window.renderMetricsMode=()=>{ const on=document.getElementById('m_auto').checked; document.getElementById('m_manual').style.display = on?'none':''; document.getElementById('m_live').style.display = on?'':'none'; };
+// Current numbers served by api/metrics.php (cached on the server, refreshed once a day).
+async function loadMetricsLive(refresh){
+  const box=document.getElementById('m_live_box'); if(!box) return;
+  if(refresh) box.innerHTML='<small>Asking OpenAlex…</small>';
+  let j=null;
+  try{ const r=await fetch('index.php?action=metrics_status',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',cache:'no-store',body:JSON.stringify({csrf:CSRF,refresh:!!refresh})}); j=await r.json(); }catch(e){ j=null; }
+  const b=document.getElementById('m_live_box'); if(!b) return;
+  const when=t=>t?new Date(t*1000).toLocaleString():'never';
+  if(!j||!j.ok){ b.innerHTML='<small>Could not read the live numbers'+(j&&j.error?': '+escA(j.error):'')+'.</small>'; return; }
+  if(j.auto && !j.data && !j.tried && !refresh){ loadMetricsLive(true); return; } // first use: fetch once now
+  const d=j.data;
+  let h = d ? `<p style="margin:0 0 6px">Shown on the website now: <b>${escA(String(d.citations))}</b> citations · h-index <b>${escA(String(d.hIndex))}</b> · ${escA(String(d.works))} works <small>(numbers changed ${escA(d.updated||'?')})</small></p>`
+            : `<p style="margin:0 0 6px">No OpenAlex numbers fetched yet; the website shows the numbers from the last build until the first fetch.</p>`;
+  h += `<small>Last fetched from OpenAlex: ${escA(when(j.fetched))}.`+(j.error?` Last attempt (${escA(when(j.tried))}) failed: ${escA(j.error)}; the last good numbers stay on the website.`:'')+(j.auto?'':' Save with automatic on to start the daily updates.')+`</small>`;
+  if(j.auto) h += `<div class="bar" style="margin-top:8px"><button type="button" onclick="loadMetricsLive(true)">Check OpenAlex now</button></div>`;
+  b.innerHTML=h;
+}
+window.loadMetricsLive=loadMetricsLive;
 window.saveMetrics=()=>{
   const prev = DATA.metrics||{};
   const auto = document.getElementById('m_auto').checked;
@@ -1397,7 +1433,7 @@ window.saveMetrics=()=>{
         profileUrl: v('m_profile') || 'https://scholar.google.com/citations?user=Vy_sw5UAAAAJ&hl=en',
         updated: /^\d{4}-\d{2}(-\d{2})?$/.test(v('m_updated')) ? v('m_updated') : new Date().toISOString().slice(0,10)
       });
-  DATA.metrics = data; postSection('metrics',data,'Metrics');
+  DATA.metrics = data; postSection('metrics',data,'Metrics').then(()=>loadMetricsLive(false));
 };
 
 // ---- Change password ----

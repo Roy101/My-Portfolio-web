@@ -32,4 +32,8 @@ module.exports = {
     },
   },
   plugins: [],
+  // Scope Tailwind's --tw-* default variables to the elements whose utilities use them, instead
+  // of setting about 30 custom properties on every element (*, ::before, ::after). Same look,
+  // much less style work when the page (re)renders.
+  experimental: { optimizeUniversalDefaults: true },
 };

@@ -1,6 +1,9 @@
 
 # cPanel backend secrets (never commit)
 cpanel-backend/api/config.php
+# Server-side metrics cache (written by api/metrics.php on the server)
+cpanel-backend/api/cache/*
+!cpanel-backend/api/cache/.htaccess
 
 # Deploy artifacts (regenerable zips)
 /deploy/

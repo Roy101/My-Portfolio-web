@@ -19,6 +19,8 @@ try {
     // Tells the website that api/visit.php (visitor-country counter) is on this server, so an
     // older backend never gets a request it would answer with 404.
     $out['_visit'] = is_file(__DIR__ . '/visit.php');
+    // Same for api/metrics.php (live OpenAlex citation numbers, used in automatic metrics mode).
+    $out['_metrics'] = is_file(__DIR__ . '/metrics.php');
     echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);

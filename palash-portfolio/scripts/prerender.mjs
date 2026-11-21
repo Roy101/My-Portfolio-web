@@ -56,6 +56,22 @@ const browser = await puppeteer.launch({
   args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"],
 });
 
+// The snapshot is the finished page, so the app bundle is not needed for the first paint. Vite's
+// <script type="module"> (and its modulepreload) would load and run before that paint; instead a
+// small inline script adds them once the page is parsed and painted (DOMContentLoaded, one
+// animation frame, then a task). React then re-renders the same content (src/main.tsx). A tab
+// opened in the background paints nothing, so it loads the app right away.
+function deferApp(html, route) {
+  const entry = html.match(/<script type="module" crossorigin(?:="")? src="(\/assets\/[^"]+\.js)"><\/script>/);
+  if (!entry) { console.warn(`  [prerender] ${route}: no module script found; app left as is`); return html; }
+  const preloads = [...html.matchAll(/<link rel="modulepreload" crossorigin(?:="")? href="(\/assets\/[^"]+\.js)">/g)];
+  // A later snapshot is taken from a shell that already went through this (dist/index.html).
+  let out = html.replace(/<script id="app-loader">[\s\S]*?<\/script>\n?/g, "").replace(entry[0], "");
+  for (const m of preloads) out = out.replace(m[0], "");
+  const loader = `<script id="app-loader">(function(){var d=document,done=0;function go(){if(done)return;done=1;${JSON.stringify(preloads.map((m) => m[1]))}.forEach(function(u){var l=d.createElement("link");l.rel="modulepreload";l.crossOrigin="";l.href=u;d.head.appendChild(l)});var s=d.createElement("script");s.type="module";s.crossOrigin="";s.src=${JSON.stringify(entry[1])};d.head.appendChild(s)}d.addEventListener("DOMContentLoaded",function(){if(d.visibilityState==="hidden"){go();return}requestAnimationFrame(function(){setTimeout(go,0)});setTimeout(go,1000)})})();</script>`;
+  return out.replace("</head>", `${loader}\n</head>`);
+}
+
 async function snap(route, outFile, canonical, robots) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 1000 });
@@ -93,7 +109,22 @@ async function snap(route, outFile, canonical, robots) {
       m.setAttribute("content", v);
     }, robots);
   }
-  const html = await page.content();
+  // Fonts: preload every font file this page used (the CSS would otherwise find them only after
+  // the first layout), and drop the hero-photo preload on pages without the hero photo.
+  await page.evaluate(() => {
+    const used = [...new Set(performance.getEntriesByType("resource").map((r) => new URL(r.name).pathname).filter((u) => /^\/fonts\/[^/]+\.woff2$/.test(u)))];
+    const have = new Set([...document.querySelectorAll('link[rel="preload"][as="font"]')].map((l) => new URL(l.href).pathname));
+    const last = [...document.querySelectorAll('link[rel="preload"][as="font"]')].pop();
+    for (const u of used.sort()) {
+      if (have.has(u)) continue;
+      const l = document.createElement("link");
+      l.rel = "preload"; l.as = "font"; l.type = "font/woff2"; l.crossOrigin = ""; l.href = u;
+      if (last) last.after(l); else document.head.appendChild(l);
+    }
+    if (!document.querySelector("img.hero-photo")) document.querySelectorAll('link[rel="preload"][as="image"][imagesrcset*="headshot"]').forEach((l) => l.remove());
+  });
+  let html = await page.content();
+  html = deferApp(html, route);
   await mkdir(path.dirname(outFile), { recursive: true });
   await writeFile(outFile, html);
   await page.close();
