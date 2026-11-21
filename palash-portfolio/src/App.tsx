@@ -2008,7 +2008,15 @@ export default function App() {
     ...savedOrder.map((id) => customSections.find((c) => c.id === id)).filter(Boolean),
     ...customSections.filter((c) => !savedOrder.includes(c.id)),
   ] as any[];
-  const order = [...DEFAULT_ORDER.slice(0, -1), ...customOrdered.map((c) => c.id), "contact"];
+  // A layout saved by the 2026-11 admin starts with the marker "v2" and orders the built-in
+  // sections too (admin id "software" = "tools"). Older saved orders only order custom sections,
+  // so the recommended built-in order is kept for them. Contact is always last.
+  const order = (() => {
+    const base = [...DEFAULT_ORDER.slice(0, -1), ...customOrdered.map((c) => c.id)];
+    if (savedOrder[0] !== "v2") return [...base, "contact"];
+    const wanted = savedOrder.slice(1).map((id) => (id === "software" ? "tools" : id)).filter((id) => base.includes(id));
+    return [...new Set([...wanted, ...base])].concat("contact");
+  })();
   const hidden = new Set<string>(Array.isArray(remote.sectionsHidden) ? remote.sectionsHidden : DEFAULT_HIDDEN);
   const isHidden = (k: string) => hidden.has(k) || (SOURCES[k] ? SOURCES[k].every((s) => hidden.has(s)) : false);
 
@@ -2037,7 +2045,10 @@ export default function App() {
     ...customOrdered.filter((c) => c.nav && visibleSet.has(c.id)).map((c) => ({ id: c.id, label: noEmoji(c.nav), href: h(c.id) })),
     ...(showBlogNav ? [{ id: "blog-page", label: navText(["blog"], "Blog"), href: "/blog/" }] : []),
     { id: "contact", label: navText(["contact"], "Contact", /^collaborate$/i), href: h("contact") },
-  ].filter((l) => l.id === "blog-page" || !l.href.includes("#") || visibleSet.has(l.id) || customOrdered.some((c) => c.id === l.id)).slice(0, 6);
+  ].filter((l) => l.id === "blog-page" || !l.href.includes("#") || visibleSet.has(l.id) || customOrdered.some((c) => c.id === l.id))
+    // The menu follows the homepage order (Blog sits where the blog section is; Contact stays last).
+    .map((l, i) => ({ l, i, p: l.id === "contact" ? 1e9 : order.indexOf(l.id === "blog-page" ? "blog" : l.id) }))
+    .sort((a, b) => (a.p - b.p) || (a.i - b.i)).map((x) => x.l).slice(0, 6);
 
   // Older database copies call this section "Software & Data"; the owner renamed it.
   const softwareTitle = titleText(["tools", "software"], "Tools & Benchmarks", /^software/i);

@@ -598,9 +598,22 @@ let customSections = validCustom(DATA.customSections);
 // Label for any section id (built-in or custom)
 function sectionLabel(id){ if(SECTION_LABELS[id]) return SECTION_LABELS[id]; const c=customSections.find(x=>x.id===id); return c ? ((c.title||c.nav||'Custom section')) : id; }
 function knownSection(id){ return !!SECTION_LABELS[id] || !!LEGACY_SECTIONS[id] || customSections.some(c=>c.id===id); }
-// Only the custom sections' order matters (built-ins are fixed); keep the saved custom order.
-let layoutOrder = [...DEFAULT_ORDER, ...(Array.isArray(DATA.sectionOrder) ? DATA.sectionOrder.filter(id=>customSections.some(c=>c.id===id)) : [])];
-customSections.forEach(c=>{ if(!layoutOrder.includes(c.id)) layoutOrder.push(c.id); });
+// Homepage order. A layout saved by this admin starts with the marker "v2" and orders every
+// section (built-in and custom); an older saved order only ordered custom sections, so the
+// recommended built-in order is used for those. Contact is always last.
+function normLayout(ids){
+  const ok=id=>id!=='contact' && (DEFAULT_ORDER.includes(id) || customSections.some(c=>c.id===id));
+  const out=[...new Set(ids.filter(ok))];
+  DEFAULT_ORDER.forEach(id=>{ if(id!=='contact' && !out.includes(id)) out.push(id); });
+  customSections.forEach(c=>{ if(!out.includes(c.id)) out.push(c.id); });
+  return [...out,'contact'];
+}
+let layoutOrder = (()=>{
+  const saved=Array.isArray(DATA.sectionOrder)?DATA.sectionOrder:[];
+  if(saved[0]==='v2') return normLayout(saved.slice(1));
+  return normLayout([...DEFAULT_ORDER, ...saved.filter(id=>customSections.some(c=>c.id===id))]);
+})();
+const layoutForSave=()=>['v2', ...normLayout(layoutOrder)];
 let hiddenSet = new Set(Array.isArray(DATA.sectionsHidden) ? DATA.sectionsHidden.filter(knownSection) : []);
 
 // Sections whose headings/descriptions are editable, in page order
@@ -747,27 +760,30 @@ window.fetchTitle=async(btn)=>{
 // ---- Page Layout ----
 function sectionOff(id){ return hiddenSet.has(id) || (SECTION_SOURCES[id] ? SECTION_SOURCES[id].every(k=>hiddenSet.has(k)) : false); }
 function renderLayout(){
-  const customs=layoutOrder.filter(id=>customSections.some(c=>c.id===id));
+  layoutOrder=normLayout(layoutOrder);
+  const movable=layoutOrder.filter(id=>id!=='contact');
   const row=(id,label,acts,off)=>`<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;${off?'opacity:.5':''}">`+
     `<b style="color:${off?'#6b6f85':'#7ec8e3'}">${escA(label)}${off?' <span style="font-weight:400;font-size:12px">(hidden)</span>':''}</b><span class="acts">${acts}</span></div>`;
   const showBtn=(id,off)=>`<button class="mv" title="${off?'Show on website':'Hide from website'}" data-id="${escA(id)}" onclick="toggleHidden(this.dataset.id)">${off?'Show':'Hide'}</button>`;
-  const builtins=DEFAULT_ORDER.filter(id=>id!=='contact');
-  app().innerHTML = `<h2>Page Layout</h2><p class="lead">Show or hide homepage sections. Built-in sections always appear in this order (it matches the top menu: Research · Publications · Experience · Blog · Contact). Your custom sections can be moved with the arrows; they appear just before Contact. Hidden sections keep their content, so you can bring them back anytime. A section with no content (for example News with no items) is left out automatically.</p>`+
+  app().innerHTML = `<h2>Page Layout</h2><p class="lead">Reorder and show/hide homepage sections. Use the arrows to move a section (built-in or custom) up or down; the top menu follows the same order. The hero is always first and Contact always last. Hidden sections keep their content, so you can bring them back anytime. A section with no content (for example News with no items) is left out automatically. The recommended order for academic and industry readers is Research · Publications · Tools &amp; Benchmarks · Experience · Awards · News · Blog.</p>`+
     `<div>`+
-    builtins.map(id=>{ const off=sectionOff(id); return row(id,SECTION_LABELS[id],showBtn(id,off),off); }).join('')+
-    customs.map((id,i)=>{ const off=hiddenSet.has(id); return row(id,'Custom: '+sectionLabel(id),showBtn(id,off)+
-      `<button class="mv" title="Move up" data-id="${escA(id)}" onclick="moveSection(this.dataset.id,-1)" ${i===0?'disabled':''}>↑</button>`+
-      `<button class="mv" title="Move down" data-id="${escA(id)}" onclick="moveSection(this.dataset.id,1)" ${i===customs.length-1?'disabled':''}>↓</button>`,off); }).join('')+
+    movable.map((id,i)=>{ const isCustom=!SECTION_LABELS[id]; const off=isCustom?hiddenSet.has(id):sectionOff(id); return row(id,(isCustom?'Custom: ':'')+sectionLabel(id),showBtn(id,off)+
+      `<button class="mv" title="Move up" aria-label="Move ${escA(sectionLabel(id))} up" data-id="${escA(id)}" onclick="moveSection(this.dataset.id,-1)" ${i===0?'disabled':''}>↑</button>`+
+      `<button class="mv" title="Move down" aria-label="Move ${escA(sectionLabel(id))} down" data-id="${escA(id)}" onclick="moveSection(this.dataset.id,1)" ${i===movable.length-1?'disabled':''}>↓</button>`,off); }).join('')+
     (()=>{ const off=sectionOff('contact'); return row('contact',SECTION_LABELS.contact,showBtn('contact',off),off); })()+
     `</div>`+
     `<p class="lead" style="margin-top:12px">Photos (gallery) are shown on the separate <b>/photos/</b> page, not on the homepage, so they have no switch here. The References note (Sections &amp; Headings → References) is shown on <b>/about/</b>; the individual references (testimonials) are not shown in the 2026-11 design.</p>`+
-    `<div class="bar"><button class="primary" onclick="saveLayout()">Save Layout</button></div>`;
+    `<div class="bar"><button class="primary" onclick="saveLayout()">Save Layout</button> <button onclick="resetLayout()">Reset to recommended order</button></div>`;
 }
 window.moveSection=(id,dir)=>{
-  const customs=layoutOrder.filter(x=>customSections.some(c=>c.id===x));
-  const i=customs.indexOf(id), j=i+dir; if(i<0||j<0||j>=customs.length) return;
-  [customs[i],customs[j]]=[customs[j],customs[i]];
-  layoutOrder=[...DEFAULT_ORDER, ...customs]; renderLayout();
+  const list=normLayout(layoutOrder).filter(x=>x!=='contact');
+  const i=list.indexOf(id), j=i+dir; if(i<0||j<0||j>=list.length) return;
+  [list[i],list[j]]=[list[j],list[i]];
+  layoutOrder=normLayout(list); renderLayout();
+};
+window.resetLayout=()=>{
+  if(!confirm('Put the built-in sections back in the recommended order? (Custom sections go after them; nothing is shown or hidden. Click Save Layout to keep it.)')) return;
+  layoutOrder=normLayout([...DEFAULT_ORDER, ...customSections.map(c=>c.id)]); renderLayout();
 };
 window.toggleHidden=(id)=>{
   if(!sectionOff(id)){ hiddenSet.add(id); renderLayout(); return; }
@@ -781,8 +797,9 @@ window.toggleHidden=(id)=>{
 window.saveLayout=async()=>{
   try{
     const body=(section,data)=>fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}).then(r=>r.json());
-    const [a,b]=await Promise.all([body('sectionOrder',layoutOrder), body('sectionsHidden',[...hiddenSet])]);
-    if(a.ok) DATA.sectionOrder=layoutOrder.slice(); if(b.ok) DATA.sectionsHidden=[...hiddenSet];
+    const ord=layoutForSave();
+    const [a,b]=await Promise.all([body('sectionOrder',ord), body('sectionsHidden',[...hiddenSet])]);
+    if(a.ok) DATA.sectionOrder=ord; if(b.ok) DATA.sectionsHidden=[...hiddenSet];
     toast((a.ok&&b.ok)?'Layout & visibility saved ✓':('Error: '+((a.error||b.error)||'failed')));
   }catch(e){ toast('Network error'); }
 };
@@ -1139,14 +1156,13 @@ window.addCustom=()=>{ customSections=collectCustom(); const id='custom-'+Date.n
 window.removeCustom=(id)=>{ customSections=collectCustom().filter(s=>s.id!==id); renderCustom(); };
 window.saveCustom=async()=>{
   customSections=collectCustom();
-  customSections.forEach(s=>{ if(!layoutOrder.includes(s.id)) layoutOrder.push(s.id); });
+  layoutOrder=normLayout(layoutOrder);
   const valid=new Set([...Object.keys(SECTION_LABELS), ...Object.keys(LEGACY_SECTIONS), ...customSections.map(s=>s.id)]);
-  layoutOrder=layoutOrder.filter(id=>valid.has(id));
   hiddenSet=new Set([...hiddenSet].filter(id=>valid.has(id)));
   try{
     const body=(section,data)=>fetch('index.php?action=save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf:CSRF,section,data})}).then(r=>r.json());
-    const [a,b,c]=await Promise.all([body('customSections',customSections), body('sectionOrder',layoutOrder), body('sectionsHidden',[...hiddenSet])]);
-    DATA.customSections=customSections;
+    const [a,b,c]=await Promise.all([body('customSections',customSections), body('sectionOrder',layoutForSave()), body('sectionsHidden',[...hiddenSet])]);
+    DATA.customSections=customSections; DATA.sectionOrder=layoutForSave();
     toast((a.ok&&b.ok&&c.ok)?'Custom sections saved ✓':('Error: '+((a.error||b.error||c.error)||'failed')));
   }catch(e){ toast('Network error'); }
 };
