@@ -7,7 +7,7 @@
     "Publications: adds your M.Sc. thesis (USask HARVEST handle 10388/16429, with its official abstract), marks \"Towards Just-In-Time, Inclusive Clone Refactoring\" as an ICSME 2025 Doctoral Symposium paper with its CLEAR tool link, sets MergeSE to \"ASE 2026 Tool Track\", records equal contribution (co-first authors with Ajmain Inqiad Alam) on GPTCloneBench and the IWSC 2023 paper, and adds two kinds of tags, only where a paper has none: software engineering research areas (Software Maintenance & Evolution, Program Comprehension, Code Clones, ...) and AI/ML topics (Model Merging, Model Compression, ...).",
     "Tools & Benchmarks keeps only MergeSE and GPTCloneBench (items that are the subject of their own paper). The other code and replication-package links stay on their papers.",
     "Site Settings: the \"Latest\" strip near the top shows only pinned items (at most 2; the ASE 2026 news item is pinned) and the research-area and AI/ML topic lists (replacing any earlier list).",
-    "Experience: PhD expected Aug 2028, thesis link on the M.Sc. row, a \"Research Mentor, M.Sc. and junior Ph.D. students\" row, one \"Research Supervisor, NSERC USRA students\" row (7 students, 2023 – 2026) replacing the old supervision row, and the CARA invited talk (Feb 2026, also in News).",
+    "Experience: PhD expected Aug 2028, thesis link on the M.Sc. row, a \"Research Mentor, M.Sc. and junior Ph.D. students\" row, one \"Undergraduate Research Supervisor, NSERC USRA\" row (7 students, 2023 – 2026) replacing the old supervision row, and the CARA invited talk (Feb 2026, also in News).",
     "Awards: the combined IWSC 2023 entry becomes two entries (People's Choice Best Paper Award; Student Encouragement Award).",
     "Research: the themes become cards (title, one-sentence summary, key result from the published abstracts, keyword chips, short venue links). Each paper shows one merged keyword row (at most 4 on lists); your SE tags and AI/ML topics stay separate in the data, the search data and the /publications/ filter.",
     "Hero: one highlights line (ACM SIGSOFT Distinguished Paper, Best Doctoral Proposal Award, 2 papers at ASE 2026, Reviewer for IEEE TSE and ACM TOSEM) replaces the award line.",
@@ -2434,7 +2434,7 @@
       ],
       "replace": [
         {
-          "label": "Research Supervision row(s) → one \"Research Supervisor, NSERC USRA students\" row",
+          "label": "Research Supervision row(s) → one \"Undergraduate Research Supervisor, NSERC USRA\" row",
           "match_any": [
             {
               "role": "Research Supervision",
@@ -2446,9 +2446,9 @@
           },
           "with": [
             {
-              "period": "2023 – 2026",
-              "role": "Research Supervisor, NSERC USRA students",
-              "description": "Supervised 7 NSERC USRA students across the summers of 2023–2026.",
+              "period": "2023 – Present",
+              "role": "Undergraduate Research Supervisor, NSERC USRA",
+              "description": "Supervising NSERC USRA undergraduate researchers every summer since 2023; 7 students so far.",
               "details": "USRA is the NSERC Undergraduate Student Research Award. Four of the students worked on the GPTCloneBench project; one student's project won two undergraduate research awards (ICSAC 2024 and the SOAR Symposium 2024).",
               "venue": "Software Research Lab (SRLab) and iSE Lab, University of Saskatchewan",
               "category": "supervision",
@@ -2611,9 +2611,9 @@
           "category": "reviewing"
         },
         {
-          "period": "2023 – 2026",
-          "role": "Research Supervisor, NSERC USRA students",
-          "description": "Supervised 7 NSERC USRA students across the summers of 2023–2026.",
+          "period": "2023 – Present",
+          "role": "Undergraduate Research Supervisor, NSERC USRA",
+          "description": "Supervising NSERC USRA undergraduate researchers every summer since 2023; 7 students so far.",
           "details": "USRA is the NSERC Undergraduate Student Research Award. Four of the students worked on the GPTCloneBench project; one student's project won two undergraduate research awards (ICSAC 2024 and the SOAR Symposium 2024).",
           "venue": "Software Research Lab (SRLab) and iSE Lab, University of Saskatchewan",
           "category": "supervision",
